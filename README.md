@@ -572,19 +572,19 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ## 🗺️ Roadmap
 
-### 🎯 Version 2.1 (Q2 2024)
+### 🎯 Version 2.1 (Q2 2025)
 - [ ] **GraphQL API** - Alternative query interface
 - [ ] **WebSocket Streaming** - Real-time analysis updates
 - [ ] **Kubernetes Operator** - Native K8s deployment
 - [ ] **Advanced Caching** - Redis Cluster support
 
-### 🚀 Version 2.2 (Q3 2024)
+### 🚀 Version 2.2 (Q3 2025)
 - [ ] **GPU Acceleration** - NVIDIA CUDA support for VMAF
 - [ ] **WebAssembly Build** - Browser-based analysis
 - [ ] **Custom Metrics** - User-defined quality plugins
 - [ ] **ML Insights** - Advanced AI-powered recommendations
 
-### 🌟 Version 3.0 (Q4 2024)
+### 🌟 Version 3.0 (Q4 2025)
 - [ ] **Real-time Streaming** - Live stream analysis
 - [ ] **Advanced ML Models** - Custom neural network integration
 - [ ] **Multi-tenant Architecture** - Enterprise isolation
