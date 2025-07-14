@@ -1,0 +1,137 @@
+version: '3.8'
+
+services:
+  # Main API service
+  ffprobe-api:
+    build: .
+    container_name: ffprobe-api
+    ports:
+      - "8080:8080"
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=ffprobe_api
+      - POSTGRES_USER=ffprobe
+      - POSTGRES_PASSWORD=ffprobe_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - LOG_LEVEL=info
+      - API_KEY=dev_api_key_123
+      - FFMPEG_PATH=/usr/local/bin/ffmpeg
+      - FFPROBE_PATH=/usr/local/bin/ffprobe
+      - VMAF_MODEL_PATH=/usr/local/share/vmaf
+      - UPLOAD_DIR=/app/uploads
+      - REPORTS_DIR=/app/reports
+      - MAX_FILE_SIZE=53687091200
+      - ENABLE_AUTH=true
+      - ENABLE_RATE_LIMIT=true
+      - RATE_LIMIT_PER_MINUTE=60
+      - RATE_LIMIT_PER_HOUR=1000
+      - RATE_LIMIT_PER_DAY=10000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - uploads_data:/app/uploads
+      - reports_data:/app/reports
+      - models_data:/app/models
+      - logs_data:/app/logs
+    restart: unless-stopped
+    networks:
+      - ffprobe-network
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: '4.0'
+        reservations:
+          memory: 2G
+          cpus: '1.0'
+
+  # PostgreSQL database
+  postgres:
+    image: postgres:15-alpine
+    container_name: ffprobe-postgres
+    environment:
+      - POSTGRES_DB=ffprobe_api
+      - POSTGRES_USER=ffprobe
+      - POSTGRES_PASSWORD=ffprobe_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ffprobe -d ffprobe_api"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - ffprobe-network
+
+  # Redis cache
+  redis:
+    image: redis:7-alpine
+    container_name: ffprobe-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - ffprobe-network
+
+  # Prometheus (monitoring)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ffprobe-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - ffprobe-network
+
+  # Grafana (visualization)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ffprobe-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+    networks:
+      - ffprobe-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+  uploads_data:
+  reports_data:
+  models_data:
+  logs_data:
+
+networks:
+  ffprobe-network:
+    driver: bridge

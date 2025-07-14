@@ -1,0 +1,47 @@
+# Development override for docker-compose.yml
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+version: '3.8'
+
+services:
+  ffprobe-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: go-builder
+    command: go run ./cmd/ffprobe-api
+    volumes:
+      - .:/app
+      - uploads_data:/app/uploads
+      - reports_data:/app/reports
+      - models_data:/app/models
+      - logs_data:/app/logs
+    environment:
+      - LOG_LEVEL=debug
+      - ENABLE_AUTH=false
+      - ENABLE_RATE_LIMIT=false
+    restart: "no"
+    
+  # Add development tools
+  adminer:
+    image: adminer:latest
+    container_name: ffprobe-adminer
+    ports:
+      - "8090:8080"
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres
+    restart: unless-stopped
+    networks:
+      - ffprobe-network
+      
+  # Redis Commander for Redis management
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: ffprobe-redis-commander
+    ports:
+      - "8091:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    restart: unless-stopped
+    networks:
+      - ffprobe-network
