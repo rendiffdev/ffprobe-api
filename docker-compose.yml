@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   # Main API service
@@ -31,13 +30,18 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+        restart: true
       redis:
         condition: service_healthy
+        restart: true
     volumes:
       - uploads_data:/app/uploads
       - reports_data:/app/reports
       - models_data:/app/models
       - logs_data:/app/logs
+      - temp_data:/app/temp
+      - cache_data:/app/cache
+      - backup_data:/app/backup
     restart: unless-stopped
     networks:
       - ffprobe-network
@@ -52,7 +56,7 @@ services:
 
   # PostgreSQL database
   postgres:
-    image: postgres:15-alpine
+    image: postgres:16-alpine
     container_name: ffprobe-postgres
     environment:
       - POSTGRES_DB=ffprobe_api
@@ -62,7 +66,9 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./migrations:/docker-entrypoint-initdb.d
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+      - ./migrations/001_initial_schema.up.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./migrations/005_create_quality_metrics_tables.up.sql:/docker-entrypoint-initdb.d/02-quality.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ffprobe -d ffprobe_api"]
       interval: 10s
@@ -124,13 +130,27 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
   redis_data:
+    driver: local
   prometheus_data:
+    driver: local
   grafana_data:
+    driver: local
   uploads_data:
+    driver: local
   reports_data:
+    driver: local
   models_data:
+    driver: local
   logs_data:
+    driver: local
+  temp_data:
+    driver: local
+  cache_data:
+    driver: local
+  backup_data:
+    driver: local
 
 networks:
   ffprobe-network:

@@ -52,6 +52,11 @@ func (f *FFprobe) SetMaxOutputSize(size int64) {
 func (f *FFprobe) Probe(ctx context.Context, options *FFprobeOptions) (*FFprobeResult, error) {
 	startTime := time.Now()
 
+	// Validate options first
+	if err := ValidateOptions(options); err != nil {
+		return nil, fmt.Errorf("invalid options: %w", err)
+	}
+
 	// Build command arguments
 	args, err := f.buildArgs(options)
 	if err != nil {
@@ -131,6 +136,14 @@ func (f *FFprobe) Probe(ctx context.Context, options *FFprobeOptions) (*FFprobeR
 			Err(err).
 			Msg("Failed to parse ffprobe output")
 		return result, fmt.Errorf("failed to parse ffprobe output: %w", err)
+	}
+
+	// Validate parsed result
+	if err := ValidateResult(result); err != nil {
+		f.logger.Warn().
+			Err(err).
+			Msg("Result validation warning")
+		// Don't fail on validation warnings, just log them
 	}
 
 	return result, nil

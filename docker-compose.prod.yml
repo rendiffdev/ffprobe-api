@@ -1,7 +1,5 @@
 # Production override for docker-compose.yml
-# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
-
-version: '3.8'
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up
 
 services:
   ffprobe-api:

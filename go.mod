@@ -1,6 +1,6 @@
 module github.com/rendiffdev/ffprobe-api
 
-go 1.21
+go 1.23
 
 require (
 	github.com/gin-gonic/gin v1.9.1

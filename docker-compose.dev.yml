@@ -1,7 +1,5 @@
 # Development override for docker-compose.yml
-# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
-
-version: '3.8'
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 
 services:
   ffprobe-api:
@@ -11,11 +9,15 @@ services:
       target: go-builder
     command: go run ./cmd/ffprobe-api
     volumes:
-      - .:/app
+      - .:/app:cached
       - uploads_data:/app/uploads
       - reports_data:/app/reports
       - models_data:/app/models
       - logs_data:/app/logs
+      - temp_data:/app/temp
+      - cache_data:/app/cache
+      - backup_data:/app/backup
+      - go_mod_cache:/go/pkg/mod
     environment:
       - LOG_LEVEL=debug
       - ENABLE_AUTH=false
@@ -45,3 +47,7 @@ services:
     restart: unless-stopped
     networks:
       - ffprobe-network
+
+volumes:
+  go_mod_cache:
+    driver: local

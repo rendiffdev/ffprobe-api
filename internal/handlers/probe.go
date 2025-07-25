@@ -15,6 +15,7 @@ import (
 	"github.com/rendiffdev/ffprobe-api/internal/ffmpeg"
 	"github.com/rendiffdev/ffprobe-api/internal/models"
 	"github.com/rendiffdev/ffprobe-api/internal/services"
+	"github.com/rendiffdev/ffprobe-api/internal/validator"
 )
 
 // ProbeHandler handles ffprobe-related API endpoints
@@ -81,6 +82,17 @@ func (h *ProbeHandler) ProbeFile(c *gin.Context) {
 		h.logger.Error().Err(err).Msg("Invalid request body")
 		c.JSON(http.StatusBadRequest, ErrorResponse{
 			Error:   "Invalid request body",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	// Validate file path
+	validator := validator.NewFilePathValidator()
+	if err := validator.ValidateFilePath(req.FilePath); err != nil {
+		h.logger.Warn().Err(err).Str("path", req.FilePath).Msg("Invalid file path")
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error:   "Invalid file path",
 			Details: err.Error(),
 		})
 		return

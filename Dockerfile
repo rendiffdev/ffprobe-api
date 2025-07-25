@@ -1,6 +1,6 @@
 # Multi-stage build for FFprobe API with FFmpeg and libvmaf support
 # Stage 1: Build dependencies and compile FFmpeg with libvmaf
-FROM alpine:3.19 AS ffmpeg-builder
+FROM alpine:3.20 AS ffmpeg-builder
 
 # Install build dependencies
 RUN apk add --no-cache \
@@ -85,7 +85,7 @@ RUN git clone --depth 1 --branch n6.1 https://github.com/FFmpeg/FFmpeg.git ffmpe
     make install
 
 # Stage 2: Go application builder
-FROM golang:1.21-alpine AS go-builder
+FROM golang:1.23-alpine AS go-builder
 
 # Install git for go modules
 RUN apk add --no-cache git
@@ -109,16 +109,34 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
     ./cmd/ffprobe-api
 
 # Stage 3: Final runtime image
-FROM alpine:3.19
+FROM alpine:3.20
 
 # Install runtime dependencies
 RUN apk add --no-cache \
     ca-certificates \
     tzdata \
     curl \
+    wget \
+    bash \
+    sh \
+    coreutils \
+    findutils \
+    grep \
+    sed \
+    awk \
+    tar \
+    gzip \
+    unzip \
+    git \
+    openssh-client \
     postgresql-client \
     redis \
     python3 \
+    py3-pip \
+    jq \
+    file \
+    mediainfo \
+    exiftool \
     && rm -rf /var/cache/apk/*
 
 # Copy FFmpeg binaries and VMAF models from builder
@@ -128,6 +146,10 @@ COPY --from=ffmpeg-builder /usr/local/share/vmaf /usr/local/share/vmaf
 
 # Copy Go application from builder
 COPY --from=go-builder /app/ffprobe-api /usr/local/bin/ffprobe-api
+
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Create non-root user
 RUN adduser -D -s /bin/sh -u 1001 ffprobe
@@ -142,8 +164,15 @@ WORKDIR /app
 # Create default configuration directory
 RUN mkdir -p /app/config
 
-# Copy example configuration
+# Copy configuration files
 COPY .env.example /app/config/env.example
+
+# Create default directories and set permissions
+RUN mkdir -p /app/temp /app/cache /app/backup /app/ssl /app/scripts && \
+    chown -R ffprobe:ffprobe /app/temp /app/cache /app/backup /app/ssl /app/scripts
+
+# Copy any initialization scripts if they exist
+COPY --chown=ffprobe:ffprobe scripts/ /app/scripts/ 2>/dev/null || true
 
 # Expose port
 EXPOSE 8080
@@ -155,14 +184,27 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Switch to non-root user
 USER ffprobe
 
-# Set environment variables
-ENV FFMPEG_PATH=/usr/local/bin/ffmpeg
-ENV FFPROBE_PATH=/usr/local/bin/ffprobe
-ENV VMAF_MODEL_PATH=/usr/local/share/vmaf
-ENV UPLOAD_DIR=/app/uploads
-ENV REPORTS_DIR=/app/reports
-ENV LOG_LEVEL=info
-ENV API_PORT=8080
+# Set environment variables for complete self-containment
+ENV FFMPEG_PATH=/usr/local/bin/ffmpeg \
+    FFPROBE_PATH=/usr/local/bin/ffprobe \
+    VMAF_MODEL_PATH=/usr/local/share/vmaf \
+    UPLOAD_DIR=/app/uploads \
+    REPORTS_DIR=/app/reports \
+    TEMP_DIR=/app/temp \
+    CACHE_DIR=/app/cache \
+    BACKUP_DIR=/app/backup \
+    LOG_LEVEL=info \
+    API_PORT=8080 \
+    GO_ENV=production \
+    CGO_ENABLED=0 \
+    GOOS=linux \
+    PATH="/usr/local/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin:/app/scripts" \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    TZ=UTC
+
+# Set entrypoint
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # Run the application
 CMD ["/usr/local/bin/ffprobe-api"]

@@ -144,7 +144,7 @@ func (r *Router) SetupRoutes() *gin.Engine {
 	router := gin.New()
 
 	// Global middleware (applied to all routes)
-	router.Use(gin.Recovery())
+	router.Use(middleware.Recovery(r.logger))
 	router.Use(r.security.RequestLogging())
 	router.Use(r.security.Security())
 	router.Use(r.security.CORS())
