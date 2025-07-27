@@ -353,16 +353,22 @@ func (m *AuthMiddleware) isPublicEndpoint(path string) bool {
 }
 
 func (m *AuthMiddleware) validateCredentials(username, password string) bool {
-	// In production, hash passwords and validate against database
-	// This is just for demonstration
-	validUsers := map[string]string{
-		"admin": "admin123",
-		"user":  "user123",
-		"demo":  "demo123",
+	// SECURITY: This should be replaced with proper password hashing (bcrypt) 
+	// and database validation in production
+	// DO NOT use hardcoded credentials in production!
+	
+	// For demo purposes only - replace with database lookup
+	if username == "" || password == "" {
+		return false
 	}
 	
-	expectedPassword, exists := validUsers[username]
-	return exists && subtle.ConstantTimeCompare([]byte(password), []byte(expectedPassword)) == 1
+	// In production, this should:
+	// 1. Query user from database by username
+	// 2. Compare hashed password using bcrypt.CompareHashAndPassword
+	// 3. Implement account lockout after failed attempts
+	// 4. Log all authentication attempts
+	
+	return false // Disabled hardcoded auth - implement proper auth
 }
 
 func (m *AuthMiddleware) generateTokens(userID, username string, roles []string) (string, string, error) {

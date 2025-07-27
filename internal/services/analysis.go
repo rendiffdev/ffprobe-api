@@ -31,22 +31,29 @@ type AnalysisOptions struct {
 
 // AnalysisService handles media file analysis operations
 type AnalysisService struct {
-	db       *database.DB
-	repo     database.Repository
-	ffprobe  *ffmpeg.FFprobe
-	logger   zerolog.Logger
-	tempDir  string
+	db         *database.DB
+	repo       database.Repository
+	ffprobe    *ffmpeg.FFprobe
+	llmService *LLMService
+	logger     zerolog.Logger
+	tempDir    string
 }
 
 // NewAnalysisService creates a new analysis service
 func NewAnalysisService(db *database.DB, ffprobePath string, logger zerolog.Logger) *AnalysisService {
 	return &AnalysisService{
-		db:      db,
-		repo:    database.NewRepository(db),
-		ffprobe: ffmpeg.NewFFprobe(ffprobePath, logger),
-		logger:  logger,
-		tempDir: "/tmp", // Default temp directory
+		db:         db,
+		repo:       database.NewRepository(db),
+		ffprobe:    ffmpeg.NewFFprobe(ffprobePath, logger),
+		llmService: nil, // Will be set via SetLLMService
+		logger:     logger,
+		tempDir:    "/tmp", // Default temp directory
 	}
+}
+
+// SetLLMService sets the LLM service for automatic report generation
+func (s *AnalysisService) SetLLMService(llmService *LLMService) {
+	s.llmService = llmService
 }
 
 // SetTempDirectory sets the temporary directory for file processing
@@ -168,7 +175,61 @@ func (s *AnalysisService) ProcessAnalysis(ctx context.Context, analysisID uuid.U
 		Dur("execution_time", result.ExecutionTime).
 		Msg("Analysis completed successfully")
 
+	// Generate LLM report automatically (if LLM service is available)
+	if s.llmService != nil {
+		go s.generateLLMReport(ctx, analysis)
+	}
+
 	return nil
+}
+
+// generateLLMReport generates an AI analysis report automatically after FFprobe analysis
+func (s *AnalysisService) generateLLMReport(ctx context.Context, analysis *models.Analysis) {
+	if s.llmService == nil {
+		s.logger.Debug().Str("analysis_id", analysis.ID.String()).Msg("LLM service not available, skipping report generation")
+		return
+	}
+
+	s.logger.Info().Str("analysis_id", analysis.ID.String()).Msg("Generating AI analysis report")
+
+	// Create a timeout context for LLM generation
+	llmCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+
+	// Generate analysis report
+	report, err := s.llmService.GenerateAnalysis(llmCtx, analysis)
+	if err != nil {
+		s.logger.Warn().
+			Err(err).
+			Str("analysis_id", analysis.ID.String()).
+			Msg("Failed to generate LLM analysis report")
+		return
+	}
+
+	// Store the report in the analysis
+	analysis.LLMReport = &report
+	analysis.UpdatedAt = time.Now()
+
+	// Update the analysis with the LLM report
+	// Note: This would require adding LLMReport field to the models.Analysis struct
+	// and updating the repository to save it
+	if err := s.updateAnalysisLLMReport(llmCtx, analysis.ID, report); err != nil {
+		s.logger.Error().
+			Err(err).
+			Str("analysis_id", analysis.ID.String()).
+			Msg("Failed to save LLM analysis report")
+		return
+	}
+
+	s.logger.Info().
+		Str("analysis_id", analysis.ID.String()).
+		Int("report_length", len(report)).
+		Msg("AI analysis report generated and saved successfully")
+}
+
+// updateAnalysisLLMReport updates the analysis with the LLM report
+func (s *AnalysisService) updateAnalysisLLMReport(ctx context.Context, analysisID uuid.UUID, report string) error {
+	return s.repo.UpdateAnalysisLLMReport(ctx, analysisID, report)
 }
 
 // ProcessFile is a convenience method that creates and processes an analysis

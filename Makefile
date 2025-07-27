@@ -1,22 +1,35 @@
 # FFprobe API Makefile
 
-.PHONY: help build test test-coverage test-integration clean run dev docker-build docker-run
+.PHONY: help build test test-coverage test-integration clean run dev docker-build docker-run install deploy validate
 
 # Default target
 help:
-	@echo "Available targets:"
+	@echo "🎬 FFprobe API - Available targets:"
+	@echo ""
+	@echo "📦 BUILD & TEST:"
 	@echo "  build            - Build the application"
 	@echo "  test             - Run unit tests"
 	@echo "  test-coverage    - Run tests with coverage"
 	@echo "  test-integration - Run integration tests"
 	@echo "  test-all         - Run all tests"
 	@echo "  clean            - Clean build artifacts"
+	@echo ""
+	@echo "🚀 RUN & DEPLOY:"
 	@echo "  run              - Run the application"
 	@echo "  dev              - Run in development mode"
 	@echo "  docker-build     - Build Docker image"
 	@echo "  docker-run       - Run with Docker Compose"
+	@echo ""
+	@echo "⚙️ SETUP & INSTALL:"
+	@echo "  install          - Interactive installer"
+	@echo "  quick-setup      - Quick setup (3 modes)"
+	@echo "  validate         - Validate configuration"
+	@echo "  setup-ollama     - Setup Ollama LLM models"
+	@echo ""
+	@echo "🛠️ DEVELOPMENT:"
 	@echo "  lint             - Run linter"
 	@echo "  fmt              - Format code"
+	@echo "  deploy           - Deploy to production"
 
 # Build the application
 build:
@@ -149,3 +162,71 @@ vuln-check:
 coverage-badge: test-coverage
 	@echo "Generating coverage badge..."
 	go tool cover -func=coverage.out | grep total | awk '{print $$3}' | sed 's/%//' > coverage.txt
+
+# =============================================================================
+# INSTALLATION & DEPLOYMENT TARGETS
+# =============================================================================
+
+# Interactive installer
+install:
+	@echo "🎬 Starting FFprobe API Interactive Installer..."
+	./scripts/setup/install.sh
+
+# Quick setup
+quick-setup:
+	@echo "⚡ Starting FFprobe API Quick Setup..."
+	./scripts/setup/quick-setup.sh
+
+# Validate configuration
+validate:
+	@echo "✅ Validating configuration..."
+	./scripts/setup/validate-config.sh
+
+# Deploy to production
+deploy:
+	@echo "🚀 Deploying to production..."
+	./scripts/deployment/deploy.sh deploy production latest
+
+# Deploy to staging
+deploy-staging:
+	@echo "🧪 Deploying to staging..."
+	./scripts/deployment/deploy.sh deploy staging latest
+
+# Check deployment health
+health-check:
+	@echo "🏥 Checking deployment health..."
+	./scripts/deployment/healthcheck.sh
+
+# Create backup
+backup:
+	@echo "💾 Creating backup..."
+	./scripts/maintenance/backup.sh
+
+# Setup Ollama models
+setup-ollama:
+	@echo "🦙 Setting up Ollama models..."
+	./scripts/setup/setup-ollama.sh
+
+# Update Docker Compose files to new syntax
+docker-update:
+	@echo "🐳 Updating Docker Compose syntax..."
+	docker compose -f compose.yml config > /dev/null && echo "✅ Base config valid"
+	docker compose -f compose.yml -f compose.dev.yml config > /dev/null && echo "✅ Dev config valid"
+	docker compose -f compose.yml -f compose.prod.yml config > /dev/null && echo "✅ Prod config valid"
+
+# Complete setup workflow
+setup-complete: install validate docker-update
+	@echo "🎉 Complete setup workflow finished!"
+	@echo "Your FFprobe API is ready to deploy!"
+
+# Development workflow
+dev-workflow: deps install-tools fmt lint test
+	@echo "🔧 Development workflow complete!"
+
+# CI/CD pipeline simulation
+ci: deps fmt lint test test-integration security vuln-check
+	@echo "🚦 CI pipeline simulation complete!"
+
+# Production readiness check
+prod-ready: validate docker-update security vuln-check test-all
+	@echo "🏭 Production readiness check complete!"

@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -246,16 +247,63 @@ func (e *E2ETester) testBasicFileAnalysis(ctx context.Context, result *E2ETestRe
 }
 
 func (e *E2ETester) testURLAnalysis(ctx context.Context, result *E2ETestResult) error {
-	// This would test analysis of remote URLs
-	// For now, return success as placeholder
+	// Test analysis of remote URLs using a sample media file
 	step := &E2ETestStep{
 		Name:      "URL analysis test",
 		StartedAt: time.Now(),
 	}
 	result.Steps = append(result.Steps, step)
 
-	// Simulate URL analysis test
-	time.Sleep(100 * time.Millisecond)
+	// Use a publicly available test media file
+	testURL := "https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4"
+	
+	// Create analysis request for URL
+	analysisID := uuid.New()
+	opts := services.AnalysisOptions{
+		Source:      testURL,
+		UserID:      "",
+		FFprobeArgs: []string{"-show_format", "-show_streams"},
+	}
+	
+	// Start analysis
+	if err := e.analysisService.AnalyzeMedia(ctx, analysisID.String(), opts); err != nil {
+		step.Error = err.Error()
+		step.Success = false
+		step.CompletedAt = time.Now()
+		e.logger.Error().Err(err).Msg("URL analysis test failed")
+		return err
+	}
+	
+	// Wait for analysis to complete (with timeout)
+	timeout := time.After(30 * time.Second)
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+	
+	for {
+		select {
+		case <-timeout:
+			step.Error = "analysis timeout"
+			step.Success = false
+			step.CompletedAt = time.Now()
+			return fmt.Errorf("URL analysis test timed out")
+		case <-ticker.C:
+			analysisResult, err := e.analysisService.GetAnalysisResult(ctx, analysisID.String())
+			if err != nil {
+				continue
+			}
+			if analysisResult.Analysis.Status == models.StatusCompleted {
+				step.Success = true
+				step.CompletedAt = time.Now()
+				return nil
+			}
+			if analysisResult.Analysis.Status == models.StatusFailed {
+				step.Error = "analysis failed"
+				step.Success = false
+				step.CompletedAt = time.Now()
+				return fmt.Errorf("URL analysis failed")
+			}
+		}
+	}
 
 	step.CompletedAt = time.Now()
 	step.Passed = true
@@ -525,29 +573,40 @@ func (e *E2ETester) createTestMediaFile() (string, error) {
 	testFile := filepath.Join(e.testDataDir, fmt.Sprintf("test_%s.mp4", uuid.New().String()[:8]))
 	
 	// Generate a 1-second test video (color bars)
-	cmd := fmt.Sprintf("ffmpeg -f lavfi -i testsrc=duration=1:size=320x240:rate=1 -c:v libx264 -t 1 -y %s", testFile)
+	// Try to use FFmpeg to create a proper test file
+	cmd := exec.Command("ffmpeg", "-f", "lavfi", "-i", "testsrc=duration=1:size=320x240:rate=1", "-c:v", "libx264", "-t", "1", "-y", testFile)
 	
-	// For now, create a dummy file since FFmpeg might not be available in test environment
-	file, err := os.Create(testFile)
-	if err != nil {
-		return "", fmt.Errorf("failed to create test file: %w", err)
+	if err := cmd.Run(); err != nil {
+		// FFmpeg not available, create a minimal valid MP4 file
+		e.logger.Warn().Msg("FFmpeg not available for test file generation, creating minimal MP4")
+		
+		file, err := os.Create(testFile)
+		if err != nil {
+			return "", fmt.Errorf("failed to create test file: %w", err)
+		}
+		defer file.Close()
+		
+		// Write a more complete MP4 structure that FFprobe can analyze
+		mp4Data := []byte{
+			// ftyp box
+			0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70,
+			0x69, 0x73, 0x6f, 0x6d, 0x00, 0x00, 0x02, 0x00,
+			0x69, 0x73, 0x6f, 0x6d, 0x69, 0x73, 0x6f, 0x32,
+			0x61, 0x76, 0x63, 0x31, 0x6d, 0x70, 0x34, 0x31,
+			// mdat box (minimal)
+			0x00, 0x00, 0x00, 0x08, 0x6d, 0x64, 0x61, 0x74,
+		}
+		
+		if _, err := file.Write(mp4Data); err != nil {
+			os.Remove(testFile)
+			return "", fmt.Errorf("failed to write test file data: %w", err)
+		}
+		
+		e.logger.Info().Str("file", testFile).Msg("Created minimal MP4 test file")
+	} else {
+		e.logger.Info().Str("file", testFile).Msg("Created test file using FFmpeg")
 	}
 	
-	// Write minimal MP4 header to make it a valid media file
-	header := []byte{
-		0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, // ftyp box
-		0x69, 0x73, 0x6f, 0x6d, 0x00, 0x00, 0x02, 0x00,
-		0x69, 0x73, 0x6f, 0x6d, 0x69, 0x73, 0x6f, 0x32,
-		0x61, 0x76, 0x63, 0x31, 0x6d, 0x70, 0x34, 0x31,
-	}
-	
-	if _, err := file.Write(header); err != nil {
-		file.Close()
-		os.Remove(testFile)
-		return "", fmt.Errorf("failed to write test file header: %w", err)
-	}
-	
-	file.Close()
 	return testFile, nil
 }
 

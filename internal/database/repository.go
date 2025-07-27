@@ -16,6 +16,7 @@ type Repository interface {
 	GetAnalysis(ctx context.Context, id uuid.UUID) (*models.Analysis, error)
 	GetAnalysesByUser(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Analysis, error)
 	UpdateAnalysisStatus(ctx context.Context, id uuid.UUID, status models.AnalysisStatus, errorMsg *string) error
+	UpdateAnalysisLLMReport(ctx context.Context, id uuid.UUID, report string) error
 	DeleteAnalysis(ctx context.Context, id uuid.UUID) error
 
 	// Quality metrics operations
@@ -101,7 +102,7 @@ func (r *PostgreSQLRepository) CreateAnalysis(ctx context.Context, analysis *mod
 func (r *PostgreSQLRepository) GetAnalysis(ctx context.Context, id uuid.UUID) (*models.Analysis, error) {
 	query := `
 		SELECT id, user_id, file_name, file_path, file_size, content_hash, source_type,
-			status, ffprobe_data, processed_at, created_at, updated_at, error_msg
+			status, ffprobe_data, llm_report, processed_at, created_at, updated_at, error_msg
 		FROM analyses WHERE id = $1`
 
 	var analysis models.Analysis
@@ -115,6 +116,7 @@ func (r *PostgreSQLRepository) GetAnalysis(ctx context.Context, id uuid.UUID) (*
 		&analysis.SourceType,
 		&analysis.Status,
 		&analysis.FFprobeData,
+		&analysis.LLMReport,
 		&analysis.ProcessedAt,
 		&analysis.CreatedAt,
 		&analysis.UpdatedAt,
@@ -132,7 +134,7 @@ func (r *PostgreSQLRepository) GetAnalysis(ctx context.Context, id uuid.UUID) (*
 func (r *PostgreSQLRepository) GetAnalysesByUser(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Analysis, error) {
 	query := `
 		SELECT id, user_id, file_name, file_path, file_size, content_hash, source_type,
-			status, ffprobe_data, processed_at, created_at, updated_at, error_msg
+			status, ffprobe_data, llm_report, processed_at, created_at, updated_at, error_msg
 		FROM analyses 
 		WHERE user_id = $1 
 		ORDER BY created_at DESC 
@@ -157,6 +159,7 @@ func (r *PostgreSQLRepository) GetAnalysesByUser(ctx context.Context, userID uui
 			&analysis.SourceType,
 			&analysis.Status,
 			&analysis.FFprobeData,
+			&analysis.LLMReport,
 			&analysis.ProcessedAt,
 			&analysis.CreatedAt,
 			&analysis.UpdatedAt,
@@ -186,6 +189,21 @@ func (r *PostgreSQLRepository) UpdateAnalysisStatus(ctx context.Context, id uuid
 	return nil
 }
 
+// UpdateAnalysisLLMReport updates the LLM report of an analysis
+func (r *PostgreSQLRepository) UpdateAnalysisLLMReport(ctx context.Context, id uuid.UUID, report string) error {
+	query := `
+		UPDATE analyses 
+		SET llm_report = $2, updated_at = $3
+		WHERE id = $1`
+
+	_, err := r.db.Pool.Exec(ctx, query, id, report, time.Now())
+	if err != nil {
+		return fmt.Errorf("failed to update analysis LLM report: %w", err)
+	}
+
+	return nil
+}
+
 // DeleteAnalysis deletes an analysis record
 func (r *PostgreSQLRepository) DeleteAnalysis(ctx context.Context, id uuid.UUID) error {
 	query := `DELETE FROM analyses WHERE id = $1`
@@ -198,28 +216,7 @@ func (r *PostgreSQLRepository) DeleteAnalysis(ctx context.Context, id uuid.UUID)
 	return nil
 }
 
-// Placeholder implementations for other methods
-// These will be implemented in subsequent tasks
-
-func (r *PostgreSQLRepository) CreateQualityMetrics(ctx context.Context, metrics *models.QualityMetrics) error {
-	// TODO: Implement in quality metrics task
-	return fmt.Errorf("not implemented yet")
-}
-
-func (r *PostgreSQLRepository) GetQualityMetrics(ctx context.Context, analysisID uuid.UUID) ([]models.QualityMetrics, error) {
-	// TODO: Implement in quality metrics task
-	return nil, fmt.Errorf("not implemented yet")
-}
-
-func (r *PostgreSQLRepository) CreateQualityFrame(ctx context.Context, frame *models.QualityFrame) error {
-	// TODO: Implement in quality metrics task
-	return fmt.Errorf("not implemented yet")
-}
-
-func (r *PostgreSQLRepository) GetQualityFrames(ctx context.Context, metricID uuid.UUID, limit, offset int) ([]models.QualityFrame, error) {
-	// TODO: Implement in quality metrics task
-	return nil, fmt.Errorf("not implemented yet")
-}
+// Quality metrics operations are implemented in quality_repository.go
 
 func (r *PostgreSQLRepository) CreateHLSAnalysis(ctx context.Context, hls *models.HLSAnalysis) error {
 	query := `
@@ -361,34 +358,80 @@ func (r *PostgreSQLRepository) ListHLSAnalyses(ctx context.Context, userID *uuid
 	return analyses, total, nil
 }
 
+// User and API Key operations - stub implementations for basic functionality
 func (r *PostgreSQLRepository) CreateUser(ctx context.Context, user *models.User) error {
-	// TODO: Implement in user management task
-	return fmt.Errorf("not implemented yet")
+	query := `
+		INSERT INTO users (id, email, username, password_hash, role, is_active, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+	
+	_, err := r.db.Pool.Exec(ctx, query,
+		user.ID, user.Email, user.Username, user.PasswordHash,
+		user.Role, user.IsActive, user.CreatedAt, user.UpdatedAt)
+	return err
 }
 
 func (r *PostgreSQLRepository) GetUser(ctx context.Context, id uuid.UUID) (*models.User, error) {
-	// TODO: Implement in user management task
-	return nil, fmt.Errorf("not implemented yet")
+	query := `
+		SELECT id, email, username, password_hash, role, is_active, created_at, updated_at
+		FROM users WHERE id = $1`
+	
+	var user models.User
+	err := r.db.Pool.QueryRow(ctx, query, id).Scan(
+		&user.ID, &user.Email, &user.Username, &user.PasswordHash,
+		&user.Role, &user.IsActive, &user.CreatedAt, &user.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 func (r *PostgreSQLRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
-	// TODO: Implement in user management task
-	return nil, fmt.Errorf("not implemented yet")
+	query := `
+		SELECT id, email, username, password_hash, role, is_active, created_at, updated_at
+		FROM users WHERE email = $1`
+	
+	var user models.User
+	err := r.db.Pool.QueryRow(ctx, query, email).Scan(
+		&user.ID, &user.Email, &user.Username, &user.PasswordHash,
+		&user.Role, &user.IsActive, &user.CreatedAt, &user.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 func (r *PostgreSQLRepository) CreateAPIKey(ctx context.Context, apiKey *models.APIKey) error {
-	// TODO: Implement in authentication task
-	return fmt.Errorf("not implemented yet")
+	query := `
+		INSERT INTO api_keys (id, user_id, key_hash, name, permissions, is_active, expires_at, created_at, last_used)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+	
+	_, err := r.db.Pool.Exec(ctx, query,
+		apiKey.ID, apiKey.UserID, apiKey.KeyHash, apiKey.Name,
+		apiKey.Permissions, apiKey.IsActive, apiKey.ExpiresAt,
+		apiKey.CreatedAt, apiKey.LastUsed)
+	return err
 }
 
 func (r *PostgreSQLRepository) GetAPIKey(ctx context.Context, keyHash string) (*models.APIKey, error) {
-	// TODO: Implement in authentication task
-	return nil, fmt.Errorf("not implemented yet")
+	query := `
+		SELECT id, user_id, key_hash, name, permissions, is_active, expires_at, created_at, last_used
+		FROM api_keys WHERE key_hash = $1 AND is_active = true`
+	
+	var apiKey models.APIKey
+	err := r.db.Pool.QueryRow(ctx, query, keyHash).Scan(
+		&apiKey.ID, &apiKey.UserID, &apiKey.KeyHash, &apiKey.Name,
+		&apiKey.Permissions, &apiKey.IsActive, &apiKey.ExpiresAt,
+		&apiKey.CreatedAt, &apiKey.LastUsed)
+	if err != nil {
+		return nil, err
+	}
+	return &apiKey, nil
 }
 
 func (r *PostgreSQLRepository) UpdateAPIKeyLastUsed(ctx context.Context, id uuid.UUID) error {
-	// TODO: Implement in authentication task
-	return fmt.Errorf("not implemented yet")
+	query := `UPDATE api_keys SET last_used = NOW() WHERE id = $1`
+	_, err := r.db.Pool.Exec(ctx, query, id)
+	return err
 }
 
 // Report methods
@@ -666,62 +709,115 @@ func (r *PostgreSQLRepository) DeleteQualityComparison(ctx context.Context, id u
 	return nil
 }
 
+// Processing job operations - basic implementations
 func (r *PostgreSQLRepository) CreateProcessingJob(ctx context.Context, job *models.ProcessingJob) error {
-	// TODO: Implement in job processing task
-	return fmt.Errorf("not implemented yet")
+	query := `
+		INSERT INTO processing_jobs (id, analysis_id, job_type, status, priority, 
+			scheduled_at, started_at, completed_at, error_msg, retry_count, max_retries)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
+	
+	_, err := r.db.Pool.Exec(ctx, query,
+		job.ID, job.AnalysisID, job.JobType, job.Status, job.Priority,
+		job.ScheduledAt, job.StartedAt, job.CompletedAt, job.ErrorMsg,
+		job.RetryCount, job.MaxRetries)
+	return err
 }
 
 func (r *PostgreSQLRepository) GetProcessingJob(ctx context.Context, id uuid.UUID) (*models.ProcessingJob, error) {
-	// TODO: Implement in job processing task
-	return nil, fmt.Errorf("not implemented yet")
+	query := `
+		SELECT id, analysis_id, job_type, status, priority, scheduled_at, 
+			started_at, completed_at, error_msg, retry_count, max_retries, created_at
+		FROM processing_jobs WHERE id = $1`
+	
+	var job models.ProcessingJob
+	err := r.db.Pool.QueryRow(ctx, query, id).Scan(
+		&job.ID, &job.AnalysisID, &job.JobType, &job.Status, &job.Priority,
+		&job.ScheduledAt, &job.StartedAt, &job.CompletedAt, &job.ErrorMsg,
+		&job.RetryCount, &job.MaxRetries, &job.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &job, nil
 }
 
 func (r *PostgreSQLRepository) UpdateProcessingJob(ctx context.Context, job *models.ProcessingJob) error {
-	// TODO: Implement in job processing task
-	return fmt.Errorf("not implemented yet")
+	query := `
+		UPDATE processing_jobs 
+		SET status = $2, started_at = $3, completed_at = $4, error_msg = $5, retry_count = $6
+		WHERE id = $1`
+	
+	_, err := r.db.Pool.Exec(ctx, query,
+		job.ID, job.Status, job.StartedAt, job.CompletedAt, job.ErrorMsg, job.RetryCount)
+	return err
 }
 
 func (r *PostgreSQLRepository) GetPendingJobs(ctx context.Context, jobType models.JobType, limit int) ([]models.ProcessingJob, error) {
-	// TODO: Implement in job processing task
-	return nil, fmt.Errorf("not implemented yet")
+	query := `
+		SELECT id, analysis_id, job_type, status, priority, scheduled_at, 
+			started_at, completed_at, error_msg, retry_count, max_retries, created_at
+		FROM processing_jobs 
+		WHERE job_type = $1 AND status = 'pending' 
+		ORDER BY priority DESC, scheduled_at ASC 
+		LIMIT $2`
+	
+	rows, err := r.db.Pool.Query(ctx, query, jobType, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	
+	var jobs []models.ProcessingJob
+	for rows.Next() {
+		var job models.ProcessingJob
+		err := rows.Scan(
+			&job.ID, &job.AnalysisID, &job.JobType, &job.Status, &job.Priority,
+			&job.ScheduledAt, &job.StartedAt, &job.CompletedAt, &job.ErrorMsg,
+			&job.RetryCount, &job.MaxRetries, &job.CreatedAt)
+		if err != nil {
+			return nil, err
+		}
+		jobs = append(jobs, job)
+	}
+	return jobs, nil
 }
 
+// Cache operations - basic implementations  
 func (r *PostgreSQLRepository) CreateCacheEntry(ctx context.Context, entry *models.CacheEntry) error {
-	// TODO: Implement in caching task
-	return fmt.Errorf("not implemented yet")
+	query := `
+		INSERT INTO cache_entries (id, content_hash, cache_type, file_path, 
+			hit_count, expires_at, created_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	
+	_, err := r.db.Pool.Exec(ctx, query,
+		entry.ID, entry.ContentHash, entry.CacheType, entry.FilePath,
+		entry.HitCount, entry.ExpiresAt, entry.CreatedAt)
+	return err
 }
 
 func (r *PostgreSQLRepository) GetCacheEntry(ctx context.Context, contentHash string, cacheType models.CacheType) (*models.CacheEntry, error) {
-	// TODO: Implement in caching task
-	return nil, fmt.Errorf("not implemented yet")
+	query := `
+		SELECT id, content_hash, cache_type, file_path, hit_count, expires_at, created_at
+		FROM cache_entries 
+		WHERE content_hash = $1 AND cache_type = $2 AND expires_at > NOW()`
+	
+	var entry models.CacheEntry
+	err := r.db.Pool.QueryRow(ctx, query, contentHash, cacheType).Scan(
+		&entry.ID, &entry.ContentHash, &entry.CacheType, &entry.FilePath,
+		&entry.HitCount, &entry.ExpiresAt, &entry.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &entry, nil
 }
 
 func (r *PostgreSQLRepository) UpdateCacheHit(ctx context.Context, id uuid.UUID) error {
-	// TODO: Implement in caching task
-	return fmt.Errorf("not implemented yet")
+	query := `UPDATE cache_entries SET hit_count = hit_count + 1 WHERE id = $1`
+	_, err := r.db.Pool.Exec(ctx, query, id)
+	return err
 }
 
 func (r *PostgreSQLRepository) CleanupExpiredCache(ctx context.Context) error {
-	// TODO: Implement in caching task
-	return fmt.Errorf("not implemented yet")
-}
-
-func (r *PostgreSQLRepository) CreateReport(ctx context.Context, report *models.Report) error {
-	// TODO: Implement in reporting task
-	return fmt.Errorf("not implemented yet")
-}
-
-func (r *PostgreSQLRepository) GetReport(ctx context.Context, id uuid.UUID) (*models.Report, error) {
-	// TODO: Implement in reporting task
-	return nil, fmt.Errorf("not implemented yet")
-}
-
-func (r *PostgreSQLRepository) GetReportsByAnalysis(ctx context.Context, analysisID uuid.UUID) ([]models.Report, error) {
-	// TODO: Implement in reporting task
-	return nil, fmt.Errorf("not implemented yet")
-}
-
-func (r *PostgreSQLRepository) UpdateReportDownload(ctx context.Context, id uuid.UUID) error {
-	// TODO: Implement in reporting task
-	return fmt.Errorf("not implemented yet")
+	query := `DELETE FROM cache_entries WHERE expires_at <= NOW()`
+	_, err := r.db.Pool.Exec(ctx, query)
+	return err
 }

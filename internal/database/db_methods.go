@@ -51,6 +51,11 @@ func (db *DB) UpdateAnalysisStatus(ctx context.Context, id string, status models
 	return repo.UpdateAnalysisStatus(ctx, analysisID, status)
 }
 
+func (db *DB) UpdateAnalysisLLMReport(ctx context.Context, id uuid.UUID, report string) error {
+	repo := newRepository(db)
+	return repo.UpdateAnalysisLLMReport(ctx, id, report)
+}
+
 func (db *DB) DeleteAnalysis(ctx context.Context, id uuid.UUID) error {
 	repo := newRepository(db)
 	return repo.DeleteAnalysis(ctx, id)

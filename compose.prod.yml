@@ -1,8 +1,9 @@
-# Production override for docker-compose.yml
-# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up
+# Production override for compose.yml
+# Usage: docker compose -f compose.yml -f compose.prod.yml up
 
 services:
   ffprobe-api:
+    # Remove container_name for production scaling
     environment:
       - LOG_LEVEL=warn
       - ENABLE_AUTH=true
@@ -75,7 +76,7 @@ services:
 
   # Add nginx reverse proxy for production
   nginx:
-    image: nginx:alpine
+    image: nginx:1.25.3-alpine
     container_name: ffprobe-nginx
     ports:
       - "80:80"

@@ -21,7 +21,8 @@ type S3Provider struct {
 }
 
 func NewS3Provider(cfg Config) (*S3Provider, error) {
-	awsConfig, err := config.LoadDefaultConfig(context.TODO(),
+	ctx := context.Background()
+	awsConfig, err := config.LoadDefaultConfig(ctx,
 		config.WithRegion(cfg.Region),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
 			cfg.AccessKey,

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -316,5 +317,101 @@ func (h *GenAIHandler) GenerateQualityInsights(c *gin.Context) {
 		"insights":    insights,
 		"metrics_count": len(metrics),
 		"generated_at": "now",
+	})
+}
+
+// GetLLMHealth checks the health of LLM services
+// @Summary Check LLM health
+// @Description Check the health status of local and remote LLM services
+// @Tags genai
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} ErrorResponse
+// @Router /api/v1/genai/health [get]
+func (h *GenAIHandler) GetLLMHealth(c *gin.Context) {
+	ctx := c.Request.Context()
+	health := map[string]interface{}{
+		"timestamp": time.Now().UTC(),
+		"services":  map[string]interface{}{},
+	}
+
+	// Check Ollama health
+	ollamaHealth, err := h.llmService.CheckOllamaHealth(ctx)
+	if err != nil {
+		health["services"].(map[string]interface{})["ollama"] = map[string]interface{}{
+			"status": "error",
+			"error":  err.Error(),
+		}
+	} else {
+		health["services"].(map[string]interface{})["ollama"] = ollamaHealth
+	}
+
+	// Overall status
+	allHealthy := true
+	if ollamaHealth == nil || !ollamaHealth.Healthy {
+		allHealthy = false
+	}
+
+	health["overall_status"] = "healthy"
+	if !allHealthy {
+		health["overall_status"] = "degraded"
+	}
+
+	status := http.StatusOK
+	if !allHealthy {
+		status = http.StatusServiceUnavailable
+	}
+
+	c.JSON(status, health)
+}
+
+// PullModel downloads a model to Ollama
+// @Summary Pull LLM model
+// @Description Download a model to the local Ollama service
+// @Tags genai
+// @Accept json
+// @Produce json
+// @Param request body map[string]string true "Model pull request"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} ErrorResponse
+// @Failure 500 {object} ErrorResponse
+// @Router /api/v1/genai/pull-model [post]
+func (h *GenAIHandler) PullModel(c *gin.Context) {
+	var req struct {
+		Model string `json:"model" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		h.logger.Error().Err(err).Msg("Invalid request body")
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid request body",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Validate model name
+	if len(req.Model) == 0 || len(req.Model) > 100 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Model name must be between 1 and 100 characters",
+		})
+		return
+	}
+
+	ctx := c.Request.Context()
+
+	// Start model pull
+	go func() {
+		if err := h.llmService.PullModel(ctx, req.Model); err != nil {
+			h.logger.Error().Err(err).Str("model", req.Model).Msg("Failed to pull model")
+		} else {
+			h.logger.Info().Str("model", req.Model).Msg("Successfully pulled model")
+		}
+	}()
+
+	c.JSON(http.StatusAccepted, gin.H{
+		"message": "Model pull started",
+		"model":   req.Model,
+		"status":  "pulling",
 	})
 }

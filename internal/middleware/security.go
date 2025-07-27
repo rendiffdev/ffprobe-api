@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
@@ -92,7 +93,7 @@ func (sm *SecurityMiddleware) Security() gin.HandlerFunc {
 		// Strict-Transport-Security
 		if sm.config.EnableHSTS && c.Request.TLS != nil {
 			c.Header("Strict-Transport-Security", 
-				"max-age="+string(rune(sm.config.HSTSMaxAge))+"; includeSubDomains; preload")
+				fmt.Sprintf("max-age=%d; includeSubDomains; preload", sm.config.HSTSMaxAge))
 		}
 
 		// Referrer-Policy
@@ -141,7 +142,7 @@ func (sm *SecurityMiddleware) CORS() gin.HandlerFunc {
 		c.Header("Access-Control-Allow-Credentials", "true")
 		
 		if sm.config.MaxAge > 0 {
-			c.Header("Access-Control-Max-Age", string(rune(sm.config.MaxAge)))
+			c.Header("Access-Control-Max-Age", fmt.Sprintf("%d", sm.config.MaxAge))
 		}
 
 		// Handle preflight requests

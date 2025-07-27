@@ -1,3 +1,10 @@
+# FFprobe API - .gitignore
+# Comprehensive ignore file for Go application with Docker and media processing
+
+# =============================================================================
+# Go Language
+# =============================================================================
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -6,24 +13,46 @@
 *.dylib
 bin/
 dist/
+build/
 
 # Test binary, built with `go test -c`
 *.test
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+*.coverprofile
 coverage.html
+coverage.xml
 
 # Dependency directories
 vendor/
 
 # Go workspace file
 go.work
+go.work.sum
 
-# Environment files
+# =============================================================================
+# Environment & Configuration
+# =============================================================================
+
+# Environment files (contain secrets)
 .env
-.env.local
-.env.production
+.env.*
+!.env.example
+
+# Configuration files with secrets
+config.json
+config.yaml
+config.toml
+secrets.yaml
+credentials.json
+
+# Installation info
+SETUP_INFO.md
+
+# =============================================================================
+# Development & IDE
+# =============================================================================
 
 # IDE and editor files
 .vscode/
@@ -31,62 +60,220 @@ go.work
 *.swp
 *.swo
 *~
+.vim/
+.netrwhist
 
-# OS generated files
+# Air (live reload) temp files
+.air.toml
+tmp/
+
+# =============================================================================
+# Operating System
+# =============================================================================
+
+# macOS
 .DS_Store
 .DS_Store?
 ._*
 .Spotlight-V100
 .Trashes
+.AppleDouble
+.LSOverride
+Icon?
+
+# Windows
 ehthumbs.db
+ehthumbs_vista.db
 Thumbs.db
+Thumbs.db:encryptable
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# =============================================================================
+# Docker & Container
+# =============================================================================
+
+# Docker override files
+docker-compose.override.yml
+compose.override.yml
+
+# Docker volumes and data
+data/
+volumes/
+
+# =============================================================================
+# Application Data
+# =============================================================================
 
 # Logs
 *.log
 logs/
+log/
 
 # Temporary files
-tmp/
 temp/
+tmp/
+cache/
+
+# Uploads and media files
+uploads/
+media/
+files/
+
+# Reports and generated files
+reports/
+output/
+exports/
+
+# Backup files
+backups/
+*.bak
+*.backup
 
 # Database files
 *.db
 *.sqlite
 *.sqlite3
+database.sql
 
-# Configuration files with secrets
-config.json
-config.yaml
-config.toml
+# =============================================================================
+# Media & Models
+# =============================================================================
 
-# Build artifacts
-*.tar.gz
-*.zip
-
-# Docker
-.dockerignore
-
-# Test files
+# Test media files
 test_videos/
+test_audio/
 test_data/
+samples/
+fixtures/
 
-# Model files
+# Large model files
 models/
 *.gguf
 *.bin
 *.safetensors
+*.model
+*.weights
 
-# Reports and generated files
-reports/
+# VMAF models (except defaults)
+vmaf_models/
+*.pkl
+*.json.model
+
+# =============================================================================
+# Build & Deploy
+# =============================================================================
+
+# Build artifacts
+*.tar.gz
+*.zip
+*.deb
+*.rpm
+
+# Deployment files
+deploy/
+k8s-generated/
+manifests/
+
+# Certificates and keys
+*.pem
+*.key
+*.crt
+*.cert
+*.p12
+*.pfx
+ssl/
+certs/
+
+# =============================================================================
+# Monitoring & Metrics
+# =============================================================================
+
+# Prometheus data
+prometheus/
+metrics/
+
+# Grafana data
+grafana/
+
+# =============================================================================
+# Testing
+# =============================================================================
+
+# Test results
+test-results/
+test-reports/
+junit.xml
+
+# Benchmark results
+benchmarks/
+*.bench
+
+# =============================================================================
+# Documentation
+# =============================================================================
+
+# Generated documentation
+doc/html/
+doc/latex/
 *.pdf
 *.html
 
-# Coverage files
-coverage.out
-coverage.html
+# =============================================================================
+# Cloud & Infrastructure
+# =============================================================================
 
-# Air (live reload) temp files
-tmp/
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
 
-# Migration files (keep structure, ignore data)
+# Ansible
+*.retry
+
+# Kubernetes
+kubeconfig
+*.kubeconfig
+
+# =============================================================================
+# Package Managers
+# =============================================================================
+
+# Node.js (if used for docs/tools)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Python (if used for scripts)
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+venv/
+.venv/
+
+# =============================================================================
+# Keep Important Files
+# =============================================================================
+
+# Ensure migration files are kept
+!migrations/
 !migrations/*.sql
+
+# Keep Docker configs
+!docker/
+!Dockerfile*
+!compose*.yml
+
+# Keep scripts
+!scripts/
+!scripts/*.sh

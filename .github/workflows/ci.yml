@@ -7,9 +7,11 @@ on:
     branches: [ main, develop ]
 
 env:
-  GO_VERSION: "1.21"
-  POSTGRES_VERSION: "15"
+  GO_VERSION: "1.23"
+  POSTGRES_VERSION: "16"
   REDIS_VERSION: "7"
+  DOCKER_REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   test:
@@ -18,7 +20,7 @@ jobs:
     
     services:
       postgres:
-        image: postgres:15
+        image: postgres:16
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: ffprobe_api_test

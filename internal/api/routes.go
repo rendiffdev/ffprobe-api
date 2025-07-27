@@ -61,6 +61,9 @@ func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Rout
 	// Create LLM service
 	llmService := services.NewLLMService(cfg, logger)
 	
+	// Set LLM service on analysis service for automatic report generation
+	analysisService.SetLLMService(llmService)
+	
 	// Create storage service
 	storageConfig := storage.Config{
 		Provider:   cfg.StorageProvider,
@@ -291,6 +294,8 @@ func (r *Router) SetupRoutes() *gin.Engine {
 			{
 				genai.POST("/analysis", r.genaiHandler.GenerateAnalysis)
 				genai.GET("/quality-insights/:analysis_id", r.genaiHandler.GenerateQualityInsights)
+				genai.GET("/health", r.genaiHandler.GetLLMHealth)
+				genai.POST("/pull-model", r.genaiHandler.PullModel)
 			}
 
 			// Admin-only system endpoints

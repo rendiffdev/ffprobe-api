@@ -1,60 +1,27 @@
-# Authentication and Security Documentation
+# 🔐 Authentication & Security
 
-This document describes the comprehensive authentication, authorization, and security features implemented in the ffprobe-api.
+Comprehensive authentication and security features for the FFprobe API.
 
-## Authentication Methods
+## 🔑 Authentication Methods
 
-The API supports multiple authentication methods that can be configured based on your requirements.
+### 1. API Key Authentication (Recommended)
 
-### 1. JWT Token Authentication
+Simple and secure authentication using HTTP headers.
 
-JSON Web Tokens (JWT) provide secure, stateless authentication with role-based access control.
-
-#### Login
 ```bash
-curl -X POST http://localhost:8080/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "admin",
-    "password": "admin123"
-  }'
+curl -H "X-API-Key: your-api-key-here" \
+     http://localhost:8080/api/v1/probe/file
 ```
 
-Response:
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "Bearer",
-  "expires_in": 86400,
-  "user_info": {
-    "id": "user-123",
-    "username": "admin",
-    "roles": ["admin", "user"]
-  }
-}
-```
-
-#### Using JWT Token
+#### Configuration
 ```bash
-curl -X POST http://localhost:8080/api/v1/probe/file \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
-  -H "Content-Type: application/json" \
-  -d '{"file_path": "/path/to/video.mp4"}'
+# Set your API key (minimum 32 characters)
+export API_KEY="your-secure-api-key-minimum-32-characters"
 ```
 
-#### Token Refresh
-```bash
-curl -X POST http://localhost:8080/api/v1/auth/refresh \
-  -H "Content-Type: application/json" \
-  -d '{
-    "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-  }'
-```
+### 2. JWT Token Authentication
 
-### 2. API Key Authentication
-
-API keys provide simple, persistent authentication suitable for server-to-server communication.
+Stateless authentication with refresh tokens and role-based access.
 
 #### Using API Key
 ```bash

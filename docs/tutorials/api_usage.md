@@ -1,6 +1,6 @@
-# API Usage Examples
+# 🎯 API Usage Tutorial
 
-This document provides examples of how to use the ffprobe-api endpoints.
+Step-by-step guide to using the FFprobe API effectively.
 
 ## Health Check
 

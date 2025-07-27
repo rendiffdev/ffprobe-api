@@ -41,7 +41,7 @@ Please describe the tests that you ran to verify your changes.
 go test ./...
 # All tests passed
 
-docker compose -f docker-compose.test.yml up --abort-on-container-exit
+docker compose -f compose.test.yml up --abort-on-container-exit
 # Integration tests passed
 ```
 

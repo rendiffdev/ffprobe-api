@@ -30,7 +30,7 @@ git clone https://github.com/your-username/ffprobe-api.git
 cd ffprobe-api
 
 # Start development environment (includes PostgreSQL, Redis, FFmpeg)
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+docker compose -f compose.yml -f compose.dev.yml up -d
 
 # Verify setup
 curl http://localhost:8080/health

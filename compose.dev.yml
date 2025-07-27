@@ -1,8 +1,9 @@
-# Development override for docker-compose.yml
-# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Development override for compose.yml
+# Usage: docker compose -f compose.yml -f compose.dev.yml up
 
 services:
   ffprobe-api:
+    container_name: ffprobe-api
     build:
       context: .
       dockerfile: Dockerfile
@@ -22,11 +23,13 @@ services:
       - LOG_LEVEL=debug
       - ENABLE_AUTH=false
       - ENABLE_RATE_LIMIT=false
+      - ENABLE_LOCAL_LLM=true
+      - OLLAMA_MODEL=qwen2:1.5b  # Smaller model for development
     restart: "no"
     
   # Add development tools
   adminer:
-    image: adminer:latest
+    image: adminer:4.8.1
     container_name: ffprobe-adminer
     ports:
       - "8090:8080"
@@ -38,7 +41,7 @@ services:
       
   # Redis Commander for Redis management
   redis-commander:
-    image: rediscommander/redis-commander:latest
+    image: rediscommander/redis-commander:0.8.1
     container_name: ffprobe-redis-commander
     ports:
       - "8091:8081"
@@ -47,6 +50,22 @@ services:
     restart: unless-stopped
     networks:
       - ffprobe-network
+      
+  # Ollama development settings
+  ollama:
+    container_name: ffprobe-ollama-dev
+    environment:
+      - OLLAMA_MODEL=qwen2:1.5b  # Smaller model for development
+      - OLLAMA_MAX_LOADED_MODELS=1
+      - OLLAMA_NUM_PARALLEL=2
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+          cpus: '2.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
 
 volumes:
   go_mod_cache:

@@ -62,6 +62,9 @@ type Config struct {
 	// LLM configuration (optional)
 	LLMModelPath     string `json:"llm_model_path"`
 	OpenRouterAPIKey string `json:"openrouter_api_key"`
+	EnableLocalLLM   bool   `json:"enable_local_llm"`
+	OllamaURL        string `json:"ollama_url"`
+	OllamaModel      string `json:"ollama_model"`
 
 	// Cloud storage configuration (optional)
 	StorageProvider        string `json:"storage_provider"`
@@ -115,6 +118,9 @@ func Load() (*Config, error) {
 		ReportsDir:         getEnv("REPORTS_DIR", "/tmp/reports"),
 		LLMModelPath:       getEnv("LLM_MODEL_PATH", ""),
 		OpenRouterAPIKey:   getEnv("OPENROUTER_API_KEY", ""),
+		EnableLocalLLM:     getEnvAsBool("ENABLE_LOCAL_LLM", true),
+		OllamaURL:          getEnv("OLLAMA_URL", "http://localhost:11434"),
+		OllamaModel:        getEnv("OLLAMA_MODEL", "mistral:7b"),
 		StorageProvider:    getEnv("STORAGE_PROVIDER", "local"),
 		StorageBucket:      getEnv("STORAGE_BUCKET", "./storage"),
 		StorageRegion:      getEnv("STORAGE_REGION", "us-east-1"),
@@ -134,6 +140,11 @@ func Load() (*Config, error) {
 	// Build database URL if not provided directly
 	if cfg.DatabaseURL == "" {
 		cfg.DatabaseURL = buildDatabaseURL(cfg)
+	}
+
+	// Validate critical configuration
+	if err := validateConfig(cfg); err != nil {
+		return nil, fmt.Errorf("configuration validation failed: %w", err)
 	}
 
 	return cfg, nil
@@ -195,4 +206,166 @@ func buildDatabaseURL(cfg *Config) string {
 		cfg.DatabaseName,
 		cfg.DatabaseSSLMode,
 	)
+}
+
+// validateConfig validates critical configuration values
+func validateConfig(cfg *Config) error {
+	var errors []string
+
+	// Validate required security settings for production
+	if cfg.APIKey == "" {
+		errors = append(errors, "API_KEY is required for authentication")
+	} else if len(cfg.APIKey) < 32 {
+		errors = append(errors, "API_KEY must be at least 32 characters long")
+	}
+
+	if cfg.JWTSecret == "your-super-secret-jwt-key-change-in-production" {
+		errors = append(errors, "JWT_SECRET must be changed from default value")
+	} else if len(cfg.JWTSecret) < 32 {
+		errors = append(errors, "JWT_SECRET must be at least 32 characters long")
+	}
+
+	// Validate database configuration
+	if cfg.DatabasePassword == "" {
+		errors = append(errors, "POSTGRES_PASSWORD is required")
+	}
+
+	if cfg.DatabaseHost == "" {
+		errors = append(errors, "POSTGRES_HOST is required")
+	}
+
+	// Validate ports
+	if cfg.Port <= 0 || cfg.Port > 65535 {
+		errors = append(errors, "API_PORT must be between 1 and 65535")
+	}
+
+	if cfg.DatabasePort <= 0 || cfg.DatabasePort > 65535 {
+		errors = append(errors, "POSTGRES_PORT must be between 1 and 65535")
+	}
+
+	// Validate file paths
+	if cfg.UploadDir == "" {
+		errors = append(errors, "UPLOAD_DIR is required")
+	}
+
+	if cfg.ReportsDir == "" {
+		errors = append(errors, "REPORTS_DIR is required")
+	}
+
+	// Validate file size limits
+	if cfg.MaxFileSize <= 0 {
+		errors = append(errors, "MAX_FILE_SIZE must be greater than 0")
+	}
+
+	// Validate rate limiting
+	if cfg.EnableRateLimit {
+		if cfg.RateLimitPerMinute <= 0 {
+			errors = append(errors, "RATE_LIMIT_PER_MINUTE must be greater than 0 when rate limiting is enabled")
+		}
+		if cfg.RateLimitPerHour <= 0 {
+			errors = append(errors, "RATE_LIMIT_PER_HOUR must be greater than 0 when rate limiting is enabled")
+		}
+		if cfg.RateLimitPerDay <= 0 {
+			errors = append(errors, "RATE_LIMIT_PER_DAY must be greater than 0 when rate limiting is enabled")
+		}
+	}
+
+	// Validate FFmpeg paths
+	if cfg.FFmpegPath == "" {
+		errors = append(errors, "FFMPEG_PATH is required")
+	}
+
+	if cfg.FFprobePath == "" {
+		errors = append(errors, "FFPROBE_PATH is required")
+	}
+
+	// Validate log level
+	validLogLevels := []string{"debug", "info", "warn", "error", "fatal", "panic"}
+	isValidLogLevel := false
+	for _, level := range validLogLevels {
+		if cfg.LogLevel == level {
+			isValidLogLevel = true
+			break
+		}
+	}
+	if !isValidLogLevel {
+		errors = append(errors, "LOG_LEVEL must be one of: debug, info, warn, error, fatal, panic")
+	}
+
+	// Validate LLM configuration
+	if cfg.EnableLocalLLM {
+		if cfg.OllamaURL == "" {
+			errors = append(errors, "OLLAMA_URL is required when local LLM is enabled")
+		}
+		if cfg.OllamaModel == "" {
+			errors = append(errors, "OLLAMA_MODEL is required when local LLM is enabled")
+		}
+	}
+
+	// Validate OpenRouter configuration if API key is provided
+	if cfg.OpenRouterAPIKey != "" {
+		if len(cfg.OpenRouterAPIKey) < 10 {
+			errors = append(errors, "OPENROUTER_API_KEY appears to be invalid (too short)")
+		}
+	}
+
+	// Validate that at least one LLM option is configured if LLM features are expected
+	if !cfg.EnableLocalLLM && cfg.OpenRouterAPIKey == "" {
+		// This is a warning case - LLM features will be disabled
+		// Could add a warning log here in the future
+	}
+
+	// Validate enhanced storage configuration
+	if cfg.StorageProvider != "local" {
+		switch cfg.StorageProvider {
+		case "s3":
+			if cfg.AWSAccessKeyID == "" {
+				errors = append(errors, "AWS_ACCESS_KEY_ID is required when using S3 storage")
+			}
+			if cfg.AWSSecretAccessKey == "" {
+				errors = append(errors, "AWS_SECRET_ACCESS_KEY is required when using S3 storage")
+			}
+			if cfg.StorageBucket == "" {
+				errors = append(errors, "STORAGE_BUCKET is required when using S3 storage")
+			}
+		case "gcs":
+			if cfg.GCPServiceAccount == "" {
+				errors = append(errors, "GCP_SERVICE_ACCOUNT_JSON is required when using GCS storage")
+			}
+			if cfg.StorageBucket == "" {
+				errors = append(errors, "STORAGE_BUCKET is required when using GCS storage")
+			}
+		case "azure":
+			if cfg.AzureStorageAccount == "" {
+				errors = append(errors, "AZURE_STORAGE_ACCOUNT is required when using Azure storage")
+			}
+			if cfg.AzureStorageKey == "" {
+				errors = append(errors, "AZURE_STORAGE_KEY is required when using Azure storage")
+			}
+		case "smb", "cifs":
+			if cfg.StorageEndpoint == "" {
+				errors = append(errors, "STORAGE_ENDPOINT (SMB share path) is required when using SMB/CIFS storage")
+			}
+		case "nfs":
+			if cfg.StorageEndpoint == "" {
+				errors = append(errors, "STORAGE_ENDPOINT (NFS mount path) is required when using NFS storage")
+			}
+		case "ftp":
+			if cfg.StorageEndpoint == "" {
+				errors = append(errors, "STORAGE_ENDPOINT (FTP server) is required when using FTP storage")
+			}
+		case "nas":
+			if cfg.StorageEndpoint == "" {
+				errors = append(errors, "STORAGE_ENDPOINT (NAS path) is required when using NAS storage")
+			}
+		default:
+			errors = append(errors, "STORAGE_PROVIDER must be one of: local, s3, gcs, azure, smb, cifs, nfs, ftp, nas")
+		}
+	}
+
+	if len(errors) > 0 {
+		return fmt.Errorf("configuration validation errors:\n- %s", strings.Join(errors, "\n- "))
+	}
+
+	return nil
 }
