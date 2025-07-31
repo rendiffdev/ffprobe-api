@@ -1,100 +1,74 @@
-# 🎬 FFprobe API
+# 🎬 FFprobe API - Production Ready
 
-> **Professional video analysis API with AI-powered insights and enterprise scaling**
+> **Enterprise-grade video analysis API with AI-powered insights and professional scaling**
 
-[![Production Ready](https://img.shields.io/badge/production-ready-green.svg)](#-deployment-options)
-[![Security Score](https://img.shields.io/badge/security-96%2F100-brightgreen.svg)](#-security-features)
+[![Production Ready](https://img.shields.io/badge/production-ready-green.svg)](#-production-readiness)
+[![Security Hardened](https://img.shields.io/badge/security-hardened-brightgreen.svg)](#-security-features)
 [![API Version](https://img.shields.io/badge/api-v1.0-blue.svg)](#-api-overview)
-[![Docker](https://img.shields.io/badge/docker-optimized-blue.svg)](#-what's-included-out-of-the-box)
-[![GitHub](https://img.shields.io/badge/GitHub-rendiffdev%2Fffprobe--api-blue?logo=github)](https://github.com/rendiffdev/ffprobe-api)
-[![Website](https://img.shields.io/badge/Website-rendiff.dev-blue?logo=web)](https://rendiff.dev)
+[![Docker Optimized](https://img.shields.io/badge/docker-optimized-blue.svg)](#-deployment-options)
 
 ## 🎯 What This Solves
 
-**Problem**: "I need professional video analysis and can't tell if my optimizations actually improved quality"  
-**Solution**: Get comprehensive video analysis with AI insights and before/after comparison validation
+**Problem**: Professional video analysis with scalable, secure, and production-ready infrastructure  
+**Solution**: Complete FFprobe integration with AI insights, quality metrics, and enterprise features
 
 ### Key Capabilities
-- 📹 **Complete Video Analysis**: Technical specs, quality metrics, compliance checking
+- 📹 **Complete Video Analysis**: Technical specs, quality metrics, HLS/DASH support
 - 🤖 **AI-Powered Insights**: Professional video engineering assessment with recommendations  
-- 📊 **Video Comparison**: Compare original vs modified videos to validate improvements
-- 🏗️ **Enterprise Ready**: Production-grade scaling, security, and monitoring
+- 📊 **Quality Comparison**: VMAF, PSNR, SSIM analysis with before/after validation
+- 🏗️ **Production Grade**: Hardened security, scalable architecture, comprehensive monitoring
 
-## 🚀 Installation Options
+## 🚀 Quick Start
 
-### 1. **Single Server** (Development & Small Scale)
-**Perfect for**: Development, testing, small projects  
-**Requirements**: 4GB RAM, 2 CPU cores
-
+### Development Setup
 ```bash
-# One-command installation
-curl -fsSL https://raw.githubusercontent.com/rendiffdev/ffprobe-api/main/scripts/install-single-server.sh | bash
-
-# Or manual
+# Clone repository
 git clone https://github.com/rendiffdev/ffprobe-api.git
 cd ffprobe-api
-./scripts/install-single-server.sh
+
+# Start with Docker Compose
+docker compose up -d
+
+# Verify services
+curl http://localhost:8080/health
 ```
 
-**What you get**: All services in lightweight containers (~3.5GB total)
-
-### 2. **Professional Installation** (Interactive Setup)
-**Perfect for**: Production deployments, custom configurations
-
+### Production Deployment
 ```bash
-git clone https://github.com/rendiffdev/ffprobe-api.git
-cd ffprobe-api
-./scripts/install.sh
+# Production-ready configuration
+cp .env.example .env
+# Edit .env with your production values
+
+# Deploy with monitoring and scaling
+docker compose -f compose.yml -f compose.production.yml up -d
 ```
 
-**Features**: Interactive configuration, deployment type selection, monitoring options
+## 🏗️ Architecture
 
-### 3. **Enterprise Scaling** (High Availability)
-**Perfect for**: Large scale, high availability, load balancing
-
-```bash
-# Enterprise deployment with scaling
-docker compose -f compose.yml -f compose.enterprise.yml up -d
-
-# Scale specific services
-docker compose -f compose.yml -f compose.enterprise.yml up -d --scale ffprobe-api=3 --scale ffprobe-worker=5
+### Core Services
+```
+┌─────────────┐    ┌──────────────┐    ┌─────────────┐
+│   Client    │───▶│  FFprobe API │───▶│ PostgreSQL │
+└─────────────┘    │   (Go/Gin)   │    │  Database   │
+                   └──────┬───────┘    └─────────────┘
+                          │
+                   ┌──────▼──────┐    ┌─────────────┐
+                   │    Redis    │    │   Monitoring│
+                   │  (Caching)  │    │(Prometheus) │
+                   └─────────────┘    └─────────────┘
 ```
 
-## 🎬 Real-World Example: Video Optimization Workflow
-
-**Common scenario**: "I optimized my video, but is it actually better?"
-
-```bash
-# 1. Analyze original video
-curl -X POST http://localhost:8080/api/v1/probe/file \
-  -H "X-API-Key: YOUR_API_KEY" \
-  -F "file=@original-large-video.mp4" \
-  > original_analysis.json
-
-# 2. Your optimization process (external)
-ffmpeg -i original-large-video.mp4 -c:v libx264 -crf 23 optimized-video.mp4
-
-# 3. Analyze optimized video  
-curl -X POST http://localhost:8080/api/v1/probe/file \
-  -H "X-API-Key: YOUR_API_KEY" \
-  -F "file=@optimized-video.mp4" \
-  > optimized_analysis.json
-
-# 4. Get AI-powered comparison verdict
-ORIGINAL_ID=$(jq -r '.id' original_analysis.json)
-OPTIMIZED_ID=$(jq -r '.id' optimized_analysis.json)
-
-curl -X POST http://localhost:8080/api/v1/comparisons/quick \
-  -H "X-API-Key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"original_analysis_id\": \"$ORIGINAL_ID\",
-    \"modified_analysis_id\": \"$OPTIMIZED_ID\",  
-    \"include_llm\": true
-  }"
-
-# 5. Clear recommendation
-# Response: "30% file size reduction with maintained quality → Accept changes ✅"
+### Enterprise Scaling
+```
+┌─────────────┐    ┌──────────────┐    ┌─────────────────┐
+│Load Balancer│───▶│ API Cluster  │───▶│ Worker Pool     │
+│   (Nginx)   │    │ (Scalable)   │    │ (FFprobe/LLM)   │
+└─────────────┘    └──────┬───────┘    └─────────────────┘
+                          │
+                   ┌──────▼──────┐    ┌─────────────────┐
+                   │ Database    │    │ Storage Layer   │
+                   │ (PostgreSQL)│    │ (Local/Cloud)   │
+                   └─────────────┘    └─────────────────┘
 ```
 
 ## ✨ Core Features
@@ -103,268 +77,398 @@ curl -X POST http://localhost:8080/api/v1/comparisons/quick \
 - **Complete FFprobe Integration**: All metadata, streams, formats, chapters
 - **Quality Metrics**: VMAF, PSNR, SSIM analysis with Netflix-grade models
 - **HLS/DASH Support**: Streaming protocol validation and optimization
-- **Compliance Checking**: Broadcasting and platform standards validation
-- **Batch Processing**: Handle multiple files efficiently
+- **Batch Processing**: Handle multiple files efficiently with progress tracking
+- **Raw Data Access**: Direct access to FFprobe JSON output
 
-### 🤖 AI-Powered Insights (Zero Configuration)
-- **Auto-Configured Local AI**: Phi-3 Mini model (2GB RAM) downloads automatically
-- **No Setup Required**: Ollama service starts with `docker compose up -d`
-- **Professional Analysis**: 8-section video engineering reports
+### 🤖 AI-Powered Insights
+- **Local LLM Support**: Ollama integration with configurable models
+- **Professional Analysis**: Comprehensive video engineering reports
 - **Quality Recommendations**: AI-generated optimization suggestions
-- **Smart Fallback**: Optional OpenRouter API when local LLM unavailable
+- **Comparison Reports**: Intelligent before/after analysis
+- **OpenRouter Integration**: Fallback to cloud AI services
 
-### 📊 Video Comparison System
-- **Before/After Validation**: Compare original vs modified videos objectively
-- **Quality Improvement Tracking**: Determine if changes actually improved content
-- **File Size Analysis**: Optimization impact on storage costs
-- **AI-Powered Decisions**: Get clear accept/reject recommendations
-- **Comparative Metrics**: Side-by-side technical and quality comparisons
+### 📊 Quality Assessment System
+- **VMAF Analysis**: Netflix Video Multimethod Assessment Fusion
+- **Perceptual Metrics**: PSNR, SSIM, and custom quality models
+- **Frame-by-Frame Analysis**: Detailed quality tracking over time
+- **Comparison Engine**: Objective before/after quality validation
+- **Quality Statistics**: Comprehensive quality reporting and trends
 
-### 🏗️ Production Architecture (Fully Containerized)
-- **Zero Setup**: All services auto-configured (PostgreSQL, Redis, FFmpeg, Ollama)
-- **Microservices Ready**: Scale API, FFprobe workers, and LLM service independently
-- **Security Hardened**: 96/100 security score with comprehensive hardening
-- **Monitoring Integrated**: Prometheus metrics, Grafana dashboards, health checks
-- **Enterprise Features**: JWT/API key auth, rate limiting, audit logging
+### 🏗️ Production Architecture
+- **Microservices Design**: Independently scalable components
+- **Database Migrations**: Automated schema management with PostgreSQL
+- **Security Hardened**: Authentication, authorization, input validation
+- **Monitoring Ready**: Prometheus metrics, health checks, logging
+- **Container Optimized**: Multi-stage builds, non-root users, resource limits
 
-## 🏗️ Architecture
+## 🔒 Security Features
 
-### Zero-Configuration Deployment (Default)
-```
-┌─────────────┐    ┌──────────────┐    ┌─────────────┐
-│   Client    │───▶│  FFprobe API │───▶│ PostgreSQL │
-└─────────────┘    │ (w/ FFmpeg)  │    │(Auto-setup)│
-                   └──────┬───────┘    └─────────────┘
-                          │                  │
-                   ┌──────▼──────┐    ┌──────▼──────┐
-                   │   Ollama    │    │   Redis     │
-                   │(Phi-3 Mini) │    │ (Caching)   │
-                   │(Auto-DL'd)  │    │(Auto-setup)│
-                   └─────────────┘    └─────────────┘
-```
+### Authentication & Authorization
+- **JWT Token Authentication**: Secure session management with refresh tokens
+- **API Key Authentication**: Service-to-service authentication
+- **Role-Based Access Control**: Admin, user, pro, premium roles
+- **Account Lockout**: Automatic protection against brute force attacks
 
-### Enterprise Scaling (Production)
-```
-┌─────────────┐    ┌──────────────┐    ┌─────────────────┐
-│   Client    │───▶│ Load Balancer│───▶│ FFprobe Workers │
-└─────────────┘    │    (Nginx)   │    │   (Scalable)    │
-                   └──────┬───────┘    └─────────────────┘
-                          │                      │
-                   ┌──────▼──────┐    ┌──────────▼──────┐
-                   │ AI Workers  │    │ Database Cluster│
-                   │ (Scalable)  │    │  (PostgreSQL)   │
-                   └─────────────┘    └─────────────────┘
-```
+### Security Hardening
+- **Input Validation**: Comprehensive validation for all endpoints
+- **Path Traversal Protection**: Secure file upload handling
+- **CORS Configuration**: Configurable cross-origin resource sharing
+- **Rate Limiting**: Per-user and per-IP rate limiting with Redis
+- **Security Headers**: HSTS, XSS protection, content type validation
 
-## 🎁 What's Included Out-of-the-Box
-
-**All services automatically configured with `docker compose up -d`:**
-
-### 🐳 **Core Services** (Zero Setup Required)
-- **🎬 FFprobe API Server** - Main application with FFmpeg/FFprobe built-in
-- **🐘 PostgreSQL Database** - Persistent data storage with auto-initialization
-- **🔴 Redis Cache** - High-performance caching and session storage
-- **🤖 Ollama + Phi-3 Mini** - Local AI analysis (auto-downloads 2GB model)
-- **📊 Prometheus + Grafana** - Monitoring and visualization dashboards
-
-### ✨ **No Manual Setup Required For:**
-- ✅ Database schemas and migrations
-- ✅ AI model downloads and configuration
-- ✅ FFmpeg/FFprobe tools and codecs
-- ✅ Quality assessment libraries (VMAF)
-- ✅ Authentication and API key management
-- ✅ Rate limiting and security headers
-- ✅ Monitoring and health checks
-- ✅ Container networking and volumes
-
-**Just run installation script and everything works!**
+### Data Protection
+- **Password Hashing**: bcrypt with salt for secure password storage
+- **Secure File Handling**: Upload sanitization and path validation
+- **Database Security**: Prepared statements, connection pooling
+- **Error Handling**: Consistent error responses without information leakage
 
 ## 🔧 API Overview
 
 ### Core Endpoints
 
-| Endpoint | Method | Description | Example |
-|----------|--------|-------------|---------|
-| `/api/v1/probe/file` | POST | Analyze uploaded video | Upload and get comprehensive analysis |
-| `/api/v1/probe/url` | POST | Analyze video from URL | Analyze remote video files |
-| `/api/v1/comparisons/quick` | POST | Compare two videos | Before/after validation |
-| `/api/v1/quality/vmaf` | POST | VMAF quality comparison | Objective quality metrics |
-| `/health` | GET | API health status | System status check |
+| Endpoint | Method | Description | Authentication |
+|----------|--------|-------------|---------------|
+| `/api/v1/probe/file` | POST | Analyze uploaded video | API Key/JWT |
+| `/api/v1/probe/url` | POST | Analyze video from URL | API Key/JWT |
+| `/api/v1/probe/quick` | POST | Fast basic analysis | API Key/JWT |
+| `/api/v1/batch/analyze` | POST | Batch video processing | API Key/JWT |
+| `/api/v1/quality/compare` | POST | Quality comparison | API Key/JWT |
+| `/api/v1/comparisons` | POST | Create comparison | API Key/JWT |
+| `/api/v1/reports/analysis` | POST | Generate reports | API Key/JWT |
+| `/health` | GET | System health check | None |
 
-### Authentication Required
-All endpoints require authentication:
+### Authentication Methods
 
 ```bash
-# API Key (Recommended)
-curl -H "X-API-Key: your-api-key" ...
+# API Key (Recommended for services)
+curl -H "X-API-Key: your-api-key" \
+     -H "Content-Type: application/json" \
+     http://localhost:8080/api/v1/probe/file
 
-# JWT Token
-curl -H "Authorization: Bearer your-jwt-token" ...
+# JWT Token (Recommended for users)
+curl -H "Authorization: Bearer your-jwt-token" \
+     -H "Content-Type: application/json" \
+     http://localhost:8080/api/v1/probe/file
 ```
 
 ### Response Format
 ```json
 {
-  "id": "analysis-uuid",
+  "analysis_id": "uuid-v4",
   "status": "completed",
-  "file_name": "video.mp4",
-  "file_size": 104857600,
   "analysis": {
     "format": {
       "duration": "120.5",
       "bit_rate": "5000000",
       "format_name": "mov,mp4,m4a,3gp,3g2,mj2"
     },
-    "streams": [/* detailed stream info */]
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1920,
+        "height": 1080,
+        "r_frame_rate": "30/1"
+      }
+    ],
+    "quality_metrics": {
+      "vmaf_score": 85.6,
+      "psnr": 42.3,
+      "ssim": 0.95
+    }
   },
-  "quality_metrics": {
-    "vmaf_score": 85.6,
-    "psnr": 42.3,
-    "ssim": 0.95
+  "reports": {
+    "formats": ["json", "pdf"],
+    "download_urls": ["..."]
   },
-  "llm_report": "Professional analysis with recommendations...",
   "created_at": "2024-01-15T10:30:00Z"
 }
 ```
 
-## 📊 Scaling & Performance
+## 📊 Production Readiness
 
-### Resource Requirements by Deployment Type
+### Resource Requirements
 
-| Deployment | RAM | CPU | Storage | Use Case |
-|------------|-----|-----|---------|----------|
-| **Single Server** | 4GB | 2 cores | 5GB | Development, small projects |
-| **Production** | 8GB | 4 cores | 20GB | Medium production workloads |
-| **Enterprise** | 16GB+ | 8+ cores | 50GB+ | High availability, large scale |
+| Deployment Type | RAM | CPU | Storage | Concurrent Jobs |
+|-----------------|-----|-----|---------|-----------------|
+| **Development** | 4GB | 2 cores | 10GB | 2-5 |
+| **Production** | 8GB | 4 cores | 50GB | 5-15 |
+| **Enterprise** | 16GB+ | 8+ cores | 100GB+ | 15-50 |
 
-### Scaling Examples
+### Scaling Configuration
+
 ```bash
-# Light Load: 10-50 requests/min
+# Light Load (Development)
 docker compose up -d
 
-# Medium Load: 100-500 requests/min
+# Medium Load (Production)
 docker compose -f compose.yml -f compose.production.yml up -d
 
-# Heavy Load: 1000+ requests/min  
+# Heavy Load (Enterprise)
 docker compose -f compose.yml -f compose.enterprise.yml up -d \
-  --scale ffprobe-api=3 --scale ffprobe-worker=5 --scale ai-worker=2
+  --scale ffprobe-api=3 \
+  --scale ffprobe-worker=5 \
+  --scale llm-service=2
 ```
 
 ### Performance Metrics
-- **Processing Speed**: 1-5 minutes per video (depending on size)
-- **Concurrent Jobs**: 2-20 (based on deployment type)
 - **API Throughput**: 60-1000 requests/minute (with rate limiting)
-- **AI Analysis**: 10-30 seconds per video (local Phi-3 Mini)
+- **Processing Speed**: 30 seconds - 5 minutes per video (size dependent)
+- **Concurrent Processing**: 2-50 simultaneous analyses
+- **Database Performance**: Connection pooling, prepared statements
+- **Memory Usage**: Optimized for container environments
 
-## 🔒 Security Features
+## 🔍 Monitoring & Observability
 
-- **🏆 96/100 Security Score** - Enterprise-grade security hardening
-- **🔐 Multi-Auth Support** - JWT tokens, API keys, role-based access control
-- **🛡️ Container Security** - Non-root users, read-only filesystems
-- **📊 Rate Limiting** - Configurable per-user/IP limits (60/min default)
-- **🔍 Audit Logging** - Complete request/response logging
-- **🚫 Input Validation** - Comprehensive input sanitization
+### Built-in Monitoring
+- **Health Checks**: Comprehensive endpoint monitoring
+- **Prometheus Metrics**: Request rates, processing times, error rates
+- **Database Monitoring**: Connection health, query performance
+- **Resource Tracking**: CPU, memory, and disk utilization
 
-## 🔍 Monitoring Options
+### Logging
+- **Structured Logging**: JSON format with request IDs
+- **Error Tracking**: Detailed error logging with context
+- **Audit Logging**: Authentication and authorization events
+- **Performance Logging**: Request/response timing and metrics
 
-### Self-Hosted (Default)
-- **Grafana Dashboard**: `http://localhost:3000` (admin/[generated-password])
-- **Prometheus Metrics**: `http://localhost:9090`
-- **Health Endpoints**: `http://localhost:8080/health`
-
-### Grafana Cloud (Enterprise)
+### Alerting (Optional)
 ```bash
-# Configure during installation or manually
-GRAFANA_CLOUD_URL=https://your-instance.grafana.net
-GRAFANA_CLOUD_USERNAME=your-username  
-GRAFANA_CLOUD_API_KEY=your-api-key
+# Configure Grafana Cloud integration
+export GRAFANA_CLOUD_URL="https://your-instance.grafana.net"
+export GRAFANA_CLOUD_USERNAME="your-username"
+export GRAFANA_CLOUD_API_KEY="your-api-key"
 
-# Deploy with cloud monitoring
-docker compose -f compose.yml -f docker/grafana-cloud.yml up -d
+docker compose -f compose.yml -f compose.monitoring.yml up -d
 ```
 
-### Key Metrics Monitored
-- Request rate and response times
-- Video processing queue depth
-- Quality analysis success rates
-- Resource utilization (CPU, memory, disk)
-- AI model performance and availability
+## 🛠️ Configuration
+
+### Environment Variables
+
+```bash
+# Server Configuration
+API_PORT=8080
+API_HOST=localhost
+BASE_URL=http://localhost:8080
+LOG_LEVEL=info
+
+# Database Configuration
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=ffprobe_api
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your-secure-password
+
+# Authentication
+API_KEY=your-32-char-api-key
+JWT_SECRET=your-32-char-jwt-secret
+TOKEN_EXPIRY_HOURS=24
+REFRESH_EXPIRY_HOURS=168
+
+# Security
+ENABLE_AUTH=true
+ENABLE_RATE_LIMIT=true
+RATE_LIMIT_PER_MINUTE=60
+ALLOWED_ORIGINS=*
+
+# Storage
+UPLOAD_DIR=/app/uploads
+REPORTS_DIR=/app/reports
+MAX_FILE_SIZE=53687091200  # 50GB
+
+# FFmpeg Tools
+FFMPEG_PATH=ffmpeg
+FFPROBE_PATH=ffprobe
+
+# Optional: LLM Configuration
+ENABLE_LOCAL_LLM=true
+OLLAMA_URL=http://localhost:11434
+OLLAMA_MODEL=mistral:7b
+OPENROUTER_API_KEY=your-openrouter-key
+```
+
+### Production Configuration Validation
+
+The application includes comprehensive configuration validation:
+- **Required Fields**: Validates all mandatory configuration values
+- **Security Settings**: Ensures API keys and JWT secrets meet minimum requirements
+- **Directory Validation**: Checks directory existence and write permissions
+- **Port Validation**: Validates port ranges and availability
+- **Token Expiry**: Validates token expiry relationships
+- **CORS Origins**: Validates allowed origins format
+
+## 🐳 Deployment Options
+
+### Docker Compose (Recommended)
+
+```yaml
+# Basic deployment
+version: '3.8'
+services:
+  ffprobe-api:
+    image: ffprobe-api:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - POSTGRES_HOST=postgres
+      - REDIS_HOST=redis
+    depends_on:
+      - postgres
+      - redis
+    
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ffprobe_api
+      POSTGRES_PASSWORD: secure-password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+```
+
+### Kubernetes (Enterprise)
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ffprobe-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ffprobe-api
+  template:
+    metadata:
+      labels:
+        app: ffprobe-api
+    spec:
+      containers:
+      - name: ffprobe-api
+        image: ffprobe-api:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: POSTGRES_HOST
+          value: "postgres-service"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1000m"
+          limits:
+            memory: "4Gi"
+            cpu: "2000m"
+```
+
+## 🧪 Testing
+
+### Running Tests
+```bash
+# Unit tests
+go test ./...
+
+# Integration tests
+go test -tags=integration ./...
+
+# API tests
+make test-api
+
+# Load testing
+make test-load
+```
+
+### Test Coverage
+- **Unit Tests**: Core business logic and utilities
+- **Integration Tests**: Database operations and external services
+- **API Tests**: Endpoint functionality and error handling
+- **Security Tests**: Authentication and authorization flows
 
 ## 📚 Documentation
 
-### Essential Guides
-| Guide | When to Use |
-|-------|-------------|
-| **[Complete API Guide](docs/api/complete-api-guide.md)** | Detailed API usage with examples |
-| **[API Authentication](docs/API_AUTHENTICATION.md)** | Setting up API keys and JWT tokens |
-| **[Video Comparison System](docs/COMPARISON_SYSTEM.md)** | Before/after video validation |
-| **[Local LLM Setup](docs/tutorials/local-llm-setup.md)** | Zero-configuration AI guide |
+### API Documentation
+- **[API Reference](docs/api/README.md)** - Complete API documentation
+- **[Authentication Guide](docs/API_AUTHENTICATION.md)** - JWT and API key setup
+- **[Quality Metrics](docs/QUALITY_METRICS.md)** - VMAF and quality analysis
 
-### Quick References
-- **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** - Common issues and solutions
-- **[Configuration Guide](docs/deployment/configuration.md)** - Environment setup
-- **[Production Deployment](docs/deployment/PRODUCTION_READINESS_CHECKLIST.md)** - Production checklist
+### Deployment Guides
+- **[Production Deployment](docs/deployment/PRODUCTION_READINESS_CHECKLIST.md)** - Production setup checklist
+- **[Docker Configuration](docs/deployment/docker.md)** - Container deployment guide
+- **[Kubernetes Guide](docs/deployment/kubernetes.md)** - K8s deployment examples
+
+### Development
+- **[Development Setup](docs/development/SETUP.md)** - Local development environment
+- **[Contributing Guide](CONTRIBUTING.md)** - Contribution guidelines
+- **[Architecture](docs/ARCHITECTURE.md)** - System design and components
 
 ## 🆘 Troubleshooting
 
 ### Common Issues
 
-**Services won't start**
+**Authentication Failures**
 ```bash
-# Check system resources
-free -h && df -h
-
-# Check Docker
-docker --version && docker compose version
-
-# View logs
-docker compose logs -f
-```
-
-**API authentication fails**
-```bash
-# Verify API key format (should be 79 characters)
+# Check API key format (should be 32+ characters)
 echo $API_KEY | wc -c
 
-# Test health endpoint
-curl -H "X-API-Key: $API_KEY" http://localhost:8080/health
+# Verify JWT secret is set
+curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8080/api/v1/auth/validate
 ```
 
-**AI analysis not working**
+**Database Connection Issues**
 ```bash
-# Check Ollama service
-curl http://localhost:11434/api/version
+# Check database health
+docker compose exec postgres pg_isready
 
-# Verify model downloaded
-docker compose exec ollama ollama list
+# Verify connection string
+docker compose logs ffprobe-api | grep -i database
 ```
 
-### Getting Help
-- **📖 Documentation**: [docs/](docs/) directory
-- **🐛 GitHub Issues**: [Report Issues](https://github.com/rendiffdev/ffprobe-api/issues)
-- **💬 Discussions**: [GitHub Discussions](https://github.com/rendiffdev/ffprobe-api/discussions)
-- **📧 Contact**: [dev@rendiff.dev](mailto:dev@rendiff.dev)
-- **🌐 Website**: [rendiff.dev](https://rendiff.dev)
+**Processing Failures**
+```bash
+# Check FFmpeg availability
+docker compose exec ffprobe-api ffprobe -version
+
+# Monitor processing queue
+curl http://localhost:8080/api/v1/batch/status
+```
+
+### Performance Optimization
+
+**Database Performance**
+- Connection pooling is configured automatically
+- Database migrations run on startup
+- Indexes are optimized for common queries
+
+**Memory Management**
+- Goroutine contexts prevent resource leaks
+- File uploads are streamed to prevent memory issues
+- Database connections are properly pooled
+
+**Scaling Recommendations**
+- Scale API containers horizontally
+- Use Redis for session storage and caching
+- Consider read replicas for high-read workloads
 
 ## 🤝 Contributing
 
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-### Development Setup
-```bash
-# Clone and setup development environment
-git clone https://github.com/rendiffdev/ffprobe-api.git
-cd ffprobe-api
+### Development Workflow
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes with tests
+4. Run the test suite
+5. Submit a pull request
 
-# Start development services
-./scripts/install-single-server.sh
-
-# Run tests
-make test
-
-# Build
-make build
-```
+### Code Standards
+- Go modules for dependency management
+- Comprehensive error handling
+- Security-first development
+- Container-native design
+- Comprehensive testing
 
 ## 📄 License
 
@@ -373,31 +477,33 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - **FFmpeg Team** - For the excellent FFmpeg and FFprobe tools
-- **Ollama** - For making local LLM deployment simple
-- **Microsoft** - For the efficient Phi-3 Mini model
+- **Gin Framework** - For the high-performance HTTP web framework  
+- **PostgreSQL** - For the robust database system
 - **Netflix** - For the VMAF quality assessment library
+- **Go Community** - For the excellent ecosystem and tools
 
 ---
 
-## 🏢 About Rendiff
+## 📞 Support & Contact
 
-**FFprobe API** is developed by [**Rendiff**](https://rendiff.dev) - specialists in professional video processing and AI-powered media analysis.
+- **🐛 Issues**: [GitHub Issues](https://github.com/rendiffdev/ffprobe-api/issues)
+- **💬 Discussions**: [GitHub Discussions](https://github.com/rendiffdev/ffprobe-api/discussions)
+- **📧 Email**: [support@rendiff.dev](mailto:support@rendiff.dev)
+- **📖 Documentation**: [docs/](docs/) directory
 
-- **🌐 Website**: [rendiff.dev](https://rendiff.dev)
-- **📧 Contact**: [dev@rendiff.dev](mailto:dev@rendiff.dev)
-- **🐦 Twitter**: [@rendiffdev](https://x.com/rendiffdev)
-- **💻 GitHub**: [github.com/rendiffdev](https://github.com/rendiffdev)
+## 🚀 Production Checklist
 
-**Built with ❤️ for professional video workflows**
+Before deploying to production:
 
----
+- [ ] Configure environment variables (`.env` file)
+- [ ] Set secure API keys and JWT secrets (32+ characters)
+- [ ] Configure database with strong passwords
+- [ ] Set up SSL/TLS certificates
+- [ ] Configure monitoring and alerting
+- [ ] Set appropriate resource limits
+- [ ] Test authentication and authorization
+- [ ] Verify file upload limits and storage
+- [ ] Set up backup procedures
+- [ ] Configure log rotation
 
-## 📞 Need Help Getting Started?
-
-1. **First time setup**: Run `./scripts/install-single-server.sh` 
-2. **Production deployment**: Run `./scripts/install.sh` for guided setup
-3. **API usage**: Check [Complete API Guide](docs/api/complete-api-guide.md)
-4. **Enterprise scaling**: See [compose.enterprise.yml](compose.enterprise.yml)
-5. **Issues**: Create a [GitHub Issue](https://github.com/rendiffdev/ffprobe-api/issues)
-
-**🎬 Ready to build professional video applications!**
+**Ready for production deployment!** 🎬
