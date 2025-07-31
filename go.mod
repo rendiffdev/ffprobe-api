@@ -15,6 +15,7 @@ require (
 	github.com/google/uuid v1.4.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/golang-jwt/jwt/v5 v5.2.0
+	github.com/jung-kurt/gofpdf v1.16.2
 )
 
 require (

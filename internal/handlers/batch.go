@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -9,9 +10,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
+	"github.com/rendiffdev/ffprobe-api/internal/errors"
 	"github.com/rendiffdev/ffprobe-api/internal/ffmpeg"
 	"github.com/rendiffdev/ffprobe-api/internal/models"
 	"github.com/rendiffdev/ffprobe-api/internal/services"
+	"github.com/rendiffdev/ffprobe-api/internal/validator"
 )
 
 // BatchHandler handles batch processing operations
@@ -101,10 +104,7 @@ func (h *BatchHandler) CreateBatch(c *gin.Context) {
 	var req BatchAnalysisRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Error().Err(err).Msg("Invalid batch request")
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error:   "Invalid request body",
-			Details: err.Error(),
-		})
+		errors.ValidationError(c, "Invalid request body", err.Error())
 		return
 	}
 
@@ -114,11 +114,27 @@ func (h *BatchHandler) CreateBatch(c *gin.Context) {
 			Int("size", len(req.Files)).
 			Int("max", h.maxBatchSize).
 			Msg("Batch too large")
-		c.JSON(http.StatusRequestEntityTooLarge, ErrorResponse{
-			Error:   "Batch too large",
-			Details: "Maximum batch size is " + string(h.maxBatchSize),
-		})
+		errors.RespondWithError(c, http.StatusRequestEntityTooLarge, errors.CodeBadRequest, "Batch too large", fmt.Sprintf("Maximum batch size is %d", h.maxBatchSize))
 		return
+	}
+
+	// Validate each file in the batch
+	fileValidator := validator.NewFilePathValidator()
+	for i, file := range req.Files {
+		// Validate file path or URL depending on source type
+		if file.SourceType == "url" || file.SourceType == "" && (len(file.FilePath) > 4 && file.FilePath[:4] == "http") {
+			if err := validator.ValidateURL(file.FilePath); err != nil {
+				h.logger.Warn().Err(err).Str("url", file.FilePath).Int("index", i).Msg("Invalid URL in batch")
+				errors.ValidationError(c, fmt.Sprintf("Invalid URL in file %d", i+1), err.Error())
+				return
+			}
+		} else {
+			if err := fileValidator.ValidateFilePath(file.FilePath); err != nil {
+				h.logger.Warn().Err(err).Str("path", file.FilePath).Int("index", i).Msg("Invalid file path in batch")
+				errors.ValidationError(c, fmt.Sprintf("Invalid file path in file %d", i+1), err.Error())
+				return
+			}
+		}
 	}
 
 	// Create batch ID
@@ -188,10 +204,7 @@ func (h *BatchHandler) GetBatchStatus(c *gin.Context) {
 	batchID, err := uuid.Parse(batchIDStr)
 	if err != nil {
 		h.logger.Error().Err(err).Str("id", batchIDStr).Msg("Invalid batch ID")
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error:   "Invalid batch ID",
-			Details: err.Error(),
-		})
+		errors.ValidationError(c, "Invalid batch ID", err.Error())
 		return
 	}
 
@@ -200,9 +213,7 @@ func (h *BatchHandler) GetBatchStatus(c *gin.Context) {
 	batchMutex.RUnlock()
 
 	if !exists {
-		c.JSON(http.StatusNotFound, ErrorResponse{
-			Error: "Batch not found",
-		})
+		errors.NotFound(c, "Batch not found", "")
 		return
 	}
 
@@ -223,10 +234,7 @@ func (h *BatchHandler) CancelBatch(c *gin.Context) {
 	batchID, err := uuid.Parse(batchIDStr)
 	if err != nil {
 		h.logger.Error().Err(err).Str("id", batchIDStr).Msg("Invalid batch ID")
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error:   "Invalid batch ID",
-			Details: err.Error(),
-		})
+		errors.ValidationError(c, "Invalid batch ID", err.Error())
 		return
 	}
 
@@ -241,9 +249,7 @@ func (h *BatchHandler) CancelBatch(c *gin.Context) {
 	batchMutex.Unlock()
 
 	if !exists {
-		c.JSON(http.StatusNotFound, ErrorResponse{
-			Error: "Batch not found",
-		})
+		errors.NotFound(c, "Batch not found", "")
 		return
 	}
 

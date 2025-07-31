@@ -81,6 +81,8 @@ type QualityFrameMetric struct {
 // VMAFConfiguration represents VMAF-specific configuration
 type VMAFConfiguration struct {
 	Model            string   `json:"model"`             // VMAF model version
+	CustomModelPath  string   `json:"custom_model_path"` // Path to custom VMAF model
+	CustomModelID    string   `json:"custom_model_id"`   // ID of custom model from database
 	SubSampling      int      `json:"sub_sampling"`      // Frame subsampling rate
 	PoolingMethod    string   `json:"pooling_method"`    // mean, harmonic_mean, min
 	NThreads         int      `json:"n_threads"`         // Number of threads

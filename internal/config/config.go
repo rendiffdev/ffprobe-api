@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -11,6 +12,8 @@ import (
 type Config struct {
 	// Server configuration
 	Port     int    `json:"port"`
+	Host     string `json:"host"`
+	BaseURL  string `json:"base_url"`
 	LogLevel string `json:"log_level"`
 
 	// Database configuration
@@ -88,6 +91,8 @@ func Load() (*Config, error) {
 	cfg := &Config{
 		// Default values
 		Port:             getEnvAsInt("API_PORT", 8080),
+		Host:             getEnv("API_HOST", "localhost"),
+		BaseURL:          getEnv("BASE_URL", ""),
 		LogLevel:         getEnv("LOG_LEVEL", "info"),
 		DatabaseHost:     getEnv("POSTGRES_HOST", "localhost"),
 		DatabasePort:     getEnvAsInt("POSTGRES_PORT", 5432),
@@ -140,6 +145,11 @@ func Load() (*Config, error) {
 	// Build database URL if not provided directly
 	if cfg.DatabaseURL == "" {
 		cfg.DatabaseURL = buildDatabaseURL(cfg)
+	}
+
+	// Build base URL if not provided directly
+	if cfg.BaseURL == "" {
+		cfg.BaseURL = buildBaseURL(cfg)
 	}
 
 	// Validate critical configuration
@@ -208,6 +218,15 @@ func buildDatabaseURL(cfg *Config) string {
 	)
 }
 
+// buildBaseURL constructs the base URL for the API
+func buildBaseURL(cfg *Config) string {
+	protocol := "http"
+	if cfg.Port == 443 {
+		protocol = "https"
+	}
+	return fmt.Sprintf("%s://%s:%d", protocol, cfg.Host, cfg.Port)
+}
+
 // validateConfig validates critical configuration values
 func validateConfig(cfg *Config) error {
 	var errors []string
@@ -239,17 +258,37 @@ func validateConfig(cfg *Config) error {
 		errors = append(errors, "API_PORT must be between 1 and 65535")
 	}
 
+	// Validate host
+	if cfg.Host == "" {
+		errors = append(errors, "API_HOST is required")
+	}
+
+	// Validate base URL format if provided
+	if cfg.BaseURL != "" {
+		if !strings.HasPrefix(cfg.BaseURL, "http://") && !strings.HasPrefix(cfg.BaseURL, "https://") {
+			errors = append(errors, "BASE_URL must start with http:// or https://")
+		}
+	}
+
 	if cfg.DatabasePort <= 0 || cfg.DatabasePort > 65535 {
 		errors = append(errors, "POSTGRES_PORT must be between 1 and 65535")
 	}
 
-	// Validate file paths
+	// Validate file paths and directories
 	if cfg.UploadDir == "" {
 		errors = append(errors, "UPLOAD_DIR is required")
+	} else {
+		if err := validateDirectory(cfg.UploadDir); err != nil {
+			errors = append(errors, fmt.Sprintf("UPLOAD_DIR validation failed: %v", err))
+		}
 	}
 
 	if cfg.ReportsDir == "" {
 		errors = append(errors, "REPORTS_DIR is required")
+	} else {
+		if err := validateDirectory(cfg.ReportsDir); err != nil {
+			errors = append(errors, fmt.Sprintf("REPORTS_DIR validation failed: %v", err))
+		}
 	}
 
 	// Validate file size limits
@@ -315,6 +354,36 @@ func validateConfig(cfg *Config) error {
 		// Could add a warning log here in the future
 	}
 
+	// Validate token expiry values
+	if cfg.TokenExpiry <= 0 {
+		errors = append(errors, "TOKEN_EXPIRY_HOURS must be greater than 0")
+	}
+	if cfg.RefreshExpiry <= 0 {
+		errors = append(errors, "REFRESH_EXPIRY_HOURS must be greater than 0")
+	}
+	if cfg.TokenExpiry >= cfg.RefreshExpiry {
+		errors = append(errors, "REFRESH_EXPIRY_HOURS must be greater than TOKEN_EXPIRY_HOURS")
+	}
+
+	// Validate Redis configuration if used for rate limiting
+	if cfg.EnableRateLimit {
+		if cfg.RedisPort <= 0 || cfg.RedisPort > 65535 {
+			errors = append(errors, "REDIS_PORT must be between 1 and 65535")
+		}
+		if cfg.RedisHost == "" {
+			errors = append(errors, "REDIS_HOST is required when rate limiting is enabled")
+		}
+	}
+
+	// Validate CORS configuration
+	if len(cfg.AllowedOrigins) > 0 {
+		for _, origin := range cfg.AllowedOrigins {
+			if origin != "*" && !strings.HasPrefix(origin, "http://") && !strings.HasPrefix(origin, "https://") {
+				errors = append(errors, fmt.Sprintf("invalid CORS origin format: %s (must start with http:// or https:// or be '*')", origin))
+			}
+		}
+	}
+
 	// Validate enhanced storage configuration
 	if cfg.StorageProvider != "local" {
 		switch cfg.StorageProvider {
@@ -368,4 +437,37 @@ func validateConfig(cfg *Config) error {
 	}
 
 	return nil
+}
+
+// validateDirectory checks if a directory exists or can be created
+func validateDirectory(dir string) error {
+	// Convert to absolute path
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return fmt.Errorf("invalid path: %w", err)
+	}
+
+	// Check if directory exists
+	if stat, err := os.Stat(absDir); err == nil {
+		if !stat.IsDir() {
+			return fmt.Errorf("path exists but is not a directory: %s", absDir)
+		}
+		// Directory exists, check if writable
+		testFile := filepath.Join(absDir, ".write_test")
+		if f, err := os.Create(testFile); err != nil {
+			return fmt.Errorf("directory is not writable: %s", absDir)
+		} else {
+			f.Close()
+			os.Remove(testFile)
+		}
+		return nil
+	} else if os.IsNotExist(err) {
+		// Directory doesn't exist, try to create it
+		if err := os.MkdirAll(absDir, 0755); err != nil {
+			return fmt.Errorf("failed to create directory: %w", err)
+		}
+		return nil
+	} else {
+		return fmt.Errorf("failed to check directory: %w", err)
+	}
 }

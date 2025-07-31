@@ -68,34 +68,8 @@ CREATE TABLE analyses_2024 PARTITION OF analyses
 CREATE TABLE analyses_2025 PARTITION OF analyses
     FOR VALUES FROM ('2025-01-01') TO ('2026-01-01');
 
--- Quality metrics table
-CREATE TABLE quality_metrics (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    analysis_id UUID NOT NULL REFERENCES analyses(id) ON DELETE CASCADE,
-    reference_file_id UUID REFERENCES analyses(id) ON DELETE SET NULL,
-    metric_type quality_metric_type NOT NULL,
-    overall_score DOUBLE PRECISION,
-    min_score DOUBLE PRECISION,
-    max_score DOUBLE PRECISION,
-    mean_score DOUBLE PRECISION,
-    std_deviation DOUBLE PRECISION,
-    percentile_data JSONB NOT NULL DEFAULT '{}',
-    frame_count INTEGER NOT NULL DEFAULT 0,
-    processing_time DOUBLE PRECISION,
-    model_version VARCHAR(100),
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-);
-
--- Quality frames table (partitioned by metric_id for performance)
-CREATE TABLE quality_frames (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    quality_metric_id UUID NOT NULL REFERENCES quality_metrics(id) ON DELETE CASCADE,
-    frame_number INTEGER NOT NULL,
-    timestamp DOUBLE PRECISION NOT NULL,
-    score DOUBLE PRECISION NOT NULL,
-    component_scores JSONB NOT NULL DEFAULT '{}',
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-);
+-- Quality metrics tables will be created in migration 005
+-- with more comprehensive schema
 
 -- HLS analyses table
 CREATE TABLE hls_analyses (
@@ -135,19 +109,8 @@ CREATE TABLE hls_segments (
     error_msg TEXT
 );
 
--- Quality comparisons table
-CREATE TABLE quality_comparisons (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    reference_id UUID NOT NULL REFERENCES analyses(id) ON DELETE CASCADE,
-    distorted_id UUID NOT NULL REFERENCES analyses(id) ON DELETE CASCADE,
-    comparison_type comparison_type NOT NULL DEFAULT 'full',
-    status analysis_status NOT NULL DEFAULT 'pending',
-    result_summary JSONB NOT NULL DEFAULT '{}',
-    processing_time DOUBLE PRECISION,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    completed_at TIMESTAMP WITH TIME ZONE,
-    error_msg TEXT
-);
+-- Quality comparisons table will be created in migration 005
+-- with more comprehensive schema
 
 -- Processing jobs table
 CREATE TABLE processing_jobs (
@@ -216,11 +179,7 @@ CREATE INDEX idx_analyses_status ON analyses(status);
 CREATE INDEX idx_analyses_content_hash ON analyses(content_hash);
 CREATE INDEX idx_analyses_created_at ON analyses(created_at);
 
-CREATE INDEX idx_quality_metrics_analysis_id ON quality_metrics(analysis_id);
-CREATE INDEX idx_quality_metrics_type ON quality_metrics(metric_type);
-
-CREATE INDEX idx_quality_frames_metric_id ON quality_frames(quality_metric_id);
-CREATE INDEX idx_quality_frames_frame_number ON quality_frames(frame_number);
+-- Quality metrics indexes will be created in migration 005
 
 CREATE INDEX idx_hls_analyses_analysis_id ON hls_analyses(analysis_id);
 CREATE INDEX idx_hls_segments_hls_analysis_id ON hls_segments(hls_analysis_id);

@@ -229,7 +229,7 @@ func (r *PostgreSQLRepository) CreateHLSAnalysis(ctx context.Context, hls *model
 		)
 	`
 	
-	_, err := r.db.ExecContext(
+	_, err := r.db.DB.ExecContext(
 		ctx, query,
 		hls.ID, hls.AnalysisID, hls.ManifestPath, hls.ManifestType, hls.ManifestData,
 		hls.SegmentCount, hls.TotalDuration, hls.BitrateVariants, hls.SegmentDuration,
@@ -248,7 +248,7 @@ func (r *PostgreSQLRepository) GetHLSAnalysis(ctx context.Context, analysisID uu
 	`
 	
 	var hls models.HLSAnalysis
-	err := r.db.GetContext(ctx, &hls, query, analysisID)
+	err := r.db.DB.GetContext(ctx, &hls, query, analysisID)
 	if err != nil {
 		return nil, err
 	}
@@ -266,7 +266,7 @@ func (r *PostgreSQLRepository) CreateHLSSegment(ctx context.Context, segment *mo
 		)
 	`
 	
-	_, err := r.db.ExecContext(
+	_, err := r.db.DB.ExecContext(
 		ctx, query,
 		segment.ID, segment.HLSAnalysisID, segment.SegmentURI, segment.SequenceNumber, segment.Duration,
 		segment.FileSize, segment.Bitrate, segment.Resolution, segment.FrameRate, segment.SegmentData,
@@ -287,7 +287,7 @@ func (r *PostgreSQLRepository) GetHLSSegments(ctx context.Context, hlsAnalysisID
 	`
 	
 	var segments []*models.HLSSegment
-	err := r.db.SelectContext(ctx, &segments, query, hlsAnalysisID, limit)
+	err := r.db.DB.SelectContext(ctx, &segments, query, hlsAnalysisID, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -304,7 +304,7 @@ func (r *PostgreSQLRepository) GetHLSAnalysisByAnalysisID(ctx context.Context, a
 	`
 	
 	var hls models.HLSAnalysis
-	err := r.db.GetContext(ctx, &hls, query, analysisID)
+	err := r.db.DB.GetContext(ctx, &hls, query, analysisID)
 	if err != nil {
 		return nil, err
 	}
@@ -328,7 +328,7 @@ func (r *PostgreSQLRepository) ListHLSAnalyses(ctx context.Context, userID *uuid
 	
 	// Get total count
 	countQuery := "SELECT COUNT(*) " + baseQuery + whereClause
-	err := r.db.GetContext(ctx, &total, countQuery, args...)
+	err := r.db.DB.GetContext(ctx, &total, countQuery, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -350,7 +350,7 @@ func (r *PostgreSQLRepository) ListHLSAnalyses(ctx context.Context, userID *uuid
 		LIMIT $%d OFFSET $%d
 	`, baseQuery, whereClause, limitArg, offsetArg)
 	
-	err = r.db.SelectContext(ctx, &analyses, query, args...)
+	err = r.db.DB.SelectContext(ctx, &analyses, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -445,7 +445,7 @@ func (r *PostgreSQLRepository) CreateReport(ctx context.Context, report *models.
 		)
 	`
 	
-	_, err := r.db.ExecContext(
+	_, err := r.db.DB.ExecContext(
 		ctx, query,
 		report.ID, report.AnalysisID, report.UserID, report.ReportType, report.Format,
 		report.Title, report.Description, report.FilePath, report.FileSize,
@@ -463,7 +463,7 @@ func (r *PostgreSQLRepository) GetReport(ctx context.Context, id uuid.UUID) (*mo
 	`
 	
 	var report models.Report
-	err := r.db.GetContext(ctx, &report, query, id)
+	err := r.db.DB.GetContext(ctx, &report, query, id)
 	if err != nil {
 		return nil, err
 	}
@@ -512,7 +512,7 @@ func (r *PostgreSQLRepository) ListReports(ctx context.Context, userID *uuid.UUI
 	
 	// Get total count
 	countQuery := "SELECT COUNT(*) " + baseQuery + whereClause
-	err := r.db.GetContext(ctx, &total, countQuery, args...)
+	err := r.db.DB.GetContext(ctx, &total, countQuery, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -533,7 +533,7 @@ func (r *PostgreSQLRepository) ListReports(ctx context.Context, userID *uuid.UUI
 		LIMIT $%d OFFSET $%d
 	`, baseQuery, whereClause, limitArg, offsetArg)
 	
-	err = r.db.SelectContext(ctx, &reports, query, args...)
+	err = r.db.DB.SelectContext(ctx, &reports, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -543,7 +543,7 @@ func (r *PostgreSQLRepository) ListReports(ctx context.Context, userID *uuid.UUI
 
 func (r *PostgreSQLRepository) DeleteReport(ctx context.Context, id uuid.UUID) error {
 	query := "DELETE FROM reports WHERE id = $1"
-	_, err := r.db.ExecContext(ctx, query, id)
+	_, err := r.db.DB.ExecContext(ctx, query, id)
 	return err
 }
 
@@ -553,7 +553,7 @@ func (r *PostgreSQLRepository) IncrementReportDownloadCount(ctx context.Context,
 		SET download_count = download_count + 1, last_download = NOW()
 		WHERE id = $1
 	`
-	_, err := r.db.ExecContext(ctx, query, id)
+	_, err := r.db.DB.ExecContext(ctx, query, id)
 	return err
 }
 
@@ -568,7 +568,7 @@ func (r *PostgreSQLRepository) CreateQualityComparison(ctx context.Context, comp
 		)
 	`
 	
-	_, err := r.db.ExecContext(
+	_, err := r.db.DB.ExecContext(
 		ctx, query,
 		comparison.ID, comparison.ReferenceID, comparison.DistortedID, comparison.ComparisonType,
 		comparison.Status, comparison.ResultSummary, comparison.ProcessingTime,
@@ -586,7 +586,7 @@ func (r *PostgreSQLRepository) GetQualityComparison(ctx context.Context, id uuid
 	`
 	
 	var comparison models.QualityComparison
-	err := r.db.GetContext(ctx, &comparison, query, id)
+	err := r.db.DB.GetContext(ctx, &comparison, query, id)
 	if err != nil {
 		return nil, err
 	}
@@ -601,7 +601,7 @@ func (r *PostgreSQLRepository) UpdateQualityComparison(ctx context.Context, comp
 		WHERE id = $1
 	`
 	
-	_, err := r.db.ExecContext(
+	_, err := r.db.DB.ExecContext(
 		ctx, query,
 		comparison.ID, comparison.Status, comparison.ResultSummary, comparison.ProcessingTime,
 		comparison.CompletedAt, comparison.ErrorMsg,
@@ -611,7 +611,7 @@ func (r *PostgreSQLRepository) UpdateQualityComparison(ctx context.Context, comp
 
 func (r *PostgreSQLRepository) UpdateQualityComparisonStatus(ctx context.Context, id uuid.UUID, status models.AnalysisStatus) error {
 	query := "UPDATE quality_comparisons SET status = $2, updated_at = NOW() WHERE id = $1"
-	_, err := r.db.ExecContext(ctx, query, id, status)
+	_, err := r.db.DB.ExecContext(ctx, query, id, status)
 	return err
 }
 
@@ -661,7 +661,7 @@ func (r *PostgreSQLRepository) ListQualityComparisons(ctx context.Context, userI
 	
 	// Get total count
 	countQuery := "SELECT COUNT(*) " + baseQuery + whereClause
-	err := r.db.GetContext(ctx, &total, countQuery, args...)
+	err := r.db.DB.GetContext(ctx, &total, countQuery, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -682,7 +682,7 @@ func (r *PostgreSQLRepository) ListQualityComparisons(ctx context.Context, userI
 		LIMIT $%d OFFSET $%d
 	`, baseQuery, whereClause, limitArg, offsetArg)
 	
-	err = r.db.SelectContext(ctx, &comparisons, query, args...)
+	err = r.db.DB.SelectContext(ctx, &comparisons, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -692,7 +692,7 @@ func (r *PostgreSQLRepository) ListQualityComparisons(ctx context.Context, userI
 
 func (r *PostgreSQLRepository) DeleteQualityComparison(ctx context.Context, id uuid.UUID) error {
 	query := "DELETE FROM quality_comparisons WHERE id = $1"
-	result, err := r.db.ExecContext(ctx, query, id)
+	result, err := r.db.DB.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
 	}

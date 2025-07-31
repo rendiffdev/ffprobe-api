@@ -98,7 +98,9 @@ func (h *HLSHandler) AnalyzeHLS(c *gin.Context) {
 
 	// Start async HLS analysis
 	go func() {
-		ctx := c.Request.Context()
+		// Use background context to avoid cancellation when HTTP request ends
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Hour)
+		defer cancel()
 		
 		// Create HLS analysis options
 		opts := services.HLSAnalysisOptions{

@@ -27,9 +27,11 @@ type Router struct {
 	batchHandler      *handlers.BatchHandler
 	streamHandler     *handlers.StreamHandler
 	authHandler       *handlers.AuthHandler
+	adminHandler      *handlers.AdminHandler
 	qualityHandler    *handlers.QualityHandler
 	hlsHandler        *handlers.HLSHandler
 	reportHandler     *handlers.ReportHandler
+	reportsHandler    *handlers.ReportsHandler
 	compareHandler    *handlers.CompareHandler
 	comparisonHandler *handlers.ComparisonHandler
 	rawHandler        *handlers.RawHandler
@@ -47,6 +49,9 @@ type Router struct {
 func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Router {
 	// Create analysis service
 	analysisService := services.NewAnalysisService(db, cfg.FFprobePath, logger)
+	
+	// Create report generator
+	reportGenerator := services.NewReportGenerator(cfg.ReportsDir, cfg.BaseURL, 24) // 24 hour expiry
 
 	// Create quality service
 	qualityAnalyzer := quality.NewQualityAnalyzer(cfg.FFmpegPath, logger)
@@ -108,7 +113,7 @@ func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Rout
 		TokenExpiry:  time.Duration(cfg.TokenExpiry) * time.Hour,
 		RefreshExpiry: time.Duration(cfg.RefreshExpiry) * time.Hour,
 	}
-	authMiddleware := middleware.NewAuthMiddleware(authConfig, logger)
+	authMiddleware := middleware.NewAuthMiddleware(authConfig, db.DB, logger)
 
 	rateLimitConfig := middleware.RateLimitConfig{
 		RequestsPerMinute: cfg.RateLimitPerMinute,
@@ -134,8 +139,11 @@ func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Rout
 
 	monitoring := middleware.NewMonitoringMiddleware(logger)
 	
+	// Create user service
+	userService := services.NewUserService(db.DB, logger)
+	
 	return &Router{
-		probeHandler:  handlers.NewProbeHandler(analysisService, logger),
+		probeHandler:  handlers.NewProbeHandler(analysisService, reportGenerator, logger),
 		uploadHandler: func() *handlers.UploadHandler {
 			handler := handlers.NewUploadHandler(analysisService, cfg.UploadDir, logger)
 			handler.SetMaxFileSize(cfg.MaxFileSize)
@@ -144,9 +152,11 @@ func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Rout
 		batchHandler:      handlers.NewBatchHandler(analysisService, logger),
 		streamHandler:     handlers.NewStreamHandler(analysisService, logger),
 		authHandler:       handlers.NewAuthHandler(authMiddleware, logger),
+		adminHandler:      handlers.NewAdminHandler(userService, logger),
 		qualityHandler:    handlers.NewQualityHandler(qualityService),
 		hlsHandler:        handlers.NewHLSHandler(analysisService, hlsService, logger),
 		reportHandler:     handlers.NewReportHandler(reportService, logger),
+		reportsHandler:    handlers.NewReportsHandler(reportGenerator, analysisService, comparisonService),
 		compareHandler:    handlers.NewCompareHandler(qualityService, logger),
 		comparisonHandler: handlers.NewComparisonHandler(comparisonService),
 		rawHandler:        handlers.NewRawHandler(analysisService, logger),
@@ -285,6 +295,18 @@ func (r *Router) SetupRoutes() *gin.Engine {
 				batch.GET("", r.batchHandler.ListBatches)
 			}
 
+			// Report generation endpoints
+			reports := protected.Group("/reports")
+			{
+				reports.POST("/analysis", r.reportsHandler.GenerateAnalysisReport)
+				reports.POST("/comparison", r.reportsHandler.GenerateComparisonReport)
+				reports.POST("/analysis/:analysisId/:format", r.reportsHandler.GenerateAnalysisReportWithFormat)
+				reports.POST("/comparison/:comparisonId/:format", r.reportsHandler.GenerateComparisonReportWithFormat)
+				reports.GET("/formats", r.reportsHandler.ListReportFormats)
+				reports.GET("/:reportId/download/:filename", r.reportsHandler.DownloadReport)
+				reports.DELETE("/cleanup", r.reportsHandler.CleanupExpiredReports) // Admin only
+			}
+
 			// Streaming endpoints
 			stream := protected.Group("/stream")
 			{
@@ -317,6 +339,17 @@ func (r *Router) SetupRoutes() *gin.Engine {
 				comparisons.GET("/:id/report", r.comparisonHandler.GetComparisonReport)
 			}
 
+
+			// Admin endpoints
+			admin := protected.Group("/admin")
+			{
+				admin.Use(r.authMiddleware.RequireRole("admin"))
+				// User management
+				admin.GET("/users", r.adminHandler.ListUsers)
+				admin.GET("/users/:id/role", r.adminHandler.GetUserRole)
+				admin.PUT("/users/:id/role", r.adminHandler.UpdateUserRole)
+				admin.GET("/stats", r.adminHandler.GetSystemStats)
+			}
 
 			// Admin-only system endpoints
 			system := protected.Group("/system")

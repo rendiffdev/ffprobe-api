@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/rendiffdev/ffprobe-api/internal/ffmpeg"
 	"github.com/rendiffdev/ffprobe-api/internal/models"
 	"github.com/rendiffdev/ffprobe-api/internal/services"
+	"github.com/rendiffdev/ffprobe-api/internal/validator"
 )
 
 // UploadHandler handles file upload operations
@@ -24,6 +26,7 @@ type UploadHandler struct {
 	uploadDir       string
 	maxFileSize     int64
 	allowedFormats  []string
+	validator       *validator.FilePathValidator
 	logger          zerolog.Logger
 }
 
@@ -39,7 +42,8 @@ func NewUploadHandler(analysisService *services.AnalysisService, uploadDir strin
 			".mp3", ".wav", ".flac", ".aac", ".ogg", ".wma", ".m4a",
 			".opus", ".mxf", ".dv", ".f4v", ".vob", ".ogv", ".m3u8",
 		},
-		logger: logger,
+		validator: validator.NewFilePathValidator(),
+		logger:    logger,
 	}
 }
 
@@ -143,8 +147,39 @@ func (h *UploadHandler) UploadFile(c *gin.Context) {
 		return
 	}
 
-	// Check file extension
-	ext := strings.ToLower(filepath.Ext(header.Filename))
+	// Sanitize filename to prevent path traversal
+	sanitizedFilename := h.sanitizeFilename(header.Filename)
+	if sanitizedFilename == "" || sanitizedFilename == "unnamed_file" {
+		h.logger.Error().Str("original", header.Filename).Msg("Invalid filename after sanitization")
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error:   "Invalid filename",
+			Details: "Filename contains invalid characters or is empty",
+		})
+		return
+	}
+
+	// Validate file size
+	if err := validator.ValidateFileSize(header.Size, h.maxFileSize); err != nil {
+		h.logger.Error().Err(err).Int64("size", header.Size).Msg("File size validation failed")
+		c.JSON(http.StatusRequestEntityTooLarge, ErrorResponse{
+			Error:   "File size validation failed",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	// Validate file path
+	if err := h.validator.ValidateFilePath(sanitizedFilename); err != nil {
+		h.logger.Error().Err(err).Str("filename", sanitizedFilename).Msg("File path validation failed")
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error:   "Invalid file",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	// Check file extension (after sanitization)
+	ext := strings.ToLower(filepath.Ext(sanitizedFilename))
 	if !h.isAllowedFormat(ext) {
 		h.logger.Error().Str("extension", ext).Msg("Unsupported file format")
 		c.JSON(http.StatusUnsupportedMediaType, ErrorResponse{
@@ -162,8 +197,18 @@ func (h *UploadHandler) UploadFile(c *gin.Context) {
 
 	// Generate unique filename
 	uploadID := uuid.New()
-	filename := fmt.Sprintf("%s_%s", uploadID.String(), header.Filename)
+	filename := fmt.Sprintf("%s_%s", uploadID.String(), sanitizedFilename)
 	uploadPath := filepath.Join(h.uploadDir, filename)
+
+	// Validate the final upload path
+	if err := h.validatePath(uploadPath); err != nil {
+		h.logger.Error().Err(err).Str("path", uploadPath).Msg("Upload path validation failed")
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error:   "Invalid upload path",
+			Details: err.Error(),
+		})
+		return
+	}
 
 	// Ensure upload directory exists
 	if err := os.MkdirAll(h.uploadDir, 0755); err != nil {
@@ -185,12 +230,12 @@ func (h *UploadHandler) UploadFile(c *gin.Context) {
 		})
 		return
 	}
-	defer dst.Close()
 
 	// Copy file content
 	written, err := io.Copy(dst, file)
 	if err != nil {
 		h.logger.Error().Err(err).Msg("Failed to save uploaded file")
+		dst.Close()
 		os.Remove(uploadPath) // Clean up on error
 		c.JSON(http.StatusInternalServerError, ErrorResponse{
 			Error:   "Failed to save uploaded file",
@@ -198,16 +243,40 @@ func (h *UploadHandler) UploadFile(c *gin.Context) {
 		})
 		return
 	}
+	dst.Close()
+
+	// Validate file content after upload
+	uploadedFile, err := os.Open(uploadPath)
+	if err != nil {
+		h.logger.Error().Err(err).Msg("Failed to open uploaded file for validation")
+		os.Remove(uploadPath) // Clean up on error
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Error:   "Failed to validate uploaded file",
+			Details: err.Error(),
+		})
+		return
+	}
+	defer uploadedFile.Close()
+
+	if err := h.validateFileContent(uploadedFile, sanitizedFilename); err != nil {
+		h.logger.Error().Err(err).Str("filename", sanitizedFilename).Msg("File content validation failed")
+		os.Remove(uploadPath) // Clean up invalid file
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error:   "Invalid file content",
+			Details: err.Error(),
+		})
+		return
+	}
 
 	h.logger.Info().
 		Str("upload_id", uploadID.String()).
-		Str("filename", header.Filename).
+		Str("filename", sanitizedFilename).
 		Int64("size", written).
 		Msg("File uploaded successfully")
 
 	response := UploadResponse{
 		ID:         uploadID,
-		FileName:   header.Filename,
+		FileName:   sanitizedFilename,
 		FileSize:   written,
 		UploadPath: uploadPath,
 		Status:     "uploaded",
@@ -216,7 +285,7 @@ func (h *UploadHandler) UploadFile(c *gin.Context) {
 	// Auto-analyze if requested
 	if req.AutoAnalyze {
 		analysisReq := &models.CreateAnalysisRequest{
-			FileName:   header.Filename,
+			FileName:   sanitizedFilename,
 			FilePath:   uploadPath,
 			FileSize:   written,
 			SourceType: "upload",
@@ -317,6 +386,35 @@ func (h *UploadHandler) UploadChunk(c *gin.Context) {
 		return
 	}
 
+	// Validate upload ID
+	if err := h.validateUploadID(req.UploadID); err != nil {
+		h.logger.Error().Err(err).Str("upload_id", req.UploadID).Msg("Invalid upload ID")
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error:   "Invalid upload ID",
+			Details: err.Error(),
+		})
+		return
+	}
+
+	// Validate chunk parameters
+	if req.ChunkNumber < 1 || req.ChunkNumber > req.TotalChunks {
+		h.logger.Error().Int("chunk", req.ChunkNumber).Int("total", req.TotalChunks).Msg("Invalid chunk number")
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error:   "Invalid chunk number",
+			Details: "Chunk number must be between 1 and total chunks",
+		})
+		return
+	}
+
+	if req.TotalChunks > 10000 { // Prevent excessive chunk numbers
+		h.logger.Error().Int("total_chunks", req.TotalChunks).Msg("Too many chunks")
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error:   "Too many chunks",
+			Details: "Maximum 10000 chunks allowed",
+		})
+		return
+	}
+
 	// Get chunk file
 	chunk, _, err := c.Request.FormFile("chunk")
 	if err != nil {
@@ -331,6 +429,17 @@ func (h *UploadHandler) UploadChunk(c *gin.Context) {
 
 	// Create chunk directory
 	chunkDir := filepath.Join(h.uploadDir, "chunks", req.UploadID)
+	
+	// Validate chunk directory path
+	if err := h.validatePath(chunkDir); err != nil {
+		h.logger.Error().Err(err).Str("dir", chunkDir).Msg("Invalid chunk directory path")
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error:   "Invalid chunk directory path",
+			Details: err.Error(),
+		})
+		return
+	}
+	
 	if err := os.MkdirAll(chunkDir, 0755); err != nil {
 		h.logger.Error().Err(err).Str("dir", chunkDir).Msg("Failed to create chunk directory")
 		c.JSON(http.StatusInternalServerError, ErrorResponse{
@@ -383,8 +492,14 @@ func (h *UploadHandler) UploadChunk(c *gin.Context) {
 	if req.ChunkNumber == req.TotalChunks {
 		// Save filename for final assembly
 		if req.FileName != "" {
-			metaPath := filepath.Join(chunkDir, "metadata.txt")
-			os.WriteFile(metaPath, []byte(req.FileName), 0644)
+			// Sanitize filename before saving to metadata
+			sanitizedName := h.sanitizeFilename(req.FileName)
+			if sanitizedName != "" && sanitizedName != "unnamed_file" {
+				metaPath := filepath.Join(chunkDir, "metadata.txt")
+				if err := os.WriteFile(metaPath, []byte(sanitizedName), 0644); err != nil {
+					h.logger.Error().Err(err).Str("path", metaPath).Msg("Failed to write metadata")
+				}
+			}
 		}
 
 		// Check if all chunks exist
@@ -431,6 +546,17 @@ func (h *UploadHandler) UploadChunk(c *gin.Context) {
 // @Router /api/v1/upload/status/{id} [get]
 func (h *UploadHandler) GetUploadStatus(c *gin.Context) {
 	uploadID := c.Param("id")
+	
+	// Validate upload ID
+	if err := h.validateUploadID(uploadID); err != nil {
+		h.logger.Error().Err(err).Str("upload_id", uploadID).Msg("Invalid upload ID")
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error: "Invalid upload ID",
+			Details: err.Error(),
+		})
+		return
+	}
+	
 	chunkDir := filepath.Join(h.uploadDir, "chunks", uploadID)
 
 	// Check if upload exists
@@ -482,8 +608,119 @@ func (h *UploadHandler) isAllowedFormat(ext string) bool {
 	return false
 }
 
+// sanitizeFilename sanitizes a filename to prevent path traversal attacks
+func (h *UploadHandler) sanitizeFilename(filename string) string {
+	return validator.SanitizeFilename(filename)
+}
+
+// validateUploadID validates an upload ID to prevent directory traversal
+func (h *UploadHandler) validateUploadID(uploadID string) error {
+	// Check if it's a valid UUID format
+	if _, err := uuid.Parse(uploadID); err != nil {
+		return fmt.Errorf("invalid upload ID format")
+	}
+	
+	// Additional validation to prevent path traversal
+	if strings.Contains(uploadID, "..") || strings.Contains(uploadID, "/") || strings.Contains(uploadID, "\\") {
+		return fmt.Errorf("invalid characters in upload ID")
+	}
+	
+	return nil
+}
+
+// validatePath ensures the path is within the upload directory
+func (h *UploadHandler) validatePath(path string) error {
+	// Clean and resolve the path
+	cleanPath := filepath.Clean(path)
+	absPath, err := filepath.Abs(cleanPath)
+	if err != nil {
+		return fmt.Errorf("failed to resolve path: %w", err)
+	}
+	
+	// Get absolute upload directory
+	absUploadDir, err := filepath.Abs(h.uploadDir)
+	if err != nil {
+		return fmt.Errorf("failed to resolve upload directory: %w", err)
+	}
+	
+	// Check if the path is within the upload directory
+	if !strings.HasPrefix(absPath, absUploadDir) {
+		return fmt.Errorf("path outside upload directory")
+	}
+	
+	return nil
+}
+
+// validateFileContent performs basic validation on file content
+func (h *UploadHandler) validateFileContent(file io.Reader, filename string) error {
+	// Read first 512 bytes to detect content type
+	buffer := make([]byte, 512)
+	n, err := file.Read(buffer)
+	if err != nil && err != io.EOF {
+		return fmt.Errorf("failed to read file content: %w", err)
+	}
+	
+	// Detect content type
+	contentType := http.DetectContentType(buffer[:n])
+	
+	// Check if content type matches expected media types
+	allowedTypes := []string{
+		"video/", "audio/", "application/ogg", "application/octet-stream",
+	}
+	
+	isAllowed := false
+	for _, allowedType := range allowedTypes {
+		if strings.HasPrefix(contentType, allowedType) {
+			isAllowed = true
+			break
+		}
+	}
+	
+	if !isAllowed {
+		return fmt.Errorf("invalid content type: %s", contentType)
+	}
+	
+	// Additional security checks
+	ext := strings.ToLower(filepath.Ext(filename))
+	
+	// Check for executable files disguised as media
+	if strings.Contains(contentType, "executable") || strings.Contains(contentType, "script") {
+		return fmt.Errorf("executable files not allowed")
+	}
+	
+	// Basic magic number validation for common media types
+	if len(buffer) >= 4 {
+		// Check for common media file signatures
+		if ext == ".mp4" && !h.isValidMP4Header(buffer) {
+			h.logger.Warn().Str("filename", filename).Msg("MP4 file with invalid header")
+		}
+	}
+	
+	return nil
+}
+
+// isValidMP4Header performs basic MP4 header validation
+func (h *UploadHandler) isValidMP4Header(header []byte) bool {
+	if len(header) < 8 {
+		return false
+	}
+	
+	// Check for ftyp box signature at offset 4
+	return string(header[4:8]) == "ftyp"
+}
+
 func (h *UploadHandler) assembleChunks(uploadID string, totalChunks int) (string, error) {
+	// Validate upload ID first
+	if err := h.validateUploadID(uploadID); err != nil {
+		return "", fmt.Errorf("invalid upload ID: %w", err)
+	}
+	
 	chunkDir := filepath.Join(h.uploadDir, "chunks", uploadID)
+	
+	// Validate chunk directory path
+	if err := h.validatePath(chunkDir); err != nil {
+		return "", fmt.Errorf("invalid chunk directory path: %w", err)
+	}
 	
 	// Read metadata
 	metaPath := filepath.Join(chunkDir, "metadata.txt")
@@ -492,12 +729,23 @@ func (h *UploadHandler) assembleChunks(uploadID string, totalChunks int) (string
 		return "", fmt.Errorf("failed to read metadata: %w", err)
 	}
 
-	fileName := string(metaData)
+	fileName := strings.TrimSpace(string(metaData))
 	if fileName == "" {
 		fileName = fmt.Sprintf("%s_assembled.bin", uploadID)
+	} else {
+		// Sanitize the filename from metadata
+		fileName = h.sanitizeFilename(fileName)
+		if fileName == "" || fileName == "unnamed_file" {
+			fileName = fmt.Sprintf("%s_assembled.bin", uploadID)
+		}
 	}
 
 	finalPath := filepath.Join(h.uploadDir, fmt.Sprintf("%s_%s", uploadID, fileName))
+	
+	// Validate the final path
+	if err := h.validatePath(finalPath); err != nil {
+		return "", fmt.Errorf("invalid final path: %w", err)
+	}
 	
 	// Create final file
 	finalFile, err := os.Create(finalPath)

@@ -22,10 +22,7 @@ DROP INDEX IF EXISTS idx_processing_jobs_type;
 DROP INDEX IF EXISTS idx_processing_jobs_status;
 DROP INDEX IF EXISTS idx_hls_segments_hls_analysis_id;
 DROP INDEX IF EXISTS idx_hls_analyses_analysis_id;
-DROP INDEX IF EXISTS idx_quality_frames_frame_number;
-DROP INDEX IF EXISTS idx_quality_frames_metric_id;
-DROP INDEX IF EXISTS idx_quality_metrics_type;
-DROP INDEX IF EXISTS idx_quality_metrics_analysis_id;
+-- Quality metrics indexes will be handled by migration 005
 DROP INDEX IF EXISTS idx_analyses_created_at;
 DROP INDEX IF EXISTS idx_analyses_content_hash;
 DROP INDEX IF EXISTS idx_analyses_status;
@@ -36,11 +33,9 @@ DROP TABLE IF EXISTS vmaf_models;
 DROP TABLE IF EXISTS reports;
 DROP TABLE IF EXISTS cache_entries;
 DROP TABLE IF EXISTS processing_jobs;
-DROP TABLE IF EXISTS quality_comparisons;
+-- Quality tables will be handled by migration 005
 DROP TABLE IF EXISTS hls_segments;
 DROP TABLE IF EXISTS hls_analyses;
-DROP TABLE IF EXISTS quality_frames;
-DROP TABLE IF EXISTS quality_metrics;
 
 -- Drop analysis partitions
 DROP TABLE IF EXISTS analyses_2025;

@@ -176,6 +176,16 @@ func (qa *QualityAnalyzer) analyzeVMAF(ctx context.Context, analysis *QualityAna
 		}
 	}
 
+	// Check if a custom model path is specified
+	if config.CustomModelPath != "" {
+		// Validate custom model path
+		if _, err := os.Stat(config.CustomModelPath); err != nil {
+			return fmt.Errorf("custom VMAF model not found: %w", err)
+		}
+		// Use custom model path
+		config.Model = fmt.Sprintf("path=%s", config.CustomModelPath)
+	}
+
 	// Ensure temp directory exists
 	if err := os.MkdirAll(qa.tempDir, 0755); err != nil {
 		return fmt.Errorf("failed to create temp directory: %w", err)

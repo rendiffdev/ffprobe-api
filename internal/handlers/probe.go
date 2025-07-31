@@ -7,11 +7,13 @@ import (
 	"net/http"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
+	"github.com/rendiffdev/ffprobe-api/internal/errors"
 	"github.com/rendiffdev/ffprobe-api/internal/ffmpeg"
 	"github.com/rendiffdev/ffprobe-api/internal/models"
 	"github.com/rendiffdev/ffprobe-api/internal/services"
@@ -21,40 +23,47 @@ import (
 // ProbeHandler handles ffprobe-related API endpoints
 type ProbeHandler struct {
 	analysisService *services.AnalysisService
+	reportGenerator *services.ReportGenerator
 	logger          zerolog.Logger
 }
 
 // NewProbeHandler creates a new probe handler
-func NewProbeHandler(analysisService *services.AnalysisService, logger zerolog.Logger) *ProbeHandler {
+func NewProbeHandler(analysisService *services.AnalysisService, reportGenerator *services.ReportGenerator, logger zerolog.Logger) *ProbeHandler {
 	return &ProbeHandler{
 		analysisService: analysisService,
+		reportGenerator: reportGenerator,
 		logger:          logger,
 	}
 }
 
 // ProbeFileRequest represents a request to probe a file
 type ProbeFileRequest struct {
-	FilePath    string                 `json:"file_path" binding:"required"`
-	Options     *ffmpeg.FFprobeOptions `json:"options,omitempty"`
-	Async       bool                   `json:"async,omitempty"`
-	SourceType  string                 `json:"source_type,omitempty"`
+	FilePath       string                 `json:"file_path" binding:"required"`
+	Options        *ffmpeg.FFprobeOptions `json:"options,omitempty"`
+	Async          bool                   `json:"async,omitempty"`
+	SourceType     string                 `json:"source_type,omitempty"`
+	GenerateReports bool                  `json:"generate_reports,omitempty"`
+	ReportFormats   []string              `json:"report_formats,omitempty"`
 }
 
 // ProbeURLRequest represents a request to probe a URL
 type ProbeURLRequest struct {
-	URL         string                 `json:"url" binding:"required"`
-	Options     *ffmpeg.FFprobeOptions `json:"options,omitempty"`
-	Async       bool                   `json:"async,omitempty"`
-	Timeout     int                    `json:"timeout,omitempty"` // seconds
+	URL             string                 `json:"url" binding:"required"`
+	Options         *ffmpeg.FFprobeOptions `json:"options,omitempty"`
+	Async           bool                   `json:"async,omitempty"`
+	Timeout         int                    `json:"timeout,omitempty"` // seconds
+	GenerateReports bool                   `json:"generate_reports,omitempty"`
+	ReportFormats   []string              `json:"report_formats,omitempty"`
 }
 
 // ProbeResponse represents the response from a probe operation
 type ProbeResponse struct {
-	AnalysisID uuid.UUID              `json:"analysis_id"`
-	Status     string                 `json:"status"`
-	Result     *ffmpeg.FFprobeResult  `json:"result,omitempty"`
-	Analysis   *models.Analysis       `json:"analysis,omitempty"`
-	Message    string                 `json:"message,omitempty"`
+	AnalysisID uuid.UUID                     `json:"analysis_id"`
+	Status     string                        `json:"status"`
+	Result     *ffmpeg.FFprobeResult         `json:"result,omitempty"`
+	Analysis   *models.Analysis              `json:"analysis,omitempty"`
+	Message    string                        `json:"message,omitempty"`
+	Reports    *services.ReportResponse      `json:"reports,omitempty"`
 }
 
 // HealthResponse represents health check response
@@ -80,10 +89,7 @@ func (h *ProbeHandler) ProbeFile(c *gin.Context) {
 	var req ProbeFileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Error().Err(err).Msg("Invalid request body")
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error:   "Invalid request body",
-			Details: err.Error(),
-		})
+		errors.ValidationError(c, "Invalid request body", err.Error())
 		return
 	}
 
@@ -91,10 +97,7 @@ func (h *ProbeHandler) ProbeFile(c *gin.Context) {
 	validator := validator.NewFilePathValidator()
 	if err := validator.ValidateFilePath(req.FilePath); err != nil {
 		h.logger.Warn().Err(err).Str("path", req.FilePath).Msg("Invalid file path")
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error:   "Invalid file path",
-			Details: err.Error(),
-		})
+		errors.ValidationError(c, "Invalid file path", err.Error())
 		return
 	}
 
@@ -115,10 +118,7 @@ func (h *ProbeHandler) ProbeFile(c *gin.Context) {
 	analysis, err := h.analysisService.CreateAnalysis(c.Request.Context(), createReq)
 	if err != nil {
 		h.logger.Error().Err(err).Str("file_path", req.FilePath).Msg("Failed to create analysis")
-		c.JSON(http.StatusInternalServerError, ErrorResponse{
-			Error:   "Failed to create analysis",
-			Details: err.Error(),
-		})
+		errors.InternalError(c, "Failed to create analysis", err.Error())
 		return
 	}
 
@@ -144,10 +144,7 @@ func (h *ProbeHandler) ProbeFile(c *gin.Context) {
 	// Synchronous processing
 	if err := h.analysisService.ProcessAnalysis(c.Request.Context(), analysis.ID, req.Options); err != nil {
 		h.logger.Error().Err(err).Str("analysis_id", analysis.ID.String()).Msg("Analysis failed")
-		c.JSON(http.StatusInternalServerError, ErrorResponse{
-			Error:   "Analysis failed",
-			Details: err.Error(),
-		})
+		errors.InternalError(c, "Analysis failed", err.Error())
 		return
 	}
 
@@ -162,11 +159,38 @@ func (h *ProbeHandler) ProbeFile(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, ProbeResponse{
+	response := ProbeResponse{
 		AnalysisID: analysis.ID,
 		Status:     "completed",
 		Analysis:   updatedAnalysis,
-	})
+	}
+
+	// Generate reports if requested
+	if req.GenerateReports && len(req.ReportFormats) > 0 {
+		// Validate and convert formats
+		var formats []services.ReportFormat
+		for _, format := range req.ReportFormats {
+			switch strings.ToLower(format) {
+			case "json":
+				formats = append(formats, services.FormatJSON)
+			case "xml":
+				formats = append(formats, services.FormatXML)
+			case "pdf":
+				formats = append(formats, services.FormatPDF)
+			}
+		}
+
+		if len(formats) > 0 {
+			reportResponse, err := h.reportGenerator.GenerateAnalysisReport(c.Request.Context(), updatedAnalysis, formats)
+			if err != nil {
+				h.logger.Warn().Err(err).Msg("Failed to generate reports, but analysis succeeded")
+			} else {
+				response.Reports = reportResponse
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // ProbeURL probes a remote URL
@@ -185,14 +209,18 @@ func (h *ProbeHandler) ProbeURL(c *gin.Context) {
 	var req ProbeURLRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Error().Err(err).Msg("Invalid request body")
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error:   "Invalid request body",
-			Details: err.Error(),
-		})
+		errors.ValidationError(c, "Invalid request body", err.Error())
 		return
 	}
 
-	// Set timeout if provided
+	// Validate URL
+	if err := validator.ValidateURL(req.URL); err != nil {
+		h.logger.Warn().Err(err).Str("url", req.URL).Msg("Invalid URL")
+		errors.ValidationError(c, "Invalid URL", err.Error())
+		return
+	}
+
+	// Set timeout if provided  
 	if req.Options == nil {
 		req.Options = ffmpeg.NewOptionsBuilder().BasicInfo().Build()
 	}
@@ -211,10 +239,7 @@ func (h *ProbeHandler) ProbeURL(c *gin.Context) {
 	analysis, err := h.analysisService.CreateAnalysis(c.Request.Context(), createReq)
 	if err != nil {
 		h.logger.Error().Err(err).Str("url", req.URL).Msg("Failed to create analysis")
-		c.JSON(http.StatusInternalServerError, ErrorResponse{
-			Error:   "Failed to create analysis",
-			Details: err.Error(),
-		})
+		errors.InternalError(c, "Failed to create analysis", err.Error())
 		return
 	}
 
@@ -240,10 +265,7 @@ func (h *ProbeHandler) ProbeURL(c *gin.Context) {
 	// Synchronous processing
 	if err := h.analysisService.ProcessAnalysis(c.Request.Context(), analysis.ID, req.Options); err != nil {
 		h.logger.Error().Err(err).Str("analysis_id", analysis.ID.String()).Msg("URL analysis failed")
-		c.JSON(http.StatusInternalServerError, ErrorResponse{
-			Error:   "URL analysis failed",
-			Details: err.Error(),
-		})
+		errors.InternalError(c, "URL analysis failed", err.Error())
 		return
 	}
 
@@ -258,11 +280,38 @@ func (h *ProbeHandler) ProbeURL(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, ProbeResponse{
+	response := ProbeResponse{
 		AnalysisID: analysis.ID,
 		Status:     "completed",
 		Analysis:   updatedAnalysis,
-	})
+	}
+
+	// Generate reports if requested
+	if req.GenerateReports && len(req.ReportFormats) > 0 {
+		// Validate and convert formats
+		var formats []services.ReportFormat
+		for _, format := range req.ReportFormats {
+			switch strings.ToLower(format) {
+			case "json":
+				formats = append(formats, services.FormatJSON)
+			case "xml":
+				formats = append(formats, services.FormatXML)
+			case "pdf":
+				formats = append(formats, services.FormatPDF)
+			}
+		}
+
+		if len(formats) > 0 {
+			reportResponse, err := h.reportGenerator.GenerateAnalysisReport(c.Request.Context(), updatedAnalysis, formats)
+			if err != nil {
+				h.logger.Warn().Err(err).Msg("Failed to generate reports, but analysis succeeded")
+			} else {
+				response.Reports = reportResponse
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, response)
 }
 
 // GetAnalysisStatus gets the status of an analysis
@@ -281,20 +330,14 @@ func (h *ProbeHandler) GetAnalysisStatus(c *gin.Context) {
 	analysisID, err := uuid.Parse(analysisIDStr)
 	if err != nil {
 		h.logger.Error().Err(err).Str("id", analysisIDStr).Msg("Invalid analysis ID")
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error:   "Invalid analysis ID",
-			Details: err.Error(),
-		})
+		errors.ValidationError(c, "Invalid analysis ID", err.Error())
 		return
 	}
 
 	analysis, err := h.analysisService.GetAnalysis(c.Request.Context(), analysisID)
 	if err != nil {
 		h.logger.Error().Err(err).Str("analysis_id", analysisID.String()).Msg("Failed to get analysis")
-		c.JSON(http.StatusNotFound, ErrorResponse{
-			Error:   "Analysis not found",
-			Details: err.Error(),
-		})
+		errors.NotFound(c, "Analysis not found", err.Error())
 		return
 	}
 
@@ -368,10 +411,7 @@ func (h *ProbeHandler) DeleteAnalysis(c *gin.Context) {
 	analysisID, err := uuid.Parse(analysisIDStr)
 	if err != nil {
 		h.logger.Error().Err(err).Str("id", analysisIDStr).Msg("Invalid analysis ID")
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error:   "Invalid analysis ID",
-			Details: err.Error(),
-		})
+		errors.ValidationError(c, "Invalid analysis ID", err.Error())
 		return
 	}
 
@@ -437,10 +477,7 @@ func (h *ProbeHandler) QuickProbe(c *gin.Context) {
 	var req ProbeFileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.logger.Error().Err(err).Msg("Invalid request body")
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Error:   "Invalid request body",
-			Details: err.Error(),
-		})
+		errors.ValidationError(c, "Invalid request body", err.Error())
 		return
 	}
 
@@ -466,10 +503,7 @@ func (h *ProbeHandler) QuickProbe(c *gin.Context) {
 	analysis, err := h.analysisService.CreateAnalysis(c.Request.Context(), createReq)
 	if err != nil {
 		h.logger.Error().Err(err).Str("file_path", req.FilePath).Msg("Failed to create quick analysis")
-		c.JSON(http.StatusInternalServerError, ErrorResponse{
-			Error:   "Failed to create analysis",
-			Details: err.Error(),
-		})
+		errors.InternalError(c, "Failed to create analysis", err.Error())
 		return
 	}
 
@@ -513,3 +547,4 @@ type ListAnalysesResponse struct {
 	Offset   int               `json:"offset"`
 	Count    int               `json:"count"`
 }
+

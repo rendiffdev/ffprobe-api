@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -71,6 +72,7 @@ type ProgressUpdate struct {
 	AnalysisID uuid.UUID `json:"analysis_id"`
 	Progress   float64   `json:"progress"`
 	Message    string    `json:"message,omitempty"`
+	Error      string    `json:"error,omitempty"`
 }
 
 // StreamAnalysis handles WebSocket connection for real-time analysis
@@ -95,14 +97,21 @@ func (h *StreamHandler) StreamAnalysis(c *gin.Context) {
 		return nil
 	})
 
+	// Create context for goroutine management
+	ctx, cancel := context.WithCancel(c.Request.Context())
+	defer cancel()
+
 	// Start ping ticker
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 
-	// Message handling loop
+	// Message handling loop with proper cleanup
 	go func() {
+		defer cancel() // Ensure context is canceled when goroutine exits
 		for {
 			select {
+			case <-ctx.Done():
+				return
 			case <-ticker.C:
 				conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 				if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
@@ -178,19 +187,52 @@ func (h *StreamHandler) StreamProgress(c *gin.Context) {
 	ctx, cancel := context.WithCancel(c.Request.Context())
 	defer cancel()
 
-	// Simulate progress updates (in production, this would come from the analysis service)
+	// Start real analysis with progress reporting
 	go func() {
-		for i := 0; i <= 100; i += 10 {
+		defer close(progressChan)
+		
+		// Create progress callback
+		progressCallback := func(progress float64) {
 			select {
 			case <-ctx.Done():
 				return
 			case progressChan <- ProgressUpdate{
 				AnalysisID: analysisID,
-				Progress:   float64(i) / 100,
-				Message:    "Processing...",
+				Progress:   progress,
+				Message:    fmt.Sprintf("Processing: %.1f%%", progress*100),
 			}:
-				time.Sleep(1 * time.Second)
+			default:
+				// Non-blocking send
 			}
+		}
+		
+		// Start analysis with progress reporting
+		if err := h.analysisService.ProcessWithProgress(ctx, analysisID, nil, progressCallback); err != nil {
+			h.logger.Error().Err(err).Str("analysis_id", analysisID.String()).Msg("Analysis failed")
+			select {
+			case <-ctx.Done():
+				return
+			case progressChan <- ProgressUpdate{
+				AnalysisID: analysisID,
+				Progress:   0,
+				Message:    "Analysis failed: " + err.Error(),
+				Error:      err.Error(),
+			}:
+			default:
+			}
+			return
+		}
+		
+		// Send completion update
+		select {
+		case <-ctx.Done():
+			return
+		case progressChan <- ProgressUpdate{
+			AnalysisID: analysisID,
+			Progress:   1.0,
+			Message:    "Analysis completed",
+		}:
+		default:
 		}
 	}()
 

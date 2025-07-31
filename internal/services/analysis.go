@@ -568,9 +568,13 @@ func (s *AnalysisService) AnalyzeMedia(ctx context.Context, analysisID string, o
 		return fmt.Errorf("failed to create analysis: %w", err)
 	}
 
-	// Start processing
+	// Start processing with independent context to avoid cancellation when HTTP request ends
 	go func() {
-		if err := s.ProcessAnalysis(ctx, id, &ffmpeg.FFprobeOptions{
+		// Create independent context with timeout for background processing
+		bgCtx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+		defer cancel()
+		
+		if err := s.ProcessAnalysis(bgCtx, id, &ffmpeg.FFprobeOptions{
 			ShowFormat:      true,
 			ShowStreams:     true,
 			ShowChapters:    true,

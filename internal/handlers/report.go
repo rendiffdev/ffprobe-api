@@ -97,7 +97,9 @@ func (h *ReportHandler) GenerateReport(c *gin.Context) {
 
 	// Start async report generation
 	go func() {
-		ctx := c.Request.Context()
+		// Use background context to avoid cancellation when HTTP request ends
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		defer cancel()
 		
 		// Create report options
 		opts := services.ReportGenerationOptions{
@@ -181,7 +183,10 @@ func (h *ReportHandler) DownloadReport(c *gin.Context) {
 
 	// Increment download count
 	go func() {
-		if err := h.reportService.IncrementDownloadCount(c.Request.Context(), reportID); err != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		
+		if err := h.reportService.IncrementDownloadCount(ctx, reportID); err != nil {
 			h.logger.Error().Err(err).Msg("Failed to increment download count")
 		}
 	}()

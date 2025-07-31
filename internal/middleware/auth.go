@@ -1,7 +1,11 @@
 package middleware
 
 import (
+	"crypto/rand"
 	"crypto/subtle"
+	"database/sql"
+	"encoding/hex"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -9,7 +13,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 	"github.com/rs/zerolog"
+	"golang.org/x/crypto/bcrypt"
+	"github.com/rendiffdev/ffprobe-api/internal/errors"
 )
 
 // AuthConfig holds authentication configuration
@@ -23,11 +30,12 @@ type AuthConfig struct {
 // AuthMiddleware handles authentication
 type AuthMiddleware struct {
 	config AuthConfig
+	db     *sqlx.DB
 	logger zerolog.Logger
 }
 
 // NewAuthMiddleware creates a new authentication middleware
-func NewAuthMiddleware(config AuthConfig, logger zerolog.Logger) *AuthMiddleware {
+func NewAuthMiddleware(config AuthConfig, db *sqlx.DB, logger zerolog.Logger) *AuthMiddleware {
 	if config.TokenExpiry == 0 {
 		config.TokenExpiry = 24 * time.Hour // Default 24 hours
 	}
@@ -37,6 +45,7 @@ func NewAuthMiddleware(config AuthConfig, logger zerolog.Logger) *AuthMiddleware
 
 	return &AuthMiddleware{
 		config: config,
+		db:     db,
 		logger: logger,
 	}
 }
@@ -84,10 +93,7 @@ func (m *AuthMiddleware) APIKeyAuth() gin.HandlerFunc {
 				Str("ip", c.ClientIP()).
 				Msg("Missing API key")
 			
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "API key required",
-				"code":  "MISSING_API_KEY",
-			})
+			errors.Unauthorized(c, "API key required", "No API key provided in request")
 			c.Abort()
 			return
 		}
@@ -99,10 +105,7 @@ func (m *AuthMiddleware) APIKeyAuth() gin.HandlerFunc {
 				Str("ip", c.ClientIP()).
 				Msg("Invalid API key")
 			
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "Invalid API key",
-				"code":  "INVALID_API_KEY",
-			})
+			errors.Unauthorized(c, "Invalid API key", "The provided API key is not valid")
 			c.Abort()
 			return
 		}
@@ -218,51 +221,49 @@ func (m *AuthMiddleware) RequireRole(requiredRoles ...string) gin.HandlerFunc {
 func (m *AuthMiddleware) Login(c *gin.Context) {
 	var req AuthRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request format",
-			"code":  "INVALID_REQUEST",
-		})
+		errors.ValidationError(c, "Invalid request format", "")
 		return
 	}
 
-	// In production, validate against database
-	// For now, use hardcoded credentials
-	if !m.validateCredentials(req.Username, req.Password) {
+	// Validate credentials and get user info
+	user, valid := m.validateCredentialsAndGetUser(req.Username, req.Password)
+	if !valid || user == nil {
 		m.logger.Warn().
 			Str("username", req.Username).
 			Str("ip", c.ClientIP()).
 			Msg("Failed login attempt")
 		
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Invalid credentials",
-			"code":  "INVALID_CREDENTIALS",
-		})
+		errors.Unauthorized(c, "Invalid credentials", "")
 		return
 	}
 
-	// Generate tokens
-	userID := uuid.New().String()
-	accessToken, refreshToken, err := m.generateTokens(userID, req.Username, []string{"user"})
+	// Generate tokens with actual user data
+	userID := user.ID.String()
+	roles := []string{user.Role}
+	accessToken, refreshToken, err := m.generateTokens(userID, user.Email, roles)
 	if err != nil {
 		m.logger.Error().Err(err).Msg("Failed to generate tokens")
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to generate tokens",
-			"code":  "TOKEN_GENERATION_FAILED",
-		})
+		errors.InternalError(c, "Failed to generate tokens", "")
 		return
 	}
 
 	m.logger.Info().
-		Str("username", req.Username).
+		Str("username", user.Email).
 		Str("user_id", userID).
+		Str("role", user.Role).
 		Str("ip", c.ClientIP()).
 		Msg("Successful login")
 
-	c.JSON(http.StatusOK, TokenResponse{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		TokenType:    "Bearer",
-		ExpiresIn:    int64(m.config.TokenExpiry.Seconds()),
+	c.JSON(http.StatusOK, gin.H{
+		"access_token":  accessToken,
+		"refresh_token": refreshToken,
+		"token_type":    "Bearer",
+		"expires_in":    int64(m.config.TokenExpiry.Seconds()),
+		"user": gin.H{
+			"id":    userID,
+			"email": user.Email,
+			"role":  user.Role,
+		},
 	})
 }
 
@@ -270,19 +271,13 @@ func (m *AuthMiddleware) Login(c *gin.Context) {
 func (m *AuthMiddleware) RefreshToken(c *gin.Context) {
 	var req RefreshRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request format",
-			"code":  "INVALID_REQUEST",
-		})
+		errors.ValidationError(c, "Invalid request format", "")
 		return
 	}
 
 	claims, err := m.validateToken(req.RefreshToken)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Invalid refresh token",
-			"code":  "INVALID_REFRESH_TOKEN",
-		})
+		errors.Unauthorized(c, "Invalid refresh token", "")
 		return
 	}
 
@@ -290,10 +285,7 @@ func (m *AuthMiddleware) RefreshToken(c *gin.Context) {
 	accessToken, refreshToken, err := m.generateTokens(claims.UserID, claims.Username, claims.Roles)
 	if err != nil {
 		m.logger.Error().Err(err).Msg("Failed to refresh tokens")
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to refresh tokens",
-			"code":  "TOKEN_REFRESH_FAILED",
-		})
+		errors.InternalError(c, "Failed to refresh tokens", "")
 		return
 	}
 
@@ -352,23 +344,113 @@ func (m *AuthMiddleware) isPublicEndpoint(path string) bool {
 	return false
 }
 
+// UserCredentials represents user credentials from database
+type UserCredentials struct {
+	ID           uuid.UUID `db:"id"`
+	Email        string    `db:"email"`
+	PasswordHash string    `db:"password_hash"`
+	Role         string    `db:"role"`
+	Status       string    `db:"status"`
+	FailedLogins int       `db:"failed_logins"`
+	LockedUntil  *time.Time `db:"locked_until"`
+	LastLoginAt  *time.Time `db:"last_login_at"`
+}
+
 func (m *AuthMiddleware) validateCredentials(username, password string) bool {
-	// SECURITY: This should be replaced with proper password hashing (bcrypt) 
-	// and database validation in production
-	// DO NOT use hardcoded credentials in production!
-	
-	// For demo purposes only - replace with database lookup
+	user, valid := m.validateCredentialsAndGetUser(username, password)
+	return valid && user != nil
+}
+
+func (m *AuthMiddleware) validateCredentialsAndGetUser(username, password string) (*UserCredentials, bool) {
 	if username == "" || password == "" {
-		return false
+		return nil, false
 	}
 	
-	// In production, this should:
-	// 1. Query user from database by username
-	// 2. Compare hashed password using bcrypt.CompareHashAndPassword
-	// 3. Implement account lockout after failed attempts
-	// 4. Log all authentication attempts
+	// Get user from database
+	var user UserCredentials
+	query := `
+		SELECT id, email, password_hash, role, status, 
+			   COALESCE(failed_logins, 0) as failed_logins,
+			   locked_until, last_login_at
+		FROM users 
+		WHERE email = $1 AND deleted_at IS NULL`
+		
+	err := m.db.Get(&user, query, username)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			m.logger.Warn().Str("email", username).Msg("Login attempt with non-existent user")
+		} else {
+			m.logger.Error().Err(err).Str("email", username).Msg("Database error during login")
+		}
+		return nil, false
+	}
 	
-	return false // Disabled hardcoded auth - implement proper auth
+	// Check if account is locked
+	if user.LockedUntil != nil && user.LockedUntil.After(time.Now()) {
+		m.logger.Warn().Str("email", username).Msg("Login attempt on locked account")
+		return nil, false
+	}
+	
+	// Check if account is active
+	if user.Status != "active" {
+		m.logger.Warn().Str("email", username).Str("status", user.Status).Msg("Login attempt on inactive account")
+		return nil, false
+	}
+	
+	// Verify password
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	if err != nil {
+		// Password is incorrect - increment failed login count
+		m.handleFailedLogin(user.ID, user.Email, user.FailedLogins)
+		return nil, false
+	}
+	
+	// Password is correct - reset failed logins and update last login
+	m.handleSuccessfulLogin(user.ID, user.Email)
+	
+	return &user, true
+}
+
+// handleFailedLogin increments failed login count and locks account if necessary
+func (m *AuthMiddleware) handleFailedLogin(userID uuid.UUID, email string, currentFailedLogins int) {
+	newFailedLogins := currentFailedLogins + 1
+	var lockedUntil *time.Time
+	
+	// Lock account after 5 failed attempts for 30 minutes
+	if newFailedLogins >= 5 {
+		lockTime := time.Now().Add(30 * time.Minute)
+		lockedUntil = &lockTime
+		m.logger.Warn().
+			Str("email", email).
+			Int("failed_logins", newFailedLogins).
+			Time("locked_until", lockTime).
+			Msg("Account locked due to too many failed login attempts")
+	}
+	
+	query := `
+		UPDATE users 
+		SET failed_logins = $2, locked_until = $3, updated_at = NOW()
+		WHERE id = $1`
+		
+	_, err := m.db.Exec(query, userID, newFailedLogins, lockedUntil)
+	if err != nil {
+		m.logger.Error().Err(err).Str("email", email).Msg("Failed to update failed login count")
+	}
+}
+
+// handleSuccessfulLogin resets failed login count and updates last login time
+func (m *AuthMiddleware) handleSuccessfulLogin(userID uuid.UUID, email string) {
+	query := `
+		UPDATE users 
+		SET failed_logins = 0, locked_until = NULL, last_login_at = NOW(), updated_at = NOW()
+		WHERE id = $1`
+		
+	_, err := m.db.Exec(query, userID)
+	if err != nil {
+		m.logger.Error().Err(err).Str("email", email).Msg("Failed to update successful login")
+	} else {
+		m.logger.Info().Str("email", email).Msg("Successful login")
+	}
 }
 
 func (m *AuthMiddleware) generateTokens(userID, username string, roles []string) (string, string, error) {

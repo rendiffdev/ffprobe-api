@@ -3,6 +3,9 @@
 
 BEGIN;
 
+-- Create comprehensive quality metrics tables
+-- Migration 001 was updated to not create these tables to avoid conflicts
+
 -- Create quality_metrics table for overall quality analysis results
 CREATE TABLE quality_metrics (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

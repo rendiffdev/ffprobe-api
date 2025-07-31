@@ -103,8 +103,11 @@ func (rl *RateLimitMiddleware) RateLimit() gin.HandlerFunc {
 			identifier = "global"
 		}
 
-		// Check rate limits
-		if !rl.checkRateLimit(identifier) {
+		// Adjust limits based on user roles
+		limits := rl.getLimitsForRole(c)
+
+		// Check rate limits with role-based limits
+		if !rl.checkRateLimitWithLimits(identifier, limits) {
 			rl.logger.Warn().
 				Str("identifier", identifier).
 				Str("path", c.Request.URL.Path).
@@ -113,7 +116,7 @@ func (rl *RateLimitMiddleware) RateLimit() gin.HandlerFunc {
 			// Get retry after time
 			retryAfter := rl.getRetryAfter(identifier)
 			
-			c.Header("X-RateLimit-Limit", strconv.Itoa(rl.config.RequestsPerMinute))
+			c.Header("X-RateLimit-Limit", strconv.Itoa(limits.RequestsPerMinute))
 			c.Header("X-RateLimit-Remaining", "0")
 			c.Header("X-RateLimit-Reset", strconv.FormatInt(retryAfter.Unix(), 10))
 			c.Header("Retry-After", strconv.FormatInt(int64(retryAfter.Sub(time.Now()).Seconds()), 10))
@@ -128,8 +131,8 @@ func (rl *RateLimitMiddleware) RateLimit() gin.HandlerFunc {
 		}
 
 		// Add rate limit headers
-		remaining := rl.getRemainingRequests(identifier)
-		c.Header("X-RateLimit-Limit", strconv.Itoa(rl.config.RequestsPerMinute))
+		remaining := rl.getRemainingRequestsWithLimits(identifier, limits)
+		c.Header("X-RateLimit-Limit", strconv.Itoa(limits.RequestsPerMinute))
 		c.Header("X-RateLimit-Remaining", strconv.Itoa(remaining))
 		c.Header("X-RateLimit-Reset", strconv.FormatInt(rl.getResetTime(identifier).Unix(), 10))
 
@@ -391,6 +394,108 @@ func IPWhitelist(allowedIPs []string) gin.HandlerFunc {
 		
 		c.Next()
 	}
+}
+
+// RoleLimits represents rate limits for a specific role
+type RoleLimits struct {
+	RequestsPerMinute int
+	RequestsPerHour   int
+	RequestsPerDay    int
+}
+
+// getLimitsForRole returns rate limits based on user role
+func (rl *RateLimitMiddleware) getLimitsForRole(c *gin.Context) RoleLimits {
+	baseLimits := RoleLimits{
+		RequestsPerMinute: rl.config.RequestsPerMinute,
+		RequestsPerHour:   rl.config.RequestsPerHour,
+		RequestsPerDay:    rl.config.RequestsPerDay,
+	}
+
+	// Get user roles from context
+	if roles, exists := c.Get("roles"); exists {
+		if roleList, ok := roles.([]string); ok {
+			for _, role := range roleList {
+				switch role {
+				case "admin":
+					baseLimits.RequestsPerMinute = 600
+					baseLimits.RequestsPerHour = 10000
+					baseLimits.RequestsPerDay = 100000
+					return baseLimits
+				case "premium":
+					baseLimits.RequestsPerMinute = 300
+					baseLimits.RequestsPerHour = 5000
+					baseLimits.RequestsPerDay = 50000
+					return baseLimits
+				case "pro":
+					baseLimits.RequestsPerMinute = 180
+					baseLimits.RequestsPerHour = 3000
+					baseLimits.RequestsPerDay = 30000
+					return baseLimits
+				case "user":
+					baseLimits.RequestsPerMinute = 60
+					baseLimits.RequestsPerHour = 1000
+					baseLimits.RequestsPerDay = 10000
+					return baseLimits
+				}
+			}
+		}
+	}
+
+	return baseLimits
+}
+
+// checkRateLimitWithLimits checks rate limit with custom limits
+func (rl *RateLimitMiddleware) checkRateLimitWithLimits(identifier string, limits RoleLimits) bool {
+	now := time.Now()
+	key := identifier
+
+	// Check per-minute limit
+	minuteKey := fmt.Sprintf("%s:minute:%d", key, now.Unix()/60)
+	minuteCount := rl.incrementCounter(minuteKey, 60)
+	if minuteCount > limits.RequestsPerMinute {
+		return false
+	}
+
+	// Check per-hour limit
+	if limits.RequestsPerHour > 0 {
+		hourKey := fmt.Sprintf("%s:hour:%d", key, now.Unix()/3600)
+		hourCount := rl.incrementCounter(hourKey, 3600)
+		if hourCount > limits.RequestsPerHour {
+			return false
+		}
+	}
+
+	// Check per-day limit
+	if limits.RequestsPerDay > 0 {
+		dayKey := fmt.Sprintf("%s:day:%d", key, now.Unix()/86400)
+		dayCount := rl.incrementCounter(dayKey, 86400)
+		if dayCount > limits.RequestsPerDay {
+			return false
+		}
+	}
+
+	return true
+}
+
+// getRemainingRequestsWithLimits returns remaining requests for the current minute with custom limits
+func (rl *RateLimitMiddleware) getRemainingRequestsWithLimits(identifier string, limits RoleLimits) int {
+	now := time.Now()
+	minuteKey := fmt.Sprintf("%s:minute:%d", identifier, now.Unix()/60)
+	
+	rl.mu.RLock()
+	count, exists := rl.counters[minuteKey]
+	rl.mu.RUnlock()
+	
+	if !exists {
+		return limits.RequestsPerMinute
+	}
+	
+	remaining := limits.RequestsPerMinute - count
+	if remaining < 0 {
+		return 0
+	}
+	
+	return remaining
 }
 
 // DynamicRateLimit allows different limits based on user tier

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -105,46 +107,118 @@ func (w *FFprobeWorker) analyzeMedia(c *gin.Context) {
 }
 
 func (w *FFprobeWorker) executeFFprobe(ctx context.Context, filePath string, options map[string]interface{}) (map[string]interface{}, error) {
-	// This is a simplified implementation
-	// In the actual implementation, we'll use the existing FFprobe code
+	// Get ffprobe path from environment or use default
+	ffprobePath := getEnv("FFPROBE_PATH", "ffprobe")
 	
-	// For now, return a mock response to maintain functionality
-	result := map[string]interface{}{
-		"format": map[string]interface{}{
-			"filename": filePath,
-			"nb_streams": 2,
-			"format_name": "mp4,m4a,3gp,3g2,mj2",
-			"duration": "120.000000",
-			"size": "1048576",
-			"bit_rate": "1000000",
-		},
-		"streams": []map[string]interface{}{
-			{
-				"index": 0,
-				"codec_name": "h264",
-				"codec_type": "video",
-				"width": 1920,
-				"height": 1080,
-				"r_frame_rate": "30/1",
-				"duration": "120.000000",
-			},
-			{
-				"index": 1,
-				"codec_name": "aac",
-				"codec_type": "audio",
-				"sample_rate": "48000",
-				"channels": 2,
-				"duration": "120.000000",
-			},
-		},
-		"worker_info": map[string]interface{}{
-			"service": "ffprobe-worker",
-			"timestamp": time.Now().UTC(),
-			"file_path": filePath,
-		},
+	// Check if ffprobe is available
+	if _, err := exec.LookPath(ffprobePath); err != nil {
+		return nil, fmt.Errorf("ffprobe not found in PATH: %w", err)
 	}
-
+	
+	// Validate file path
+	if strings.Contains(filePath, "..") || strings.Contains(filePath, ";") || strings.Contains(filePath, "&") {
+		return nil, fmt.Errorf("invalid file path: potentially malicious characters detected")
+	}
+	
+	// Check if file exists
+	if _, err := os.Stat(filePath); err != nil {
+		return nil, fmt.Errorf("file not found: %w", err)
+	}
+	
+	// Build ffprobe command
+	args := []string{
+		"-v", "quiet",           // Suppress verbose output
+		"-print_format", "json", // Output in JSON format
+		"-show_format",          // Show format information
+		"-show_streams",         // Show stream information
+		"-show_chapters",        // Show chapter information
+		"-show_programs",        // Show program information
+		filePath,
+	}
+	
+	// Apply options if provided
+	if options != nil {
+		// Add additional options based on the options map
+		if showFrames, ok := options["show_frames"].(bool); ok && showFrames {
+			args = append(args, "-show_frames")
+		}
+		if showPackets, ok := options["show_packets"].(bool); ok && showPackets {
+			args = append(args, "-show_packets")
+		}
+		if selectStreams, ok := options["select_streams"].(string); ok && selectStreams != "" {
+			args = append(args, "-select_streams", selectStreams)
+		}
+	}
+	
+	// Create command with timeout
+	cmd := exec.CommandContext(ctx, ffprobePath, args...)
+	
+	// Set timeout if not provided by context
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, 30*time.Second)
+		defer cancel()
+		cmd = exec.CommandContext(ctx, ffprobePath, args...)
+	}
+	
+	w.logger.Debug().
+		Str("command", ffprobePath).
+		Strs("args", args).
+		Str("file_path", filePath).
+		Msg("Executing ffprobe command")
+	
+	// Execute command
+	output, err := cmd.Output()
+	if err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			w.logger.Error().
+				Err(err).
+				Str("stderr", string(exitError.Stderr)).
+				Str("file_path", filePath).
+				Msg("FFprobe command failed")
+			return nil, fmt.Errorf("ffprobe failed: %s", string(exitError.Stderr))
+		}
+		return nil, fmt.Errorf("failed to execute ffprobe: %w", err)
+	}
+	
+	// Parse JSON output
+	var result map[string]interface{}
+	if err := json.Unmarshal(output, &result); err != nil {
+		w.logger.Error().Err(err).Str("output", string(output)).Msg("Failed to parse ffprobe output")
+		return nil, fmt.Errorf("failed to parse ffprobe output: %w", err)
+	}
+	
+	// Add worker metadata
+	result["worker_info"] = map[string]interface{}{
+		"service":    "ffprobe-worker",
+		"timestamp":  time.Now().UTC(),
+		"file_path":  filePath,
+		"ffprobe_version": w.getFFprobeVersion(),
+	}
+	
 	return result, nil
+}
+
+// getFFprobeVersion gets the ffprobe version
+func (w *FFprobeWorker) getFFprobeVersion() string {
+	ffprobePath := getEnv("FFPROBE_PATH", "ffprobe")
+	cmd := exec.Command(ffprobePath, "-version")
+	
+	output, err := cmd.Output()
+	if err != nil {
+		return "unknown"
+	}
+	
+	// Extract version from first line
+	lines := strings.Split(string(output), "\n")
+	if len(lines) > 0 {
+		parts := strings.Fields(lines[0])
+		if len(parts) >= 3 {
+			return parts[2]
+		}
+	}
+	
+	return "unknown"
 }
 
 func getEnv(key, defaultValue string) string {
