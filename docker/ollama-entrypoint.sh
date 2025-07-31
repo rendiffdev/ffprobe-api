@@ -35,7 +35,7 @@ if wait_for_ollama; then
     echo "🎯 Ollama is running, checking for models..."
     
     # Check if the model exists
-    MODEL_NAME="${OLLAMA_MODEL:-mistral:7b}"
+    MODEL_NAME="${OLLAMA_MODEL:-phi3:mini}"
     echo "🔍 Checking for model: $MODEL_NAME"
     
     if ! ollama list | grep -q "$MODEL_NAME"; then
@@ -49,18 +49,15 @@ if wait_for_ollama; then
             echo "❌ Failed to download model $MODEL_NAME"
             echo "🔄 Trying to download a smaller fallback model..."
             
-            # Try fallback models
-            FALLBACK_MODELS=("qwen2:1.5b" "phi3:mini" "gemma2:2b")
-            for fallback in "${FALLBACK_MODELS[@]}"; do
-                echo "📥 Trying fallback model: $fallback"
-                if ollama pull "$fallback"; then
-                    echo "✅ Fallback model $fallback downloaded successfully!"
-                    echo "⚙️  Update your OLLAMA_MODEL environment variable to: $fallback"
-                    break
-                else
-                    echo "❌ Failed to download fallback model $fallback"
-                fi
-            done
+            # Try phi3:mini as fallback
+            echo "📥 Trying fallback model: phi3:mini"
+            if ollama pull "phi3:mini"; then
+                echo "✅ Fallback model phi3:mini downloaded successfully!"
+                echo "⚙️  Using phi3:mini as the default model"
+            else
+                echo "❌ Failed to download fallback model phi3:mini"
+                exit 1
+            fi
         fi
     else
         echo "✅ Model $MODEL_NAME already available!"

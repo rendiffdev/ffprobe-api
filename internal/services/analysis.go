@@ -31,29 +31,36 @@ type AnalysisOptions struct {
 
 // AnalysisService handles media file analysis operations
 type AnalysisService struct {
-	db         *database.DB
-	repo       database.Repository
-	ffprobe    *ffmpeg.FFprobe
-	llmService *LLMService
-	logger     zerolog.Logger
-	tempDir    string
+	db           *database.DB
+	repo         database.Repository
+	ffprobe      *ffmpeg.FFprobe
+	llmService   *LLMService
+	workerClient *WorkerClient
+	logger       zerolog.Logger
+	tempDir      string
 }
 
 // NewAnalysisService creates a new analysis service
 func NewAnalysisService(db *database.DB, ffprobePath string, logger zerolog.Logger) *AnalysisService {
 	return &AnalysisService{
-		db:         db,
-		repo:       database.NewRepository(db),
-		ffprobe:    ffmpeg.NewFFprobe(ffprobePath, logger),
-		llmService: nil, // Will be set via SetLLMService
-		logger:     logger,
-		tempDir:    "/tmp", // Default temp directory
+		db:           db,
+		repo:         database.NewRepository(db),
+		ffprobe:      ffmpeg.NewFFprobe(ffprobePath, logger),
+		llmService:   nil, // Will be set via SetLLMService
+		workerClient: nil, // Will be set via SetWorkerClient
+		logger:       logger,
+		tempDir:      "/tmp", // Default temp directory
 	}
 }
 
 // SetLLMService sets the LLM service for automatic report generation
 func (s *AnalysisService) SetLLMService(llmService *LLMService) {
 	s.llmService = llmService
+}
+
+// SetWorkerClient sets the worker client for distributed processing
+func (s *AnalysisService) SetWorkerClient(workerClient *WorkerClient) {
+	s.workerClient = workerClient
 }
 
 // SetTempDirectory sets the temporary directory for file processing
@@ -144,8 +151,41 @@ func (s *AnalysisService) ProcessAnalysis(ctx context.Context, analysisID uuid.U
 		options.Input = analysis.FilePath
 	}
 
-	// Execute ffprobe
-	result, err := s.ffprobe.Probe(ctx, options)
+	// Execute ffprobe - use worker if available, fallback to local
+	var result *ffmpeg.FFprobeResult
+	var err error
+	
+	if s.workerClient != nil {
+		// Try worker service first
+		workerData, workerErr := s.workerClient.AnalyzeWithWorker(ctx, analysis.FilePath, map[string]interface{}{
+			"show_format":      options.ShowFormat,
+			"show_streams":     options.ShowStreams,
+			"show_chapters":    options.ShowChapters,
+			"show_programs":    options.ShowPrograms,
+			"show_private_data": options.ShowPrivateData,
+			"count_frames":     options.CountFrames,
+			"count_packets":    options.CountPackets,
+		})
+		
+		if workerErr != nil {
+			s.logger.Warn().Err(workerErr).Msg("Worker service failed, falling back to local processing")
+			// Fallback to local processing
+			result, err = s.ffprobe.Probe(ctx, options)
+		} else {
+			// Convert worker data to FFprobeResult format
+			result = &ffmpeg.FFprobeResult{
+				Format:   workerData["format"],
+				Streams:  convertToStreams(workerData["streams"]),
+				Chapters: convertToChapters(workerData["chapters"]),
+				Programs: convertToPrograms(workerData["programs"]),
+				ExecutionTime: time.Second, // Worker response time handled separately
+			}
+		}
+	} else {
+		// Local processing
+		result, err = s.ffprobe.Probe(ctx, options)
+	}
+	
 	if err != nil {
 		s.updateAnalysisError(ctx, analysisID, fmt.Sprintf("FFprobe execution failed: %v", err))
 		return fmt.Errorf("ffprobe execution failed: %w", err)
@@ -175,57 +215,79 @@ func (s *AnalysisService) ProcessAnalysis(ctx context.Context, analysisID uuid.U
 		Dur("execution_time", result.ExecutionTime).
 		Msg("Analysis completed successfully")
 
-	// Generate LLM report automatically (if LLM service is available)
-	if s.llmService != nil {
-		go s.generateLLMReport(ctx, analysis)
+	// Generate AI analysis report as part of standard analysis (synchronous)
+	if s.workerClient != nil {
+		s.logger.Info().Str("analysis_id", analysis.ID.String()).Msg("Generating AI analysis report via worker")
+		
+		// Create timeout context for AI generation
+		llmCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+		defer cancel()
+		
+		// Convert FFprobeData to map for worker
+		analysisMap := make(map[string]interface{})
+		if ffprobeData.Format != nil {
+			json.Unmarshal(ffprobeData.Format, &analysisMap)
+		}
+		
+		report, err := s.workerClient.GenerateAnalysisWithLLM(llmCtx, analysisMap)
+		if err != nil {
+			s.logger.Warn().
+				Err(err).
+				Str("analysis_id", analysis.ID.String()).
+				Msg("Failed to generate AI analysis report via worker - continuing without AI insights")
+		} else if report != "" {
+			// Store the AI report
+			analysis.LLMReport = &report
+			analysis.UpdatedAt = time.Now()
+			
+			if err := s.updateAnalysisLLMReport(llmCtx, analysis.ID, report); err != nil {
+				s.logger.Error().
+					Err(err).
+					Str("analysis_id", analysis.ID.String()).
+					Msg("Failed to save AI analysis report")
+			} else {
+				s.logger.Info().
+					Str("analysis_id", analysis.ID.String()).
+					Int("report_length", len(report)).
+					Msg("AI analysis report integrated successfully via worker")
+			}
+		}
+	} else if s.llmService != nil {
+		// Fallback to local LLM service
+		s.logger.Info().Str("analysis_id", analysis.ID.String()).Msg("Generating AI analysis report locally")
+		
+		llmCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+		defer cancel()
+		
+		report, err := s.llmService.GenerateAnalysis(llmCtx, analysis)
+		if err != nil {
+			s.logger.Warn().
+				Err(err).
+				Str("analysis_id", analysis.ID.String()).
+				Msg("Failed to generate AI analysis report - continuing without AI insights")
+		} else {
+			analysis.LLMReport = &report
+			analysis.UpdatedAt = time.Now()
+			
+			if err := s.updateAnalysisLLMReport(llmCtx, analysis.ID, report); err != nil {
+				s.logger.Error().
+					Err(err).
+					Str("analysis_id", analysis.ID.String()).
+					Msg("Failed to save AI analysis report")
+			} else {
+				s.logger.Info().
+					Str("analysis_id", analysis.ID.String()).
+					Int("report_length", len(report)).
+					Msg("AI analysis report integrated successfully")
+			}
+		}
+	} else {
+		s.logger.Warn().Str("analysis_id", analysis.ID.String()).Msg("AI service not available - analysis will not include professional insights")
 	}
 
 	return nil
 }
 
-// generateLLMReport generates an AI analysis report automatically after FFprobe analysis
-func (s *AnalysisService) generateLLMReport(ctx context.Context, analysis *models.Analysis) {
-	if s.llmService == nil {
-		s.logger.Debug().Str("analysis_id", analysis.ID.String()).Msg("LLM service not available, skipping report generation")
-		return
-	}
-
-	s.logger.Info().Str("analysis_id", analysis.ID.String()).Msg("Generating AI analysis report")
-
-	// Create a timeout context for LLM generation
-	llmCtx, cancel := context.WithTimeout(ctx, 5*time.Minute)
-	defer cancel()
-
-	// Generate analysis report
-	report, err := s.llmService.GenerateAnalysis(llmCtx, analysis)
-	if err != nil {
-		s.logger.Warn().
-			Err(err).
-			Str("analysis_id", analysis.ID.String()).
-			Msg("Failed to generate LLM analysis report")
-		return
-	}
-
-	// Store the report in the analysis
-	analysis.LLMReport = &report
-	analysis.UpdatedAt = time.Now()
-
-	// Update the analysis with the LLM report
-	// Note: This would require adding LLMReport field to the models.Analysis struct
-	// and updating the repository to save it
-	if err := s.updateAnalysisLLMReport(llmCtx, analysis.ID, report); err != nil {
-		s.logger.Error().
-			Err(err).
-			Str("analysis_id", analysis.ID.String()).
-			Msg("Failed to save LLM analysis report")
-		return
-	}
-
-	s.logger.Info().
-		Str("analysis_id", analysis.ID.String()).
-		Int("report_length", len(report)).
-		Msg("AI analysis report generated and saved successfully")
-}
 
 // updateAnalysisLLMReport updates the analysis with the LLM report
 func (s *AnalysisService) updateAnalysisLLMReport(ctx context.Context, analysisID uuid.UUID, report string) error {
@@ -509,9 +571,19 @@ func (s *AnalysisService) AnalyzeMedia(ctx context.Context, analysisID string, o
 	// Start processing
 	go func() {
 		if err := s.ProcessAnalysis(ctx, id, &ffmpeg.FFprobeOptions{
-			ShowFormat:  true,
-			ShowStreams: true,
-			Args:        opts.FFprobeArgs,
+			ShowFormat:      true,
+			ShowStreams:     true,
+			ShowChapters:    true,
+			ShowPrograms:    true,
+			ShowPrivateData: true,
+			CountFrames:     true,
+			CountPackets:    true,
+			ProbeSize:       50 * 1024 * 1024, // 50MB probe size for better analysis
+			AnalyzeDuration: 10 * 1000000,     // 10 seconds analysis duration
+			OutputFormat:    ffmpeg.OutputJSON,
+			PrettyPrint:     true,
+			HideBanner:      true,
+			Args:            opts.FFprobeArgs,
 		}); err != nil {
 			s.logger.Error().Err(err).Str("analysis_id", analysisID).Msg("Failed to process analysis")
 		}
@@ -543,4 +615,35 @@ func detectSourceType(source string) string {
 	default:
 		return "file"
 	}
+}
+
+// Helper functions for converting worker data to expected formats
+func convertToStreams(data interface{}) []interface{} {
+	if data == nil {
+		return nil
+	}
+	if streams, ok := data.([]interface{}); ok {
+		return streams
+	}
+	return nil
+}
+
+func convertToChapters(data interface{}) []interface{} {
+	if data == nil {
+		return nil
+	}
+	if chapters, ok := data.([]interface{}); ok {
+		return chapters
+	}
+	return nil
+}
+
+func convertToPrograms(data interface{}) []interface{} {
+	if data == nil {
+		return nil
+	}
+	if programs, ok := data.([]interface{}); ok {
+		return programs
+	}
+	return nil
 }

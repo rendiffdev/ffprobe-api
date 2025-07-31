@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +14,7 @@ import (
 	"github.com/rendiffdev/ffprobe-api/internal/hls"
 	"github.com/rendiffdev/ffprobe-api/internal/middleware"
 	"github.com/rendiffdev/ffprobe-api/internal/quality"
+	"github.com/rendiffdev/ffprobe-api/internal/repositories"
 	"github.com/rendiffdev/ffprobe-api/internal/services"
 	"github.com/rendiffdev/ffprobe-api/internal/storage"
 )
@@ -20,25 +22,25 @@ import (
 
 // Router contains all the route handlers
 type Router struct {
-	probeHandler     *handlers.ProbeHandler
-	uploadHandler    *handlers.UploadHandler
-	batchHandler     *handlers.BatchHandler
-	streamHandler    *handlers.StreamHandler
-	authHandler      *handlers.AuthHandler
-	qualityHandler   *handlers.QualityHandler
-	hlsHandler       *handlers.HLSHandler
-	reportHandler    *handlers.ReportHandler
-	genaiHandler     *handlers.GenAIHandler
-	compareHandler   *handlers.CompareHandler
-	rawHandler       *handlers.RawHandler
-	storageHandler   *handlers.StorageHandler
-	authMiddleware   *middleware.AuthMiddleware
-	rateLimiter      *middleware.RateLimitMiddleware
-	security         *middleware.SecurityMiddleware
-	monitoring       *middleware.MonitoringMiddleware
-	logger           zerolog.Logger
-	db              *database.DB
-	config          *config.Config
+	probeHandler      *handlers.ProbeHandler
+	uploadHandler     *handlers.UploadHandler
+	batchHandler      *handlers.BatchHandler
+	streamHandler     *handlers.StreamHandler
+	authHandler       *handlers.AuthHandler
+	qualityHandler    *handlers.QualityHandler
+	hlsHandler        *handlers.HLSHandler
+	reportHandler     *handlers.ReportHandler
+	compareHandler    *handlers.CompareHandler
+	comparisonHandler *handlers.ComparisonHandler
+	rawHandler        *handlers.RawHandler
+	storageHandler    *handlers.StorageHandler
+	authMiddleware    *middleware.AuthMiddleware
+	rateLimiter       *middleware.RateLimitMiddleware
+	security          *middleware.SecurityMiddleware
+	monitoring        *middleware.MonitoringMiddleware
+	logger            zerolog.Logger
+	db               *database.DB
+	config           *config.Config
 }
 
 // NewRouter creates a new router with all handlers
@@ -61,7 +63,25 @@ func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Rout
 	// Create LLM service
 	llmService := services.NewLLMService(cfg, logger)
 	
-	// Set LLM service on analysis service for automatic report generation
+	// Create comparison repositories and service
+	analysisRepo := repositories.NewPostgreSQLAnalysisRepository(db.DB)
+	comparisonRepo := repositories.NewPostgreSQLComparisonRepository(db.DB)
+	comparisonService := services.NewComparisonService(comparisonRepo, analysisRepo, llmService)
+	
+	// Create worker client for distributed processing
+	ffprobeWorkerURL := os.Getenv("FFPROBE_WORKER_URL")
+	llmServiceURL := os.Getenv("LLM_SERVICE_URL")
+	
+	if ffprobeWorkerURL != "" || llmServiceURL != "" {
+		workerClient := services.NewWorkerClient(ffprobeWorkerURL, llmServiceURL, logger)
+		analysisService.SetWorkerClient(workerClient)
+		logger.Info().
+			Str("ffprobe_worker", ffprobeWorkerURL).
+			Str("llm_service", llmServiceURL).
+			Msg("Worker services configured")
+	}
+	
+	// Set LLM service on analysis service for automatic report generation (fallback)
 	analysisService.SetLLMService(llmService)
 	
 	// Create storage service
@@ -121,23 +141,23 @@ func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Rout
 			handler.SetMaxFileSize(cfg.MaxFileSize)
 			return handler
 		}(),
-		batchHandler:   handlers.NewBatchHandler(analysisService, logger),
-		streamHandler:  handlers.NewStreamHandler(analysisService, logger),
-		authHandler:    handlers.NewAuthHandler(authMiddleware, logger),
-		qualityHandler: handlers.NewQualityHandler(qualityService),
-		hlsHandler:     handlers.NewHLSHandler(analysisService, hlsService, logger),
-		reportHandler:  handlers.NewReportHandler(reportService, logger),
-		genaiHandler:   handlers.NewGenAIHandler(analysisService, llmService, logger),
-		compareHandler: handlers.NewCompareHandler(qualityService, logger),
-		rawHandler:     handlers.NewRawHandler(analysisService, logger),
-		storageHandler: handlers.NewStorageHandler(storageService, logger),
-		authMiddleware: authMiddleware,
-		rateLimiter:    rateLimiter,
-		security:       security,
-		monitoring:     monitoring,
-		logger:         logger,
-		db:            db,
-		config:        cfg,
+		batchHandler:      handlers.NewBatchHandler(analysisService, logger),
+		streamHandler:     handlers.NewStreamHandler(analysisService, logger),
+		authHandler:       handlers.NewAuthHandler(authMiddleware, logger),
+		qualityHandler:    handlers.NewQualityHandler(qualityService),
+		hlsHandler:        handlers.NewHLSHandler(analysisService, hlsService, logger),
+		reportHandler:     handlers.NewReportHandler(reportService, logger),
+		compareHandler:    handlers.NewCompareHandler(qualityService, logger),
+		comparisonHandler: handlers.NewComparisonHandler(comparisonService),
+		rawHandler:        handlers.NewRawHandler(analysisService, logger),
+		storageHandler:    handlers.NewStorageHandler(storageService, logger),
+		authMiddleware:    authMiddleware,
+		rateLimiter:       rateLimiter,
+		security:          security,
+		monitoring:        monitoring,
+		logger:            logger,
+		db:               db,
+		config:           cfg,
 	}
 }
 
@@ -191,8 +211,6 @@ func (r *Router) SetupRoutes() *gin.Engine {
 			authMiddleware = func(c *gin.Context) { c.Next() }
 		}
 
-		// Special GenAI endpoints (require auth but separate from other groups)
-		v1.POST("/ask", authMiddleware, r.genaiHandler.AskQuestion)
 
 		// Apply authentication to protected routes
 		protected := v1.Group("", authMiddleware)
@@ -289,14 +307,16 @@ func (r *Router) SetupRoutes() *gin.Engine {
 				quality.GET("/thresholds", r.qualityHandler.GetQualityThresholds)
 			}
 
-			// GenAI endpoints
-			genai := protected.Group("/genai")
+			// Video comparison endpoints
+			comparisons := protected.Group("/comparisons")
 			{
-				genai.POST("/analysis", r.genaiHandler.GenerateAnalysis)
-				genai.GET("/quality-insights/:analysis_id", r.genaiHandler.GenerateQualityInsights)
-				genai.GET("/health", r.genaiHandler.GetLLMHealth)
-				genai.POST("/pull-model", r.genaiHandler.PullModel)
+				comparisons.POST("", r.comparisonHandler.CreateComparison)
+				comparisons.GET("/:id", r.comparisonHandler.GetComparison)
+				comparisons.GET("", r.comparisonHandler.ListComparisons)
+				comparisons.POST("/quick", r.comparisonHandler.CompareVideos)
+				comparisons.GET("/:id/report", r.comparisonHandler.GetComparisonReport)
 			}
+
 
 			// Admin-only system endpoints
 			system := protected.Group("/system")

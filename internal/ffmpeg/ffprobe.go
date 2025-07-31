@@ -149,14 +149,22 @@ func (f *FFprobe) Probe(ctx context.Context, options *FFprobeOptions) (*FFprobeR
 	return result, nil
 }
 
-// ProbeFile is a convenience method for probing a single file
+// ProbeFile is a convenience method for probing a single file with comprehensive analysis
 func (f *FFprobe) ProbeFile(ctx context.Context, filePath string) (*FFprobeResult, error) {
 	options := &FFprobeOptions{
-		Input:        filePath,
-		OutputFormat: OutputJSON,
-		ShowFormat:   true,
-		ShowStreams:  true,
-		HideBanner:   true,
+		Input:           filePath,
+		OutputFormat:    OutputJSON,
+		ShowFormat:      true,
+		ShowStreams:     true,
+		ShowChapters:    true,
+		ShowPrograms:    true,
+		ShowPrivateData: true,
+		CountFrames:     true,
+		CountPackets:    true,
+		ProbeSize:       50 * 1024 * 1024, // 50MB probe size for detailed analysis
+		AnalyzeDuration: 10 * 1000000,     // 10 seconds analysis duration
+		PrettyPrint:     true,
+		HideBanner:      true,
 	}
 
 	return f.Probe(ctx, options)

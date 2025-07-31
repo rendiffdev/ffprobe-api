@@ -1,6 +1,6 @@
 # 📚 FFprobe API Documentation
 
-Welcome to the comprehensive documentation for the FFprobe API - an enterprise-grade media analysis service.
+Welcome to the comprehensive documentation for the FFprobe API. This directory contains everything you need to successfully deploy, configure, and use the API.
 
 ## 🗂️ Documentation Structure
 
@@ -74,8 +74,9 @@ Step-by-step guides and practical examples.
 - **New Examples**: Contribute tutorials in the `tutorials/` directory
 
 ### Technical Support
-- **Bug Reports**: [GitHub Issues](https://github.com/your-org/ffprobe-api/issues)
-- **Feature Requests**: [GitHub Discussions](https://github.com/your-org/ffprobe-api/discussions)
+- **Bug Reports**: [GitHub Issues](https://github.com/rendiffdev/ffprobe-api/issues)
+- **Feature Requests**: [GitHub Discussions](https://github.com/rendiffdev/ffprobe-api/discussions)
+- **Contact**: [dev@rendiff.dev](mailto:dev@rendiff.dev)
 - **Community Chat**: [Discord/Slack Channel]
 
 ## 📝 Contributing to Documentation

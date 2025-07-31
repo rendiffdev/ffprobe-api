@@ -9,6 +9,7 @@ Thank you for your interest in contributing to FFprobe API! This document provid
 
 1. **Fork** the repository
 2. **Clone** your fork: `git clone https://github.com/YOUR-USERNAME/ffprobe-api.git`
+3. **Add upstream**: `git remote add upstream https://github.com/rendiffdev/ffprobe-api.git`
 3. **Read** [Technical Guidelines](CONTRIBUTOR-GUIDELINES.md) for detailed setup instructions
 4. **Install** dependencies: `docker compose up -d` 
 5. **Run** tests: `go test ./...`
@@ -26,7 +27,7 @@ Thank you for your interest in contributing to FFprobe API! This document provid
 
 ```bash
 # Clone and setup
-git clone https://github.com/your-username/ffprobe-api.git
+git clone https://github.com/rendiffdev/ffprobe-api.git
 cd ffprobe-api
 
 # Start development environment (includes PostgreSQL, Redis, FFmpeg)
@@ -45,10 +46,10 @@ For detailed setup instructions, see [Technical Guidelines](CONTRIBUTOR-GUIDELIN
 
 ### 1. Find Something to Work On
 
-- Check [Good First Issues](https://github.com/your-org/ffprobe-api/labels/good%20first%20issue) for beginners
-- Browse [Help Wanted](https://github.com/your-org/ffprobe-api/labels/help%20wanted) issues
-- Review our [Project Roadmap](https://github.com/your-org/ffprobe-api/projects)
-- Propose new features via [GitHub Discussions](https://github.com/your-org/ffprobe-api/discussions)
+- Check [Good First Issues](https://github.com/rendiffdev/ffprobe-api/labels/good%20first%20issue) for beginners
+- Browse [Help Wanted](https://github.com/rendiffdev/ffprobe-api/labels/help%20wanted) issues
+- Review our [Project Roadmap](https://github.com/rendiffdev/ffprobe-api/projects)
+- Propose new features via [GitHub Discussions](https://github.com/rendiffdev/ffprobe-api/discussions)
 
 ### 2. Create a Feature Branch
 
@@ -182,7 +183,7 @@ For detailed security guidelines, see [Security Guidelines](CONTRIBUTOR-GUIDELIN
 
 ### Before Reporting
 
-1. Check [existing issues](https://github.com/your-org/ffprobe-api/issues)
+1. Check [existing issues](https://github.com/rendiffdev/ffprobe-api/issues)
 2. Ensure you're using the latest version
 3. Test in a clean environment (Docker)
 
@@ -216,8 +217,8 @@ Include relevant log output (remove sensitive information).
 
 ### Before Requesting
 
-1. Check [existing discussions](https://github.com/your-org/ffprobe-api/discussions)
-2. Review our [roadmap](https://github.com/your-org/ffprobe-api/projects)
+1. Check [existing discussions](https://github.com/rendiffdev/ffprobe-api/discussions)
+2. Review our [roadmap](https://github.com/rendiffdev/ffprobe-api/projects)
 3. Consider if this fits the project scope
 
 ### Feature Request Template
@@ -339,9 +340,9 @@ We follow the [Contributor Covenant](https://www.contributor-covenant.org/). In 
 ### 🆕 Good First Issues
 
 Look for issues labeled with:
-- [`good first issue`](https://github.com/your-org/ffprobe-api/labels/good%20first%20issue)
-- [`help wanted`](https://github.com/your-org/ffprobe-api/labels/help%20wanted)
-- [`documentation`](https://github.com/your-org/ffprobe-api/labels/documentation)
+- [`good first issue`](https://github.com/rendiffdev/ffprobe-api/labels/good%20first%20issue)
+- [`help wanted`](https://github.com/rendiffdev/ffprobe-api/labels/help%20wanted)
+- [`documentation`](https://github.com/rendiffdev/ffprobe-api/labels/documentation)
 
 ## 📚 Resources
 

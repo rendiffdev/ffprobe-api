@@ -1,0 +1,77 @@
+# Grafana Cloud Integration Configuration
+# Alternative to self-hosted Grafana instance
+
+version: '3.8'
+
+services:
+  # Prometheus configured for Grafana Cloud
+  prometheus:
+    image: prom/prometheus:v2.49.1
+    container_name: ffprobe-prometheus-cloud
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus-cloud.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=7d'  # Shorter retention for cloud
+      - '--web.enable-remote-write-receiver'
+    environment:
+      - GRAFANA_CLOUD_URL=${GRAFANA_CLOUD_URL}
+      - GRAFANA_CLOUD_USERNAME=${GRAFANA_CLOUD_USERNAME}
+      - GRAFANA_CLOUD_API_KEY=${GRAFANA_CLOUD_API_KEY}
+    restart: unless-stopped
+    networks:
+      - ffprobe-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  # Grafana Agent for enhanced cloud integration
+  grafana-agent:
+    image: grafana/agent:v0.38.1
+    container_name: ffprobe-grafana-agent
+    volumes:
+      - ./docker/grafana-agent.yml:/etc/grafana-agent.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+    environment:
+      - HOSTNAME=${HOSTNAME:-ffprobe-api}
+      - GRAFANA_CLOUD_URL=${GRAFANA_CLOUD_URL}
+      - GRAFANA_CLOUD_USERNAME=${GRAFANA_CLOUD_USERNAME}
+      - GRAFANA_CLOUD_API_KEY=${GRAFANA_CLOUD_API_KEY}
+      - LOKI_URL=${LOKI_URL}
+      - LOKI_USERNAME=${LOKI_USERNAME}
+      - LOKI_PASSWORD=${LOKI_PASSWORD}
+    command:
+      - -config.file=/etc/grafana-agent.yml
+      - -server.http.address=0.0.0.0:8080
+    ports:
+      - "8081:8080"  # Agent UI
+    restart: unless-stopped
+    networks:
+      - ffprobe-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+volumes:
+  prometheus_data:
+    driver: local
+
+networks:
+  ffprobe-network:
+    external: true

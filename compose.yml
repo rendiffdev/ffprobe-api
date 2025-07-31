@@ -39,7 +39,7 @@ services:
       - RATE_LIMIT_PER_HOUR=1000
       - RATE_LIMIT_PER_DAY=10000
       - OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434}
-      - OLLAMA_MODEL=${OLLAMA_MODEL:-mistral:7b}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-phi3:mini}
       - ENABLE_LOCAL_LLM=${ENABLE_LOCAL_LLM:-true}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
     depends_on:
@@ -254,8 +254,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: 6G
-          cpus: '3.0'
+          memory: 3G
+          cpus: '2.0'
         reservations:
           memory: 2G
           cpus: '1.0'

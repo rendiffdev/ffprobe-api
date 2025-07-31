@@ -93,7 +93,10 @@ func (s *LLMService) generateWithLocalLLM(ctx context.Context, prompt string) (s
 			"top_p":          0.9,
 			"top_k":          40,
 			"repeat_penalty": 1.1,
-			"num_predict":    1000,
+			"num_predict":    1500,    // Increased for comprehensive analysis
+			"num_ctx":        2048,    // Context window size
+			"num_batch":      8,       // Batch size for prompt processing
+			"num_thread":     4,       // CPU threads to use
 		},
 	}
 
@@ -228,12 +231,76 @@ func (s *LLMService) generateWithOpenRouter(ctx context.Context, prompt string) 
 func (s *LLMService) buildAnalysisPrompt(analysis *models.Analysis) string {
 	var prompt strings.Builder
 	
-	prompt.WriteString("You are an expert media analyst. Analyze the following media file information and provide a comprehensive, human-readable summary.\n\n")
-	prompt.WriteString("Focus on:\n")
-	prompt.WriteString("- Key characteristics and quality\n")
-	prompt.WriteString("- Technical specifications\n")
-	prompt.WriteString("- Compatibility and usage recommendations\n")
-	prompt.WriteString("- Any potential issues or noteworthy aspects\n\n")
+	prompt.WriteString("You are a senior video engineer and media processing expert working in a studio-quality post-production environment.\n\n")
+	prompt.WriteString("Analyze the following FFprobe JSON output and provide a highly detailed and professional summary report.\n\n")
+	prompt.WriteString("Break your response into the following structured sections:\n\n")
+	prompt.WriteString("---\n\n")
+	prompt.WriteString("🎬 1. **Basic Media Overview**\n")
+	prompt.WriteString("- File name or container format (e.g., MP4, MKV, MOV)\n")
+	prompt.WriteString("- Duration (in HH:MM:SS)\n")
+	prompt.WriteString("- Overall file size (if present)\n")
+	prompt.WriteString("- Bitrate (overall, and per stream if applicable)\n")
+	prompt.WriteString("- Number and types of streams (video, audio, subtitle, data)\n\n")
+	prompt.WriteString("---\n\n")
+	prompt.WriteString("📺 2. **Video Stream(s) Details**\n")
+	prompt.WriteString("- Codec name and profile (e.g., H.264 High@L4.1)\n")
+	prompt.WriteString("- Resolution (width × height)\n")
+	prompt.WriteString("- Aspect ratio (including SAR/DAR if available)\n")
+	prompt.WriteString("- Frame rate (FPS, mention if CFR or VFR)\n")
+	prompt.WriteString("- Bitrate of video stream\n")
+	prompt.WriteString("- Scan type (progressive/interlaced)\n")
+	prompt.WriteString("- GOP structure (if detectable)\n")
+	prompt.WriteString("- Bit depth and color information (color primaries, transfer characteristics, matrix)\n")
+	prompt.WriteString("- Hardware compatibility (e.g., playback issues on low-end devices, 4K support)\n\n")
+	prompt.WriteString("---\n\n")
+	prompt.WriteString("🎧 3. **Audio Stream(s) Details**\n")
+	prompt.WriteString("- Codec name (e.g., AAC, AC3, Opus, DTS)\n")
+	prompt.WriteString("- Sample rate and bit depth\n")
+	prompt.WriteString("- Number of channels (e.g., mono, stereo, 5.1)\n")
+	prompt.WriteString("- Language (if tagged)\n")
+	prompt.WriteString("- Bitrate\n")
+	prompt.WriteString("- Compression profile\n")
+	prompt.WriteString("- Delivery suitability (e.g., for OTT, broadcast, DCP)\n\n")
+	prompt.WriteString("---\n\n")
+	prompt.WriteString("🔠 4. **Subtitle & Metadata Streams**\n")
+	prompt.WriteString("- Subtitle format (e.g., SRT, MOV_TEXT)\n")
+	prompt.WriteString("- Language(s)\n")
+	prompt.WriteString("- Closed captions vs open subtitles\n")
+	prompt.WriteString("- Any embedded timecode tracks or metadata (e.g., encoder, creation date)\n\n")
+	prompt.WriteString("---\n\n")
+	prompt.WriteString("🚧 5. **Technical Analysis and Issues**\n")
+	prompt.WriteString("- Any inconsistencies in codec/container (e.g., H.264 in MKV)\n")
+	prompt.WriteString("- Missing audio or video streams\n")
+	prompt.WriteString("- Extremely high or low bitrates\n")
+	prompt.WriteString("- VFR detection or improper timebase\n")
+	prompt.WriteString("- Color profile mismatch\n")
+	prompt.WriteString("- Channel layout mismatches or channel mapping issues\n")
+	prompt.WriteString("- Codec settings not suitable for delivery or archiving\n\n")
+	prompt.WriteString("---\n\n")
+	prompt.WriteString("⚙️ 6. **Recommended FFmpeg Fixes or Optimizations**\n")
+	prompt.WriteString("- Suggest FFmpeg commands to fix detected problems or re-encode for:\n")
+	prompt.WriteString("  - Web/OTT delivery\n")
+	prompt.WriteString("  - Archival/preservation\n")
+	prompt.WriteString("  - YouTube/Vimeo upload\n")
+	prompt.WriteString("  - Standard broadcast or DCP delivery\n\n")
+	prompt.WriteString("Explain each command and why it helps.\n\n")
+	prompt.WriteString("---\n\n")
+	prompt.WriteString("🧑‍💻 7. **Summary for Non-Technical Users**\n")
+	prompt.WriteString("- Translate the findings into simple language\n")
+	prompt.WriteString("- Mention if the file is:\n")
+	prompt.WriteString("  - Good for editing/post-production\n")
+	prompt.WriteString("  - Suitable for YouTube or social media\n")
+	prompt.WriteString("  - Playable on common devices\n")
+	prompt.WriteString("  - Problematic in any way\n")
+	prompt.WriteString("- Mention the quality of the audio and video in human terms (e.g., \"Stereo audio at medium quality, suitable for online use.\")\n\n")
+	prompt.WriteString("---\n\n")
+	prompt.WriteString("📦 8. **Delivery Readiness Tags**\n")
+	prompt.WriteString("- ✅ Ready for upload\n")
+	prompt.WriteString("- ⚠️ Needs optimization\n")
+	prompt.WriteString("- ❌ Not recommended for delivery\n")
+	prompt.WriteString("- Add 1-line justification per tag\n\n")
+	prompt.WriteString("---\n\n")
+	prompt.WriteString("JSON will be provided next. Parse all values and reason holistically. Be precise, professional, and use terms common in studios, broadcasting, and OTT.\n\n")
 	
 	prompt.WriteString(fmt.Sprintf("File: %s\n", analysis.FileName))
 	prompt.WriteString(fmt.Sprintf("Size: %d bytes\n", analysis.FileSize))
@@ -247,7 +314,7 @@ func (s *LLMService) buildAnalysisPrompt(analysis *models.Analysis) string {
 		prompt.WriteString("\n\n")
 	}
 	
-	prompt.WriteString("Please provide a clear, informative analysis in plain English, suitable for both technical and non-technical users.")
+	prompt.WriteString("Be comprehensive and professional. Use industry-standard terminology.")
 	
 	return prompt.String()
 }
