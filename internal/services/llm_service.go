@@ -360,6 +360,21 @@ func (s *LLMService) GenerateQualityInsights(ctx context.Context, analysis *mode
 	return response, nil
 }
 
+// GenerateResponse generates a response for a custom prompt (used by comparison service)
+func (s *LLMService) GenerateResponse(ctx context.Context, prompt string) (string, error) {
+	// Try local LLM first, then fallback to OpenRouter
+	response, err := s.generateWithLocalLLM(ctx, prompt)
+	if err != nil {
+		s.logger.Warn().Err(err).Msg("Local LLM failed, falling back to OpenRouter")
+		response, err = s.generateWithOpenRouter(ctx, prompt)
+		if err != nil {
+			return "", fmt.Errorf("both local and remote LLM failed: %w", err)
+		}
+	}
+	
+	return response, nil
+}
+
 // buildQualityInsightsPrompt creates a prompt for quality metrics analysis
 func (s *LLMService) buildQualityInsightsPrompt(analysis *models.Analysis, metrics []*models.QualityMetric) string {
 	var prompt strings.Builder

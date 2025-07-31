@@ -127,8 +127,11 @@ func (sm *SecurityMiddleware) CORS() gin.HandlerFunc {
 		if allowed {
 			if origin != "" {
 				c.Header("Access-Control-Allow-Origin", origin)
+				// Only set credentials to true for specific origins, not wildcard
+				c.Header("Access-Control-Allow-Credentials", "true")
 			} else {
 				c.Header("Access-Control-Allow-Origin", "*")
+				// Never set credentials to true with wildcard origin (security vulnerability)
 			}
 		}
 
@@ -138,8 +141,6 @@ func (sm *SecurityMiddleware) CORS() gin.HandlerFunc {
 		if len(sm.config.ExposeHeaders) > 0 {
 			c.Header("Access-Control-Expose-Headers", strings.Join(sm.config.ExposeHeaders, ", "))
 		}
-
-		c.Header("Access-Control-Allow-Credentials", "true")
 		
 		if sm.config.MaxAge > 0 {
 			c.Header("Access-Control-Max-Age", fmt.Sprintf("%d", sm.config.MaxAge))

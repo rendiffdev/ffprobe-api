@@ -49,15 +49,23 @@ echo "ENABLE_AUTH=true" >> .env
 
 ### Step 4: Test Service Startup
 
+Choose your deployment option:
+
 ```bash
-# Start services in background
-docker-compose up -d
+# Option 1: Simple deployment (recommended for testing)
+docker compose -f compose.simple.yml up -d
+
+# Option 2: Full development setup
+docker compose -f compose.yml -f compose.dev.yml up -d
+
+# Option 3: Production setup
+docker compose -f compose.yml -f compose.production.yml up -d
 
 # Wait for services to start
 sleep 30
 
 # Check service status
-docker-compose ps
+docker compose ps
 ```
 
 ### Step 5: Test Health Endpoint
@@ -203,11 +211,11 @@ if [ -z "$API_KEY" ]; then
 fi
 
 echo -e "\n3. Testing Docker services..."
-if docker-compose ps | grep -q "Up"; then
+if docker compose ps | grep -q "Up"; then
     echo -e "${GREEN}✅ Services are running${NC}"
 else
-    echo -e "${YELLOW}⚠️  Starting services...${NC}"
-    docker-compose up -d
+    echo -e "${YELLOW}⚠️  Starting services (simple deployment)...${NC}"
+    docker compose -f compose.simple.yml up -d
     sleep 30
 fi
 

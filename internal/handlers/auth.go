@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	"github.com/rendiffdev/ffprobe-api/internal/middleware"
 )
@@ -89,19 +92,37 @@ func (h *AuthHandler) RefreshToken(c *gin.Context) {
 // @Failure 401 {object} ErrorResponse
 // @Router /api/v1/auth/logout [post]
 func (h *AuthHandler) Logout(c *gin.Context) {
-	// In a production system, you would:
-	// 1. Add the token to a blacklist/revocation list
-	// 2. Store revoked tokens in Redis with expiration
-	// 3. Check blacklist in JWT validation middleware
-	
 	userID := c.GetString("user_id")
 	username := c.GetString("username")
+	
+	// Extract token from Authorization header
+	token := ""
+	authHeader := c.GetHeader("Authorization")
+	if authHeader != "" && len(authHeader) > 7 && authHeader[:7] == "Bearer " {
+		token = authHeader[7:]
+	}
+	
+	// Revoke the JWT token
+	if token != "" {
+		if err := h.authMiddleware.RevokeToken(token); err != nil {
+			h.logger.Error().Err(err).
+				Str("user_id", userID).
+				Str("username", username).
+				Msg("Failed to revoke token during logout")
+			
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Logout completed but token revocation failed",
+				"status":  "warning",
+			})
+			return
+		}
+	}
 	
 	h.logger.Info().
 		Str("user_id", userID).
 		Str("username", username).
 		Str("ip", c.ClientIP()).
-		Msg("User logged out")
+		Msg("User logged out and token revoked")
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Successfully logged out",
@@ -157,18 +178,69 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 		return
 	}
 
+	// Validate passwords match
+	if req.NewPassword != req.ConfirmPassword {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error:   "Password confirmation doesn't match",
+			Details: "New password and confirmation password must be identical",
+		})
+		return
+	}
+
 	userID := c.GetString("user_id")
 	username := c.GetString("username")
 
-	// In production, you would:
-	// 1. Validate current password
-	// 2. Hash new password
-	// 3. Update password in database
-	// 4. Optionally invalidate all existing tokens
+	// Get user from database and validate current password
+	userUUID, err := uuid.Parse(userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error:   "Invalid user ID",
+			Details: err.Error(),
+		})
+		return
+	}
 
+	// Validate current password through auth middleware
+	if !h.authMiddleware.ValidateUserPassword(userUUID, req.CurrentPassword) {
+		h.logger.Warn().
+			Str("user_id", userID).
+			Str("username", username).
+			Str("ip", c.ClientIP()).
+			Msg("Invalid current password during password change")
+		
+		c.JSON(http.StatusUnauthorized, ErrorResponse{
+			Error:   "Current password is incorrect",
+			Details: "Please verify your current password",
+		})
+		return
+	}
+
+	// Hash new password
+	hashedPassword, err := h.authMiddleware.HashPassword(req.NewPassword)
+	if err != nil {
+		h.logger.Error().Err(err).Str("user_id", userID).Msg("Failed to hash new password")
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Error:   "Failed to process password change",
+			Details: "Internal server error",
+		})
+		return
+	}
+
+	// Update password in database
+	if err := h.authMiddleware.UpdateUserPassword(userUUID, hashedPassword); err != nil {
+		h.logger.Error().Err(err).Str("user_id", userID).Msg("Failed to update password in database")
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Error:   "Failed to update password",
+			Details: "Database update failed",
+		})
+		return
+	}
+
+	// Log successful password change
 	h.logger.Info().
 		Str("user_id", userID).
 		Str("username", username).
+		Str("ip", c.ClientIP()).
 		Msg("Password changed successfully")
 
 	c.JSON(http.StatusOK, gin.H{
@@ -223,13 +295,18 @@ func (h *AuthHandler) GenerateAPIKey(c *gin.Context) {
 	userID := c.GetString("user_id")
 	username := c.GetString("username")
 
-	// In production, you would:
-	// 1. Generate a secure random API key
-	// 2. Store it in database with user association
-	// 3. Return the key (only shown once)
-
-	// For demo purposes, generate a simple key
-	apiKey := "ffprobe_" + userID[:8] + "_" + generateRandomString(32)
+	// Generate a cryptographically secure API key
+	randomSuffix, err := generateSecureRandomString(16) // 16 bytes = 32 hex chars
+	if err != nil {
+		h.logger.Error().Err(err).Str("user_id", userID).Msg("Failed to generate secure API key")
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Error:   "Failed to generate API key",
+			Details: "Internal server error",
+		})
+		return
+	}
+	
+	apiKey := "ffprobe_" + userID[:8] + "_" + randomSuffix
 
 	h.logger.Info().
 		Str("user_id", userID).
@@ -342,11 +419,10 @@ type APIKeyListResponse struct {
 
 // Helper functions
 
-func generateRandomString(length int) string {
-	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[i%len(charset)] // Simple pseudo-random for demo
+func generateSecureRandomString(length int) (string, error) {
+	bytes := make([]byte, length)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
 	}
-	return string(b)
+	return hex.EncodeToString(bytes), nil
 }

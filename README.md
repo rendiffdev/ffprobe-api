@@ -33,14 +33,28 @@ docker compose up -d
 curl http://localhost:8080/health
 ```
 
+### Simple Deployment (Small/Test Organizations)
+```bash
+# Complete LLM-powered setup without monitoring overhead
+docker compose -f compose.simple.yml up -d
+
+# Verify services (includes AI/LLM status)
+curl http://localhost:8080/health
+```
+
 ### Production Deployment
 ```bash
-# Production-ready configuration
+# Production-ready configuration with Ollama LLM
 cp .env.example .env
 # Edit .env with your production values
 
-# Deploy with monitoring and scaling
 docker compose -f compose.yml -f compose.production.yml up -d
+```
+
+### Enterprise Deployment  
+```bash
+# Full monitoring stack with Prometheus/Grafana
+docker compose -f compose.yml -f compose.enterprise.yml up -d
 ```
 
 ## 🏗️ Architecture
@@ -197,13 +211,16 @@ curl -H "Authorization: Bearer your-jwt-token" \
 ### Scaling Configuration
 
 ```bash
-# Light Load (Development)
-docker compose up -d
+# Simple Setup (Small/Test Organizations) - LLM-Powered
+docker compose -f compose.simple.yml up -d
 
-# Medium Load (Production)
+# Development/Testing - Full AI Features
+docker compose -f compose.yml -f compose.dev.yml up -d
+
+# Production (Medium Load)
 docker compose -f compose.yml -f compose.production.yml up -d
 
-# Heavy Load (Enterprise)
+# Enterprise (Heavy Load + Monitoring)
 docker compose -f compose.yml -f compose.enterprise.yml up -d \
   --scale ffprobe-api=3 \
   --scale ffprobe-worker=5 \
@@ -238,7 +255,8 @@ export GRAFANA_CLOUD_URL="https://your-instance.grafana.net"
 export GRAFANA_CLOUD_USERNAME="your-username"
 export GRAFANA_CLOUD_API_KEY="your-api-key"
 
-docker compose -f compose.yml -f compose.monitoring.yml up -d
+# Monitoring is included in enterprise setup
+docker compose -f compose.yml -f compose.enterprise.yml up -d
 ```
 
 ## 🛠️ Configuration
@@ -395,9 +413,9 @@ make test-load
 - **[Quality Metrics](docs/QUALITY_METRICS.md)** - VMAF and quality analysis
 
 ### Deployment Guides
-- **[Production Deployment](docs/deployment/PRODUCTION_READINESS_CHECKLIST.md)** - Production setup checklist
-- **[Docker Configuration](docs/deployment/docker.md)** - Container deployment guide
-- **[Kubernetes Guide](docs/deployment/kubernetes.md)** - K8s deployment examples
+- **[Deployment Guide](DEPLOYMENT_GUIDE.md)** - Complete deployment options (Simple/Production/Enterprise)
+- **[Repository Structure](REPOSITORY_STRUCTURE.md)** - Complete repository organization guide
+- **[Production Readiness](PRODUCTION_AUDIT_REPORT.md)** - Security audit and production checklist
 
 ### Development
 - **[Development Setup](docs/development/SETUP.md)** - Local development environment
@@ -419,7 +437,10 @@ curl -H "Authorization: Bearer $JWT_TOKEN" http://localhost:8080/api/v1/auth/val
 
 **Database Connection Issues**
 ```bash
-# Check database health
+# For simple deployment
+docker compose -f compose.simple.yml exec postgres pg_isready
+
+# For production/enterprise
 docker compose exec postgres pg_isready
 
 # Verify connection string

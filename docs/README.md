@@ -21,7 +21,7 @@ Welcome to the comprehensive documentation for the **production-ready** FFprobe 
 | Document | Description | Audience |
 |----------|-------------|----------|
 | **[📖 Main README](../README.md)** | Complete setup and deployment guide | All Users |
-| **[✅ Production Features](PRODUCTION_READY_FEATURES.md)** | Comprehensive production readiness overview | DevOps/SRE |
+| **[🚀 Deployment Guide](../DEPLOYMENT_GUIDE.md)** | Complete deployment options (Simple/Production/Enterprise) | DevOps/SRE |
 | **[🔧 Quick Start Verification](QUICK_START_VERIFICATION.md)** | Step-by-step verification guide | Developers |
 
 ### 🔐 **Security & Authentication**

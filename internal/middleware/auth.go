@@ -16,6 +16,8 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/rs/zerolog"
 	"golang.org/x/crypto/bcrypt"
+	"github.com/go-redis/redis/v8"
+	"context"
 	"github.com/rendiffdev/ffprobe-api/internal/errors"
 )
 
@@ -31,11 +33,12 @@ type AuthConfig struct {
 type AuthMiddleware struct {
 	config AuthConfig
 	db     *sqlx.DB
+	redis  *redis.Client
 	logger zerolog.Logger
 }
 
 // NewAuthMiddleware creates a new authentication middleware
-func NewAuthMiddleware(config AuthConfig, db *sqlx.DB, logger zerolog.Logger) *AuthMiddleware {
+func NewAuthMiddleware(config AuthConfig, db *sqlx.DB, redisClient *redis.Client, logger zerolog.Logger) *AuthMiddleware {
 	if config.TokenExpiry == 0 {
 		config.TokenExpiry = 24 * time.Hour // Default 24 hours
 	}
@@ -46,6 +49,7 @@ func NewAuthMiddleware(config AuthConfig, db *sqlx.DB, logger zerolog.Logger) *A
 	return &AuthMiddleware{
 		config: config,
 		db:     db,
+		redis:  redisClient,
 		logger: logger,
 	}
 }
@@ -502,6 +506,12 @@ func (m *AuthMiddleware) generateTokens(userID, username string, roles []string)
 }
 
 func (m *AuthMiddleware) validateToken(tokenString string) (*Claims, error) {
+	// First check if token is blacklisted
+	if m.isTokenBlacklisted(tokenString) {
+		m.logger.Warn().Str("token_prefix", tokenString[:min(20, len(tokenString))]).Msg("Attempting to use blacklisted token")
+		return nil, jwt.ErrTokenInvalid
+	}
+
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, jwt.ErrSignatureInvalid
@@ -518,4 +528,153 @@ func (m *AuthMiddleware) validateToken(tokenString string) (*Claims, error) {
 	}
 	
 	return nil, jwt.ErrTokenInvalid
+}
+
+// ValidateUserPassword validates a user's password
+func (m *AuthMiddleware) ValidateUserPassword(userID uuid.UUID, password string) bool {
+	var user UserCredentials
+	query := `
+		SELECT id, email, password_hash, role, status, 
+			   COALESCE(failed_logins, 0) as failed_logins,
+			   locked_until, last_login_at
+		FROM users 
+		WHERE id = $1 AND deleted_at IS NULL`
+		
+	err := m.db.Get(&user, query, userID)
+	if err != nil {
+		m.logger.Error().Err(err).Str("user_id", userID.String()).Msg("Failed to get user for password validation")
+		return false
+	}
+	
+	// Check if account is locked
+	if user.LockedUntil != nil && user.LockedUntil.After(time.Now()) {
+		m.logger.Warn().Str("user_id", userID.String()).Msg("Password validation on locked account")
+		return false
+	}
+	
+	// Check if account is active
+	if user.Status != "active" {
+		m.logger.Warn().Str("user_id", userID.String()).Str("status", user.Status).Msg("Password validation on inactive account")
+		return false
+	}
+	
+	// Verify password
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	return err == nil
+}
+
+// HashPassword hashes a password using bcrypt
+func (m *AuthMiddleware) HashPassword(password string) (string, error) {
+	hashedBytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashedBytes), nil
+}
+
+// UpdateUserPassword updates a user's password in the database
+func (m *AuthMiddleware) UpdateUserPassword(userID uuid.UUID, hashedPassword string) error {
+	query := `
+		UPDATE users 
+		SET password_hash = $2, updated_at = NOW()
+		WHERE id = $1`
+		
+	_, err := m.db.Exec(query, userID, hashedPassword)
+	if err != nil {
+		m.logger.Error().Err(err).Str("user_id", userID.String()).Msg("Failed to update user password")
+		return err
+	}
+	
+	m.logger.Info().Str("user_id", userID.String()).Msg("User password updated successfully")
+	return nil
+}
+
+// RevokeToken adds a token to the blacklist
+func (m *AuthMiddleware) RevokeToken(tokenString string) error {
+	if m.redis == nil {
+		m.logger.Error().Msg("Redis client not available for token revocation")
+		return fmt.Errorf("token revocation service unavailable")
+	}
+
+	// Parse token to get expiration time
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return []byte(m.config.JWTSecret), nil
+	})
+
+	if err != nil {
+		m.logger.Error().Err(err).Msg("Failed to parse token for revocation")
+		return err
+	}
+
+	claims, ok := token.Claims.(*Claims)
+	if !ok {
+		return fmt.Errorf("invalid token claims")
+	}
+
+	// Calculate TTL until token expires
+	ttl := time.Until(claims.ExpiresAt.Time)
+	if ttl <= 0 {
+		// Token already expired, no need to blacklist
+		m.logger.Debug().Msg("Token already expired, skipping blacklist")
+		return nil
+	}
+
+	// Add token to blacklist with TTL
+	ctx := context.Background()
+	blacklistKey := "blacklist:token:" + claims.ID
+	err = m.redis.Set(ctx, blacklistKey, "revoked", ttl).Err()
+	if err != nil {
+		m.logger.Error().Err(err).Str("token_id", claims.ID).Msg("Failed to blacklist token")
+		return err
+	}
+
+	m.logger.Info().
+		Str("token_id", claims.ID).
+		Str("user_id", claims.UserID).
+		Dur("ttl", ttl).
+		Msg("Token successfully blacklisted")
+
+	return nil
+}
+
+// isTokenBlacklisted checks if a token is in the blacklist
+func (m *AuthMiddleware) isTokenBlacklisted(tokenString string) bool {
+	if m.redis == nil {
+		return false // If Redis is not available, don't block tokens
+	}
+
+	// Parse token to get the JTI (token ID)
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, jwt.ErrSignatureInvalid
+		}
+		return []byte(m.config.JWTSecret), nil
+	})
+
+	if err != nil {
+		return false // If we can't parse, let normal validation handle it
+	}
+
+	claims, ok := token.Claims.(*Claims)
+	if !ok {
+		return false
+	}
+
+	// Check if token is blacklisted
+	ctx := context.Background()
+	blacklistKey := "blacklist:token:" + claims.ID
+	exists := m.redis.Exists(ctx, blacklistKey).Val()
+
+	return exists > 0
+}
+
+// Helper function for minimum of two integers
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

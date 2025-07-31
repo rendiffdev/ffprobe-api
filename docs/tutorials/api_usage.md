@@ -2,12 +2,31 @@
 
 Step-by-step guide to using the FFprobe API effectively.
 
+## Prerequisites
+
+Make sure you have the API running. Choose your deployment:
+
+```bash
+# Simple deployment (recommended for testing)
+docker compose -f compose.simple.yml up -d
+
+# Production deployment
+docker compose -f compose.yml -f compose.production.yml up -d
+```
+
+Set up your API key (required for most endpoints):
+```bash
+export API_KEY="your-api-key-here"
+```
+
 ## Health Check
 
 Check if the API and ffprobe service are healthy:
 
 ```bash
 curl -X GET http://localhost:8080/health
+# Or with API key if authentication is enabled:
+curl -H "X-API-Key: $API_KEY" -X GET http://localhost:8080/health
 ```
 
 Response:

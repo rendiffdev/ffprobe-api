@@ -1,10 +1,6 @@
-# Docker Compose file for FFprobe API
-# Modern Compose specification
-# Usage: docker compose up
-# For development: docker compose -f compose.yml -f compose.dev.yml up
-# For production: docker compose -f compose.yml -f compose.prod.yml up
-
-# Note: version field is obsolete in modern Docker Compose
+# Simple Docker Compose for Small Organizations / Test Deployments
+# Lightweight setup without monitoring stack - ready to deploy
+# Usage: docker compose -f compose.simple.yml up -d
 
 services:
   # Main API service
@@ -12,7 +8,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    # container_name: ffprobe-api # Removed for production scaling
+    container_name: ffprobe-api
     ports:
       - "8080:8080"
     environment:
@@ -38,9 +34,9 @@ services:
       - RATE_LIMIT_PER_MINUTE=60
       - RATE_LIMIT_PER_HOUR=1000
       - RATE_LIMIT_PER_DAY=10000
+      - ENABLE_LOCAL_LLM=${ENABLE_LOCAL_LLM:-true}   # Enabled by default - APIs are LLM-powered
       - OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434}
       - OLLAMA_MODEL=${OLLAMA_MODEL:-phi3:mini}
-      - ENABLE_LOCAL_LLM=${ENABLE_LOCAL_LLM:-true}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
     depends_on:
       postgres:
@@ -55,27 +51,20 @@ services:
     volumes:
       - uploads_data:/app/uploads
       - reports_data:/app/reports
-      - models_data:/app/models
       - logs_data:/app/logs
       - temp_data:/app/temp
       - cache_data:/app/cache
-      - backup_data:/app/backup
     restart: unless-stopped
     networks:
       - ffprobe-network
     deploy:
       resources:
         limits:
-          memory: 8G
-          cpus: '4.0'
+          memory: 4G
+          cpus: '2.0'
         reservations:
-          memory: 2G
-          cpus: '1.0'
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
-        window: 120s
+          memory: 1G
+          cpus: '0.5'
     security_opt:
       - no-new-privileges:true
     read_only: false
@@ -157,11 +146,10 @@ services:
       - no-new-privileges:true
     user: "999:999"
 
-
-  # Ollama (Local LLM Service)
+  # Ollama (Local LLM Service) - Essential for LLM-powered APIs
   ollama:
     image: ollama/ollama:latest
-    container_name: ffprobe-ollama
+    container_name: ffprobe-ollama-simple
     ports:
       - "11434:11434"
     environment:
@@ -169,9 +157,9 @@ services:
       - OLLAMA_HOST=0.0.0.0:11434
       - OLLAMA_MODELS=${OLLAMA_MODELS_PATH:-/root/.ollama/models}
       - OLLAMA_KEEP_ALIVE=24h
-      - OLLAMA_MAX_LOADED_MODELS=2
-      - OLLAMA_NUM_PARALLEL=4
-      - OLLAMA_MAX_QUEUE=128
+      - OLLAMA_MAX_LOADED_MODELS=1
+      - OLLAMA_NUM_PARALLEL=2
+      - OLLAMA_MAX_QUEUE=64
     volumes:
       - ollama_data:/root/.ollama
       - ./docker/ollama-entrypoint.sh:/ollama-entrypoint.sh:ro
@@ -181,11 +169,11 @@ services:
     deploy:
       resources:
         limits:
-          memory: 3G
-          cpus: '2.0'
-        reservations:
           memory: 2G
           cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
     security_opt:
       - no-new-privileges:true
     healthcheck:
@@ -195,87 +183,27 @@ services:
       retries: 5
       start_period: 60s
     entrypoint: ["/ollama-entrypoint.sh"]
-    # Note: For GPU support, uncomment below and ensure nvidia-docker is installed
-    # runtime: nvidia
-    # environment:
-    #   - NVIDIA_VISIBLE_DEVICES=all
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
 
-# Named volumes for data persistence
+# Simple volumes for data persistence
 volumes:
   postgres_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${DATA_PATH:-./data}/postgres
   redis_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${DATA_PATH:-./data}/redis
   uploads_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${DATA_PATH:-./data}/uploads
   reports_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${DATA_PATH:-./data}/reports
-  models_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${DATA_PATH:-./data}/models
   logs_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${DATA_PATH:-./data}/logs
   temp_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${DATA_PATH:-./data}/temp
   cache_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${DATA_PATH:-./data}/cache
-  backup_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${DATA_PATH:-./data}/backup
   ollama_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${DATA_PATH:-./data}/ollama
 
-# Custom network for service communication
+# Simple network
 networks:
   ffprobe-network:
     driver: bridge
-    driver_opts:
-      com.docker.network.bridge.name: ffprobe-br
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
