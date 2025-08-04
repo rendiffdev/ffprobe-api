@@ -18,10 +18,12 @@ import (
 
 // FFprobe represents the ffprobe service
 type FFprobe struct {
-	binaryPath     string
-	logger         zerolog.Logger
-	defaultTimeout time.Duration
-	maxOutputSize  int64
+	binaryPath       string
+	logger           zerolog.Logger
+	defaultTimeout   time.Duration
+	maxOutputSize    int64
+	enhancedAnalyzer *EnhancedAnalyzer
+	enableContentAnalysis bool
 }
 
 // NewFFprobe creates a new FFprobe instance
@@ -31,10 +33,12 @@ func NewFFprobe(binaryPath string, logger zerolog.Logger) *FFprobe {
 	}
 
 	return &FFprobe{
-		binaryPath:     binaryPath,
-		logger:         logger,
-		defaultTimeout: 5 * time.Minute, // Default 5 minute timeout
-		maxOutputSize:  100 * 1024 * 1024, // Default 100MB output limit
+		binaryPath:            binaryPath,
+		logger:                logger,
+		defaultTimeout:        5 * time.Minute, // Default 5 minute timeout
+		maxOutputSize:         100 * 1024 * 1024, // Default 100MB output limit
+		enhancedAnalyzer:      NewEnhancedAnalyzer(),
+		enableContentAnalysis: false, // Disabled by default for performance
 	}
 }
 
@@ -46,6 +50,20 @@ func (f *FFprobe) SetDefaultTimeout(timeout time.Duration) {
 // SetMaxOutputSize sets the maximum output size limit
 func (f *FFprobe) SetMaxOutputSize(size int64) {
 	f.maxOutputSize = size
+}
+
+// EnableContentAnalysis enables content-based analysis using FFmpeg filters
+func (f *FFprobe) EnableContentAnalysis() {
+	f.enableContentAnalysis = true
+	// Replace with content-enabled analyzer
+	ffmpegPath := strings.Replace(f.binaryPath, "ffprobe", "ffmpeg", 1)
+	f.enhancedAnalyzer = NewEnhancedAnalyzerWithContentAnalysis(ffmpegPath, f.logger)
+}
+
+// DisableContentAnalysis disables content-based analysis for performance
+func (f *FFprobe) DisableContentAnalysis() {
+	f.enableContentAnalysis = false
+	f.enhancedAnalyzer = NewEnhancedAnalyzer()
 }
 
 // Probe executes ffprobe with the given options
@@ -146,6 +164,23 @@ func (f *FFprobe) Probe(ctx context.Context, options *FFprobeOptions) (*FFprobeR
 		// Don't fail on validation warnings, just log them
 	}
 
+	// Perform enhanced analysis
+	if f.enableContentAnalysis {
+		if err := f.enhancedAnalyzer.AnalyzeResultWithContent(ctx, result, options.Input); err != nil {
+			f.logger.Warn().
+				Err(err).
+				Msg("Enhanced content analysis failed")
+			// Don't fail on enhanced analysis errors, just log them
+		}
+	} else {
+		if err := f.enhancedAnalyzer.AnalyzeResult(result); err != nil {
+			f.logger.Warn().
+				Err(err).
+				Msg("Enhanced analysis failed")
+			// Don't fail on enhanced analysis errors, just log them
+		}
+	}
+
 	return result, nil
 }
 
@@ -159,12 +194,14 @@ func (f *FFprobe) ProbeFile(ctx context.Context, filePath string) (*FFprobeResul
 		ShowChapters:    true,
 		ShowPrograms:    true,
 		ShowPrivateData: true,
+		ShowFrames:      true,           // Enable frame analysis for GOP structure
 		CountFrames:     true,
 		CountPackets:    true,
 		ProbeSize:       50 * 1024 * 1024, // 50MB probe size for detailed analysis
 		AnalyzeDuration: 10 * 1000000,     // 10 seconds analysis duration
 		PrettyPrint:     true,
 		HideBanner:      true,
+		ReadIntervals:   "0%+#100",      // Analyze first 100 frames for GOP analysis
 	}
 
 	return f.Probe(ctx, options)
@@ -185,6 +222,20 @@ func (f *FFprobe) ProbeFileWithOptions(ctx context.Context, filePath string, opt
 	}
 
 	return f.Probe(ctx, options)
+}
+
+// ProbeFileWithContentAnalysis probes a file with enhanced content analysis enabled
+func (f *FFprobe) ProbeFileWithContentAnalysis(ctx context.Context, filePath string) (*FFprobeResult, error) {
+	// Temporarily enable content analysis
+	wasEnabled := f.enableContentAnalysis
+	f.EnableContentAnalysis()
+	defer func() {
+		if !wasEnabled {
+			f.DisableContentAnalysis()
+		}
+	}()
+
+	return f.ProbeFile(ctx, filePath)
 }
 
 // buildArgs constructs the command line arguments for ffprobe

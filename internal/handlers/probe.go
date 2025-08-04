@@ -38,12 +38,13 @@ func NewProbeHandler(analysisService *services.AnalysisService, reportGenerator 
 
 // ProbeFileRequest represents a request to probe a file
 type ProbeFileRequest struct {
-	FilePath       string                 `json:"file_path" binding:"required"`
-	Options        *ffmpeg.FFprobeOptions `json:"options,omitempty"`
-	Async          bool                   `json:"async,omitempty"`
-	SourceType     string                 `json:"source_type,omitempty"`
-	GenerateReports bool                  `json:"generate_reports,omitempty"`
+	FilePath        string                 `json:"file_path" binding:"required"`
+	Options         *ffmpeg.FFprobeOptions `json:"options,omitempty"`
+	Async           bool                   `json:"async,omitempty"`
+	SourceType      string                 `json:"source_type,omitempty"`
+	GenerateReports bool                   `json:"generate_reports,omitempty"`
 	ReportFormats   []string              `json:"report_formats,omitempty"`
+	ContentAnalysis bool                   `json:"content_analysis,omitempty"` // Enable advanced content analysis
 }
 
 // ProbeURLRequest represents a request to probe a URL
@@ -54,6 +55,7 @@ type ProbeURLRequest struct {
 	Timeout         int                    `json:"timeout,omitempty"` // seconds
 	GenerateReports bool                   `json:"generate_reports,omitempty"`
 	ReportFormats   []string              `json:"report_formats,omitempty"`
+	ContentAnalysis bool                   `json:"content_analysis,omitempty"` // Enable advanced content analysis
 }
 
 // ProbeResponse represents the response from a probe operation
@@ -128,8 +130,14 @@ func (h *ProbeHandler) ProbeFile(c *gin.Context) {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 			defer cancel()
 
-			if err := h.analysisService.ProcessAnalysis(ctx, analysis.ID, req.Options); err != nil {
-				h.logger.Error().Err(err).Str("analysis_id", analysis.ID.String()).Msg("Async analysis failed")
+			if req.ContentAnalysis {
+				if err := h.analysisService.ProcessAnalysisWithContent(ctx, analysis.ID, req.Options, true); err != nil {
+					h.logger.Error().Err(err).Str("analysis_id", analysis.ID.String()).Msg("Async analysis with content analysis failed")
+				}
+			} else {
+				if err := h.analysisService.ProcessAnalysis(ctx, analysis.ID, req.Options); err != nil {
+					h.logger.Error().Err(err).Str("analysis_id", analysis.ID.String()).Msg("Async analysis failed")
+				}
 			}
 		}()
 
@@ -142,10 +150,18 @@ func (h *ProbeHandler) ProbeFile(c *gin.Context) {
 	}
 
 	// Synchronous processing
-	if err := h.analysisService.ProcessAnalysis(c.Request.Context(), analysis.ID, req.Options); err != nil {
-		h.logger.Error().Err(err).Str("analysis_id", analysis.ID.String()).Msg("Analysis failed")
-		errors.InternalError(c, "Analysis failed", err.Error())
-		return
+	if req.ContentAnalysis {
+		if err := h.analysisService.ProcessAnalysisWithContent(c.Request.Context(), analysis.ID, req.Options, true); err != nil {
+			h.logger.Error().Err(err).Str("analysis_id", analysis.ID.String()).Msg("Analysis with content analysis failed")
+			errors.InternalError(c, "Analysis failed", err.Error())
+			return
+		}
+	} else {
+		if err := h.analysisService.ProcessAnalysis(c.Request.Context(), analysis.ID, req.Options); err != nil {
+			h.logger.Error().Err(err).Str("analysis_id", analysis.ID.String()).Msg("Analysis failed")
+			errors.InternalError(c, "Analysis failed", err.Error())
+			return
+		}
 	}
 
 	// Get updated analysis
@@ -249,8 +265,14 @@ func (h *ProbeHandler) ProbeURL(c *gin.Context) {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 			defer cancel()
 
-			if err := h.analysisService.ProcessAnalysis(ctx, analysis.ID, req.Options); err != nil {
-				h.logger.Error().Err(err).Str("analysis_id", analysis.ID.String()).Msg("Async URL analysis failed")
+			if req.ContentAnalysis {
+				if err := h.analysisService.ProcessAnalysisWithContent(ctx, analysis.ID, req.Options, true); err != nil {
+					h.logger.Error().Err(err).Str("analysis_id", analysis.ID.String()).Msg("Async URL analysis with content analysis failed")
+				}
+			} else {
+				if err := h.analysisService.ProcessAnalysis(ctx, analysis.ID, req.Options); err != nil {
+					h.logger.Error().Err(err).Str("analysis_id", analysis.ID.String()).Msg("Async URL analysis failed")
+				}
 			}
 		}()
 
@@ -263,10 +285,18 @@ func (h *ProbeHandler) ProbeURL(c *gin.Context) {
 	}
 
 	// Synchronous processing
-	if err := h.analysisService.ProcessAnalysis(c.Request.Context(), analysis.ID, req.Options); err != nil {
-		h.logger.Error().Err(err).Str("analysis_id", analysis.ID.String()).Msg("URL analysis failed")
-		errors.InternalError(c, "URL analysis failed", err.Error())
-		return
+	if req.ContentAnalysis {
+		if err := h.analysisService.ProcessAnalysisWithContent(c.Request.Context(), analysis.ID, req.Options, true); err != nil {
+			h.logger.Error().Err(err).Str("analysis_id", analysis.ID.String()).Msg("URL analysis with content analysis failed")
+			errors.InternalError(c, "URL analysis failed", err.Error())
+			return
+		}
+	} else {
+		if err := h.analysisService.ProcessAnalysis(c.Request.Context(), analysis.ID, req.Options); err != nil {
+			h.logger.Error().Err(err).Str("analysis_id", analysis.ID.String()).Msg("URL analysis failed")
+			errors.InternalError(c, "URL analysis failed", err.Error())
+			return
+		}
 	}
 
 	// Get updated analysis

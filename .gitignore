@@ -224,6 +224,10 @@ doc/latex/
 *.pdf
 *.html
 
+# Internal QC documentation (not for public repo)
+qc.md
+ENHANCED_ANALYSIS.md
+
 # =============================================================================
 # Cloud & Infrastructure
 # =============================================================================

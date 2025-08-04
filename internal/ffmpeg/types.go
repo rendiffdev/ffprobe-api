@@ -86,6 +86,9 @@ type FFprobeResult struct {
 	Programs   []ProgramInfo     `json:"programs,omitempty"`
 	Error      *ErrorInfo        `json:"error,omitempty"`
 
+	// Enhanced analysis data
+	EnhancedAnalysis *EnhancedAnalysis `json:"enhanced_analysis,omitempty"`
+
 	// Execution metadata
 	Command        []string      `json:"command"`
 	ExecutionTime  time.Duration `json:"execution_time"`
@@ -253,4 +256,130 @@ type ReadInterval struct {
 	Start    string `json:"start,omitempty"`    // Start time/percentage
 	End      string `json:"end,omitempty"`      // End time/percentage  
 	Duration string `json:"duration,omitempty"` // Duration
+}
+
+// EnhancedAnalysis contains additional quality control checks
+type EnhancedAnalysis struct {
+	StreamCounts    *StreamCounts    `json:"stream_counts,omitempty"`
+	VideoAnalysis   *VideoAnalysis   `json:"video_analysis,omitempty"`
+	AudioAnalysis   *AudioAnalysis   `json:"audio_analysis,omitempty"`
+	GOPAnalysis     *GOPAnalysis     `json:"gop_analysis,omitempty"`
+	FrameStatistics *FrameStatistics `json:"frame_statistics,omitempty"`
+	ContentAnalysis *ContentAnalysis `json:"content_analysis,omitempty"`
+}
+
+// StreamCounts provides detailed stream counting
+type StreamCounts struct {
+	TotalStreams     int `json:"total_streams"`
+	VideoStreams     int `json:"video_streams"`
+	AudioStreams     int `json:"audio_streams"`
+	SubtitleStreams  int `json:"subtitle_streams"`
+	DataStreams      int `json:"data_streams"`
+	AttachmentStreams int `json:"attachment_streams"`
+}
+
+// VideoAnalysis provides enhanced video analysis
+type VideoAnalysis struct {
+	ChromaSubsampling *string `json:"chroma_subsampling,omitempty"`
+	MatrixCoefficients *string `json:"matrix_coefficients,omitempty"`
+	BitRateMode       *string `json:"bit_rate_mode,omitempty"`
+	HasClosedCaptions bool    `json:"has_closed_captions"`
+}
+
+// AudioAnalysis provides enhanced audio analysis
+type AudioAnalysis struct {
+	BitRateMode *string `json:"bit_rate_mode,omitempty"`
+}
+
+// GOPAnalysis provides Group of Pictures analysis
+type GOPAnalysis struct {
+	AverageGOPSize  *float64 `json:"average_gop_size,omitempty"`
+	MaxGOPSize      *int     `json:"max_gop_size,omitempty"`
+	MinGOPSize      *int     `json:"min_gop_size,omitempty"`
+	KeyFrameCount   int      `json:"keyframe_count"`
+	TotalFrameCount int      `json:"total_frame_count"`
+	GOPPattern      *string  `json:"gop_pattern,omitempty"`
+}
+
+// FrameStatistics provides comprehensive frame-level statistics
+type FrameStatistics struct {
+	TotalFrames     int     `json:"total_frames"`
+	IFrames         int     `json:"i_frames"`
+	PFrames         int     `json:"p_frames"`
+	BFrames         int     `json:"b_frames"`
+	FrameTypes      map[string]int `json:"frame_types,omitempty"`
+	AverageFrameSize *float64 `json:"average_frame_size,omitempty"`
+	MaxFrameSize    *int64   `json:"max_frame_size,omitempty"`
+	MinFrameSize    *int64   `json:"min_frame_size,omitempty"`
+}
+
+// ContentAnalysis provides content-based quality analysis
+type ContentAnalysis struct {
+	BlackFrames     *BlackFrameAnalysis     `json:"black_frames,omitempty"`
+	FreezeFrames    *FreezeFrameAnalysis    `json:"freeze_frames,omitempty"`
+	AudioClipping   *AudioClippingAnalysis  `json:"audio_clipping,omitempty"`
+	Blockiness      *BlockinessAnalysis     `json:"blockiness,omitempty"`
+	Blurriness      *BlurrinessAnalysis     `json:"blurriness,omitempty"`
+	InterlaceInfo   *InterlaceAnalysis      `json:"interlace_info,omitempty"`
+	NoiseLevel      *NoiseAnalysis          `json:"noise_level,omitempty"`
+	LoudnessMeter   *LoudnessAnalysis       `json:"loudness_meter,omitempty"`
+}
+
+// BlackFrameAnalysis detects black or nearly black frames
+type BlackFrameAnalysis struct {
+	DetectedFrames int     `json:"detected_frames"`
+	Percentage     float64 `json:"percentage"`
+	Threshold      float64 `json:"threshold"`
+}
+
+// FreezeFrameAnalysis detects static/frozen frames
+type FreezeFrameAnalysis struct {
+	DetectedFrames int     `json:"detected_frames"`
+	Percentage     float64 `json:"percentage"`
+	Threshold      float64 `json:"threshold"`
+}
+
+// AudioClippingAnalysis detects audio clipping
+type AudioClippingAnalysis struct {
+	ClippedSamples int     `json:"clipped_samples"`
+	Percentage     float64 `json:"percentage"`
+	PeakLevel      float64 `json:"peak_level_db"`
+}
+
+// BlockinessAnalysis measures compression blockiness
+type BlockinessAnalysis struct {
+	AverageBlockiness float64 `json:"average_blockiness"`
+	MaxBlockiness     float64 `json:"max_blockiness"`
+	Threshold         float64 `json:"threshold"`
+}
+
+// BlurrinessAnalysis measures image sharpness
+type BlurrinessAnalysis struct {
+	AverageSharpness float64 `json:"average_sharpness"`
+	MinSharpness     float64 `json:"min_sharpness"`
+	BlurDetected     bool    `json:"blur_detected"`
+}
+
+// InterlaceAnalysis detects interlacing artifacts
+type InterlaceAnalysis struct {
+	InterlaceDetected bool    `json:"interlace_detected"`
+	ProgressiveFrames int     `json:"progressive_frames"`
+	InterlacedFrames  int     `json:"interlaced_frames"`
+	Confidence        float64 `json:"confidence"`
+}
+
+// NoiseAnalysis measures video noise levels
+type NoiseAnalysis struct {
+	AverageNoise float64 `json:"average_noise"`
+	MaxNoise     float64 `json:"max_noise"`
+	NoiseProfile string  `json:"noise_profile"`
+}
+
+// LoudnessAnalysis provides broadcast loudness compliance
+type LoudnessAnalysis struct {
+	IntegratedLoudness float64 `json:"integrated_loudness_lufs"`
+	LoudnessRange      float64 `json:"loudness_range_lu"`
+	TruePeak           float64 `json:"true_peak_dbtp"`
+	Compliant          bool    `json:"broadcast_compliant"`
+	Standard           string  `json:"standard"`
 }

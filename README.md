@@ -14,6 +14,7 @@
 
 ### Key Capabilities
 - 📹 **Complete Video Analysis**: Technical specs, quality metrics, HLS/DASH support
+- 🔍 **Enhanced Quality Control**: 16 additional QC parameters including GOP analysis, content detection
 - 🤖 **AI-Powered Insights**: Professional video engineering assessment with recommendations  
 - 📊 **Quality Comparison**: VMAF, PSNR, SSIM analysis with before/after validation
 - 🏗️ **Production Grade**: Hardened security, scalable architecture, comprehensive monitoring
@@ -89,6 +90,8 @@ docker compose -f compose.yml -f compose.enterprise.yml up -d
 
 ### 🎬 Professional Video Analysis
 - **Complete FFprobe Integration**: All metadata, streams, formats, chapters
+- **Enhanced Quality Control**: 16 additional QC parameters (GOP analysis, chroma subsampling, bitrate mode detection)
+- **Content Analysis**: Blackness detection, freeze frames, audio clipping, interlacing artifacts
 - **Quality Metrics**: VMAF, PSNR, SSIM analysis with Netflix-grade models
 - **HLS/DASH Support**: Streaming protocol validation and optimization
 - **Batch Processing**: Handle multiple files efficiently with progress tracking
@@ -142,8 +145,8 @@ docker compose -f compose.yml -f compose.enterprise.yml up -d
 
 | Endpoint | Method | Description | Authentication |
 |----------|--------|-------------|---------------|
-| `/api/v1/probe/file` | POST | Analyze uploaded video | API Key/JWT |
-| `/api/v1/probe/url` | POST | Analyze video from URL | API Key/JWT |
+| `/api/v1/probe/file` | POST | Analyze uploaded video (supports `content_analysis: true`) | API Key/JWT |
+| `/api/v1/probe/url` | POST | Analyze video from URL (supports `content_analysis: true`) | API Key/JWT |
 | `/api/v1/probe/quick` | POST | Fast basic analysis | API Key/JWT |
 | `/api/v1/batch/analyze` | POST | Batch video processing | API Key/JWT |
 | `/api/v1/quality/compare` | POST | Quality comparison | API Key/JWT |
@@ -165,6 +168,25 @@ curl -H "Authorization: Bearer your-jwt-token" \
      http://localhost:8080/api/v1/probe/file
 ```
 
+### Enhanced Analysis Request
+```bash
+# Standard analysis
+curl -X POST http://localhost:8080/api/v1/probe/file \
+  -H "X-API-Key: your-api-key" \
+  -d '{
+    "file_path": "/path/to/video.mp4",
+    "content_analysis": false
+  }'
+
+# Enhanced analysis with content analysis
+curl -X POST http://localhost:8080/api/v1/probe/file \
+  -H "X-API-Key: your-api-key" \
+  -d '{
+    "file_path": "/path/to/video.mp4",
+    "content_analysis": true
+  }'
+```
+
 ### Response Format
 ```json
 {
@@ -184,6 +206,41 @@ curl -H "Authorization: Bearer your-jwt-token" \
         "r_frame_rate": "30/1"
       }
     ],
+    "enhanced_analysis": {
+      "stream_counts": {
+        "video_streams": 1,
+        "audio_streams": 2,
+        "subtitle_streams": 0
+      },
+      "video_analysis": {
+        "chroma_subsampling": "4:2:0",
+        "matrix_coefficients": "ITU-R BT.709",
+        "bit_rate_mode": "CBR",
+        "has_closed_captions": false
+      },
+      "gop_analysis": {
+        "average_gop_size": 30.0,
+        "keyframe_count": 120,
+        "gop_pattern": "Regular (GOP=30)"
+      },
+      "frame_statistics": {
+        "total_frames": 3600,
+        "i_frames": 120,
+        "p_frames": 2400,
+        "b_frames": 1080
+      },
+      "content_analysis": {
+        "black_frames": {
+          "detected_frames": 0,
+          "percentage": 0.0
+        },
+        "loudness_meter": {
+          "integrated_loudness_lufs": -23.0,
+          "broadcast_compliant": true,
+          "standard": "EBU R128"
+        }
+      }
+    },
     "quality_metrics": {
       "vmaf_score": 85.6,
       "psnr": 42.3,

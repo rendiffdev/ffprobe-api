@@ -117,13 +117,61 @@ func (s *AnalysisService) CreateAnalysis(ctx context.Context, request *models.Cr
 	return analysis, nil
 }
 
-// ProcessAnalysis processes a media file and updates the analysis record
-func (s *AnalysisService) ProcessAnalysis(ctx context.Context, analysisID uuid.UUID, options *ffmpeg.FFprobeOptions) error {
+// ProcessAnalysisWithContent processes a media file with optional content analysis
+func (s *AnalysisService) ProcessAnalysisWithContent(ctx context.Context, analysisID uuid.UUID, options *ffmpeg.FFprobeOptions, enableContentAnalysis bool) error {
 	// Update status to processing
 	if err := s.repo.UpdateAnalysisStatus(ctx, analysisID, models.StatusProcessing, nil); err != nil {
 		return fmt.Errorf("failed to update analysis status: %w", err)
 	}
 
+	// Get analysis record
+	analysis, err := s.repo.GetAnalysis(ctx, analysisID)
+	if err != nil {
+		return fmt.Errorf("failed to get analysis record: %w", err)
+	}
+
+	// Set default options if not provided
+	if options == nil {
+		options = ffmpeg.NewOptionsBuilder().
+			Input(analysis.FilePath).
+			DetailedInfo().
+			Build()
+	} else if options.Input == "" {
+		options.Input = analysis.FilePath
+	}
+
+	// Configure ffprobe for content analysis if enabled
+	if enableContentAnalysis {
+		s.ffprobe.EnableContentAnalysis()
+		defer s.ffprobe.DisableContentAnalysis()
+		
+		// Use content analysis method
+		result, err := s.ffprobe.ProbeFileWithContentAnalysis(ctx, analysis.FilePath)
+		if err != nil {
+			s.updateAnalysisError(ctx, analysisID, fmt.Sprintf("FFprobe with content analysis failed: %v", err))
+			return fmt.Errorf("ffprobe with content analysis failed: %w", err)
+		}
+		
+		return s.completeAnalysis(ctx, analysisID, result)
+	}
+
+	// Standard analysis
+	result, err := s.ffprobe.Probe(ctx, options)
+	if err != nil {
+		s.updateAnalysisError(ctx, analysisID, fmt.Sprintf("FFprobe failed: %v", err))
+		return fmt.Errorf("ffprobe failed: %w", err)
+	}
+
+	return s.completeAnalysis(ctx, analysisID, result)
+}
+
+// ProcessAnalysis processes a media file and updates the analysis record
+func (s *AnalysisService) ProcessAnalysis(ctx context.Context, analysisID uuid.UUID, options *ffmpeg.FFprobeOptions) error {
+	return s.ProcessAnalysisWithContent(ctx, analysisID, options, false)
+}
+
+// completeAnalysis completes the analysis with the given result
+func (s *AnalysisService) completeAnalysis(ctx context.Context, analysisID uuid.UUID, result *ffmpeg.FFprobeResult) error {
 	// Get analysis record
 	analysis, err := s.repo.GetAnalysis(ctx, analysisID)
 	if err != nil {
