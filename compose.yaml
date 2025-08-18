@@ -28,6 +28,14 @@ services:
       GO_ENV: ${GO_ENV:-development}
       API_PORT: 8080
       HOST: 0.0.0.0
+      # Database Configuration (SQLite embedded)
+      DB_TYPE: ${DB_TYPE:-sqlite}
+      DB_PATH: ${DB_PATH:-/app/data/ffprobe.db}
+      
+      # Cache Configuration (Valkey)
+      VALKEY_HOST: ${VALKEY_HOST:-valkey}
+      VALKEY_PORT: 6379
+      VALKEY_PASSWORD: ${VALKEY_PASSWORD:-quickstart123}
     env_file:
       - path: .env
         required: false
@@ -44,11 +52,11 @@ services:
       - type: volume
         source: cache
         target: /app/cache
+      - type: volume
+        source: sqlite_data
+        target: /app/data
     depends_on:
-      postgres:
-        condition: service_healthy
-        restart: true
-      redis:
+      valkey:
         condition: service_healthy
         restart: true
       ollama:
@@ -94,77 +102,15 @@ services:
       - minimal
       - full
 
-  # PostgreSQL 16 with modern configuration
-  postgres:
-    image: postgres:16-alpine
-    container_name: ffprobe-postgres
-    hostname: postgres
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-ffprobe_api}
-      POSTGRES_USER: ${POSTGRES_USER:-ffprobe}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-quickstart123}
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
-      # Performance tuning
-      POSTGRES_SHARED_PRELOAD_LIBRARIES: pg_stat_statements
-      POSTGRES_MAX_CONNECTIONS: 100
-      POSTGRES_SHARED_BUFFERS: 256MB
-      POSTGRES_EFFECTIVE_CACHE_SIZE: 1GB
-    volumes:
-      - type: volume
-        source: postgres_data
-        target: /var/lib/postgresql/data
-      - type: volume
-        source: postgres_backup
-        target: /backup
-      - type: bind
-        source: ./migrations
-        target: /docker-entrypoint-initdb.d
-        read_only: true
-    ports:
-      - target: 5432
-        published: ${POSTGRES_PORT:-5432}
-        protocol: tcp
-        mode: host
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ffprobe} -d ${POSTGRES_DB:-ffprobe_api}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-      start_interval: 2s
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 1G
-        reservations:
-          cpus: '0.25'
-          memory: 256M
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-    labels:
-      - "com.ffprobe-api.service=database"
-      - "com.ffprobe-api.version=16"
-    networks:
-      - ffprobe-network
-    profiles:
-      - database
-      - quick
-      - minimal
-      - full
 
-  # Redis 7 with persistence and clustering support
-  redis:
-    image: redis:7-alpine
-    container_name: ffprobe-redis
-    hostname: redis
+  # Valkey 8 with persistence and clustering support (Redis-compatible)
+  valkey:
+    image: valkey/valkey:8.0-alpine
+    container_name: ffprobe-valkey
+    hostname: valkey
     command: >
-      redis-server
-      --requirepass ${REDIS_PASSWORD:-quickstart123}
+      valkey-server
+      --requirepass ${VALKEY_PASSWORD:-quickstart123}
       --appendonly yes
       --appendfsync everysec
       --save 900 1
@@ -176,7 +122,7 @@ services:
       --timeout 0
     volumes:
       - type: volume
-        source: redis_data
+        source: valkey_data
         target: /data
       - type: tmpfs
         target: /tmp
@@ -184,11 +130,11 @@ services:
           size: 100M
     ports:
       - target: 6379
-        published: ${REDIS_PORT:-6379}
+        published: ${VALKEY_PORT:-6379}
         protocol: tcp
         mode: host
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-quickstart123}", "ping"]
+      test: ["CMD", "valkey-cli", "-a", "${VALKEY_PASSWORD:-quickstart123}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -210,7 +156,7 @@ services:
         max-file: "3"
     labels:
       - "com.ffprobe-api.service=cache"
-      - "com.ffprobe-api.version=7"
+      - "com.ffprobe-api.version=8"
     networks:
       - ffprobe-network
     profiles:
@@ -320,29 +266,12 @@ services:
 
 # Modern volume definitions with labels and driver options
 volumes:
-  postgres_data:
+  valkey_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ${DATA_PATH:-./data}/postgres
-    labels:
-      - "com.ffprobe-api.volume=database"
-      - "com.ffprobe-api.backup=daily"
-  postgres_backup:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${BACKUP_PATH:-./backup}/postgres
-    labels:
-      - "com.ffprobe-api.volume=backup"
-  redis_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${DATA_PATH:-./data}/redis
+      device: ${DATA_PATH:-./data}/valkey
     labels:
       - "com.ffprobe-api.volume=cache"
       - "com.ffprobe-api.backup=weekly"
@@ -383,6 +312,15 @@ volumes:
     labels:
       - "com.ffprobe-api.volume=cache"
       - "com.ffprobe-api.cleanup=weekly"
+  sqlite_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${DATA_PATH:-./data}/sqlite
+    labels:
+      - "com.ffprobe-api.volume=sqlite-database"
+      - "com.ffprobe-api.backup=daily"
 
 # Modern network configuration with custom driver and IPAM
 networks:

@@ -27,7 +27,7 @@ type Resolver struct {
 // NewResolver creates a new GraphQL resolver
 func NewResolver(
 	db *sqlx.DB,
-	redis *redis.Client,
+	redisClient interface{},
 	logger zerolog.Logger,
 	analysisService *services.AnalysisService,
 	comparisonService *services.ComparisonService,
@@ -36,6 +36,12 @@ func NewResolver(
 	userService *services.UserService,
 	storageService *services.StorageService,
 ) *Resolver {
+	var redis *redis.Client
+	if redisClient != nil {
+		if rc, ok := redisClient.(*redis.Client); ok {
+			redis = rc
+		}
+	}
 	return &Resolver{
 		db:                db,
 		redis:             redis,

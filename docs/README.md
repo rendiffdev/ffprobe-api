@@ -6,18 +6,19 @@
 
 ### 🚀 Getting Started
 - **[Quick Start Guide](../README.md#quick-start)** - Get running in 2 minutes
-- **[API Usage Tutorial](tutorials/api_usage.md)** - Step-by-step API usage
+- **[Docker Deployment](../docker-image/QUICK_START.md)** - Zero-config Docker deployment
 - **[Local AI Setup](tutorials/local-llm-setup.md)** - AI-powered analysis setup
-
-### 🔧 Deployment & Configuration
-- **[Deployment Guide](deployment/README.md)** - Production deployment strategies
-- **[Modern Docker Compose](deployment/modern-docker-compose.md)** - Latest Docker features
-- **[Configuration Reference](deployment/configuration.md)** - Environment variables
-- **[Storage Configuration](deployment/storage-configuration.md)** - Storage backends
 
 ### 📡 API Reference
 - **[REST API Documentation](api/README.md)** - Complete endpoint reference
-- **[QC Features API Guide](api/QC_FEATURES.md)** - Quality Control analysis integration
+- **[GraphQL API Guide](api/GRAPHQL_API_GUIDE.md)** - GraphQL queries and mutations
+- **[QC Features Guide](api/QC_FEATURES.md)** - Quality Control analysis integration
+- **[OpenAPI Specification](api/openapi.yaml)** - Machine-readable API spec
+
+### 🔧 Advanced Topics
+- **[Production Deployment](deployment/README.md)** - Production deployment strategies
+- **[Architecture Overview](development/architecture.md)** - System architecture and design
+- **[Secret Rotation](api/SECRET_ROTATION_GUIDE.md)** - API key and JWT management
 - **[Complete QC Analysis List](../QC_ANALYSIS_LIST.md)** - All 20+ QC categories detailed
 - **[GraphQL API Guide](api/GRAPHQL_API_GUIDE.md)** - GraphQL endpoints  
 - **[Authentication Guide](api/authentication.md)** - API keys and security

@@ -277,7 +277,7 @@ Content-Type: application/json
 
 #### Microservices Architecture
 ```yaml
-# docker-compose.yml
+# compose.yml
 services:
   qc-api:
     image: ffprobe-api:latest

@@ -3,17 +3,22 @@ package database
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/rs/zerolog"
 )
 
 // MigrateUp runs all available migrations
 func MigrateUp(databaseURL string, migrationsPath string, logger zerolog.Logger) error {
+	// Determine migration path based on database type
+	finalMigrationsPath := getMigrationPath(databaseURL, migrationsPath)
+	
 	m, err := migrate.New(
-		fmt.Sprintf("file://%s", migrationsPath),
+		fmt.Sprintf("file://%s", finalMigrationsPath),
 		databaseURL,
 	)
 	if err != nil {
@@ -31,6 +36,15 @@ func MigrateUp(databaseURL string, migrationsPath string, logger zerolog.Logger)
 
 	logger.Info().Msg("Successfully applied all migrations")
 	return nil
+}
+
+// getMigrationPath returns the appropriate migration path based on database type
+func getMigrationPath(databaseURL, basePath string) string {
+	if strings.HasPrefix(databaseURL, "sqlite3://") {
+		// Use SQLite-specific migrations if they exist
+		return basePath // For now, use the same path but we could organize differently
+	}
+	return basePath
 }
 
 // MigrateDown rolls back one migration

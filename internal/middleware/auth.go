@@ -16,7 +16,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/rs/zerolog"
 	"golang.org/x/crypto/bcrypt"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 	"context"
 	"github.com/rendiffdev/ffprobe-api/internal/errors"
 )
@@ -38,7 +38,13 @@ type AuthMiddleware struct {
 }
 
 // NewAuthMiddleware creates a new authentication middleware
-func NewAuthMiddleware(config AuthConfig, db *sqlx.DB, redisClient *redis.Client, logger zerolog.Logger) *AuthMiddleware {
+func NewAuthMiddleware(config AuthConfig, db *sqlx.DB, redisClient interface{}, logger zerolog.Logger) *AuthMiddleware {
+	var rClient *redis.Client
+	if redisClient != nil {
+		if rc, ok := redisClient.(*redis.Client); ok {
+			rClient = rc
+		}
+	}
 	if config.TokenExpiry == 0 {
 		config.TokenExpiry = 24 * time.Hour // Default 24 hours
 	}
@@ -49,7 +55,7 @@ func NewAuthMiddleware(config AuthConfig, db *sqlx.DB, redisClient *redis.Client
 	return &AuthMiddleware{
 		config: config,
 		db:     db,
-		redis:  redisClient,
+		redis:  rClient,
 		logger: logger,
 	}
 }

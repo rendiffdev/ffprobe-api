@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
+	"github.com/rendiffdev/ffprobe-api/internal/cache"
 	"github.com/rendiffdev/ffprobe-api/internal/config"
 	"github.com/rendiffdev/ffprobe-api/internal/database"
 	"github.com/rendiffdev/ffprobe-api/internal/handlers"
@@ -43,6 +44,7 @@ type Router struct {
 	tenantRateLimiter *middleware.TenantRateLimiter
 	security          *middleware.SecurityMiddleware
 	monitoring        *middleware.MonitoringMiddleware
+	cacheClient       *cache.ValkeyClient
 	logger            zerolog.Logger
 	db               *database.DB
 	config           *config.Config
@@ -50,6 +52,20 @@ type Router struct {
 
 // NewRouter creates a new router with all handlers
 func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Router {
+	// Create cache client (optional for rate limiting and caching)
+	var cacheClient *cache.ValkeyClient
+	var redisClient interface{} // For compatibility with existing services
+	
+	if cfg.EnableRateLimit || cfg.ValkeyHost != "" {
+		var err error
+		cacheClient, err = cache.New(cfg, logger)
+		if err != nil {
+			logger.Warn().Err(err).Msg("Failed to connect to Valkey, continuing without cache")
+		} else {
+			redisClient = cacheClient.GetClient()
+			logger.Info().Msg("Valkey cache enabled")
+		}
+	}
 	// Create analysis service
 	analysisService := services.NewAnalysisService(db, cfg.FFprobePath, logger)
 	
@@ -116,7 +132,7 @@ func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Rout
 		TokenExpiry:  time.Duration(cfg.TokenExpiry) * time.Hour,
 		RefreshExpiry: time.Duration(cfg.RefreshExpiry) * time.Hour,
 	}
-	authMiddleware := middleware.NewAuthMiddleware(authConfig, db.DB, logger)
+	authMiddleware := middleware.NewAuthMiddleware(authConfig, db.DB, redisClient, logger)
 
 	rateLimitConfig := middleware.RateLimitConfig{
 		RequestsPerMinute: cfg.RateLimitPerMinute,
@@ -153,7 +169,7 @@ func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Rout
 		MaxActiveKeys:      5,
 		EnableAutoRotation: true,
 	}
-	rotationService := services.NewSecretRotationService(db.DB, nil, logger, rotationConfig)
+	rotationService := services.NewSecretRotationService(db.DB, redisClient, logger, rotationConfig)
 	
 	// Create tenant rate limiter
 	tenantRateLimitConfig := middleware.RateLimitConfig{
@@ -165,7 +181,7 @@ func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Rout
 		BurstMultiplier:    1.5,
 		IncludeHeaders:     true,
 	}
-	tenantRateLimiter := middleware.NewTenantRateLimiter(nil, logger, tenantRateLimitConfig)
+	tenantRateLimiter := middleware.NewTenantRateLimiter(redisClient, logger, tenantRateLimitConfig)
 	
 	// Create GraphQL handler
 	graphqlConfig := handlers.GraphQLConfig{
@@ -179,7 +195,7 @@ func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Rout
 		EnableAPQ:             true,
 	}
 	graphqlHandler := handlers.NewGraphQLHandler(
-		db.DB, nil, logger,
+		db.DB, redisClient, logger,
 		analysisService, comparisonService, reportService,
 		rotationService, userService, storageService,
 		graphqlConfig,
@@ -214,6 +230,7 @@ func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Rout
 		tenantRateLimiter: tenantRateLimiter,
 		security:          security,
 		monitoring:        monitoring,
+		cacheClient:       cacheClient,
 		logger:            logger,
 		db:               db,
 		config:           cfg,
@@ -473,28 +490,62 @@ func (r *Router) requestIDMiddleware() gin.HandlerFunc {
 // System handlers
 
 func (r *Router) systemHealth(c *gin.Context) {
+	health := gin.H{
+		"status":  "healthy",
+		"service": "ffprobe-api",
+		"version": "v1.0.0",
+	}
+
 	// Check database health
 	if err := r.db.Health(c.Request.Context()); err != nil {
-		c.JSON(http.StatusServiceUnavailable, gin.H{
-			"status":   "unhealthy",
-			"service":  "ffprobe-api",
-			"version":  "v1.0.0",
-			"database": "unhealthy",
-			"error":    err.Error(),
-		})
+		health["status"] = "unhealthy"
+		health["database"] = gin.H{
+			"status": "unhealthy",
+			"error":  err.Error(),
+		}
+	} else {
+		dbStats := r.db.Stats()
+		health["database"] = gin.H{
+			"status": "healthy",
+			"type":   dbStats["database_type"],
+			"stats":  dbStats,
+		}
+	}
+
+	// Check cache health (Valkey/Redis) if available
+	if cacheClient := r.getCacheClient(); cacheClient != nil {
+		if err := cacheClient.Health(c.Request.Context()); err != nil {
+			health["cache"] = gin.H{
+				"status": "unhealthy",
+				"error":  err.Error(),
+			}
+		} else {
+			cacheStats := cacheClient.Stats()
+			health["cache"] = gin.H{
+				"status": "healthy",
+				"type":   "valkey",
+				"stats":  cacheStats,
+			}
+		}
+	} else {
+		health["cache"] = gin.H{
+			"status": "disabled",
+			"type":   "none",
+		}
+	}
+
+	// Overall health status
+	if health["status"] == "unhealthy" {
+		c.JSON(http.StatusServiceUnavailable, health)
 		return
 	}
 
-	// Get database stats
-	stats := r.db.Stats()
+	c.JSON(http.StatusOK, health)
+}
 
-	c.JSON(http.StatusOK, gin.H{
-		"status":   "healthy",
-		"service":  "ffprobe-api",
-		"version":  "v1.0.0",
-		"database": "healthy",
-		"stats":    stats,
-	})
+// getCacheClient returns the cache client if available
+func (r *Router) getCacheClient() *cache.ValkeyClient {
+	return r.cacheClient
 }
 
 func (r *Router) getVersion(c *gin.Context) {

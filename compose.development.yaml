@@ -25,6 +25,13 @@ services:
       DEV_DISABLE_RATE_LIMIT: true
       DEV_VERBOSE_LOGGING: true
       API_PORT: 8080
+      # Database Configuration (SQLite embedded)
+      DB_TYPE: sqlite
+      DB_PATH: /app/data/ffprobe.db
+      # Cache Configuration (Valkey - Redis compatible)
+      VALKEY_HOST: valkey-dev
+      VALKEY_PORT: 6379
+      VALKEY_PASSWORD: dev123
       # Development-specific features
       GIN_MODE: debug
       HOT_RELOAD: true
@@ -77,52 +84,13 @@ services:
     networks:
       - ffprobe-dev-network
 
-  # Development database with exposed ports
-  postgres:
-    extends:
-      file: compose.yaml
-      service: postgres
-    container_name: ffprobe-postgres-dev
-    environment:
-      POSTGRES_DB: ffprobe_api_dev
-      POSTGRES_USER: ffprobe_dev
-      POSTGRES_PASSWORD: dev123
-      # Development optimizations
-      POSTGRES_LOG_STATEMENT: all
-      POSTGRES_LOG_MIN_DURATION_STATEMENT: 0
-      POSTGRES_SHARED_BUFFERS: 128MB
-    ports:
-      - target: 5432
-        published: 5432
-        protocol: tcp
-    volumes:
-      - type: volume
-        source: postgres_dev_data
-        target: /var/lib/postgresql/data
-      - type: bind
-        source: ./migrations
-        target: /docker-entrypoint-initdb.d
-        read_only: true
-      - type: bind
-        source: ./scripts/db
-        target: /scripts
-        read_only: true
-    profiles:
-      - development
-      - dev
-      - database-dev
-      - full-dev
-    networks:
-      - ffprobe-dev-network
-
-  # Development Redis with exposed ports
-  redis:
-    extends:
-      file: compose.yaml
-      service: redis
-    container_name: ffprobe-redis-dev
+  # Development Valkey (Redis-compatible) with exposed ports
+  valkey:
+    image: valkey/valkey:8.0-alpine
+    container_name: ffprobe-valkey-dev
+    hostname: valkey-dev
     command: >
-      redis-server
+      valkey-server
       --requirepass dev123
       --appendonly yes
       --save ""
@@ -135,8 +103,14 @@ services:
         protocol: tcp
     volumes:
       - type: volume
-        source: redis_dev_data
+        source: valkey_dev_data
         target: /data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "-a", "dev123", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     profiles:
       - development
       - dev
@@ -197,47 +171,13 @@ services:
       - ffprobe-dev-network
 
   # Development tools and utilities
-  # Database administration tool
-  adminer:
-    image: adminer:latest
-    container_name: ffprobe-adminer
-    hostname: adminer
-    environment:
-      ADMINER_DEFAULT_SERVER: postgres
-      ADMINER_DESIGN: lucas
-    ports:
-      - target: 8080
-        published: 8081
-        protocol: tcp
-    depends_on:
-      postgres:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "php", "-r", "if (file_get_contents('http://localhost:8080') === false) exit(1);"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
-    labels:
-      - "com.ffprobe-api.service=database-admin"
-      - "traefik.enable=true"
-      - "traefik.http.routers.adminer.rule=Host(`adminer.localhost`)"
-    profiles:
-      - development
-      - dev
-      - tools
-      - admin
-      - full-dev
-    networks:
-      - ffprobe-dev-network
-
-  # Redis administration tool
-  redis-commander:
+  # Valkey administration tool (Redis-compatible)
+  valkey-commander:
     image: rediscommander/redis-commander:latest
-    container_name: ffprobe-redis-commander
-    hostname: redis-commander
+    container_name: ffprobe-valkey-commander
+    hostname: valkey-commander
     environment:
-      REDIS_HOSTS: local:redis:6379:0:dev123
+      REDIS_HOSTS: local:valkey-dev:6379:0:dev123
       HTTP_USER: admin
       HTTP_PASSWORD: dev123
     ports:
@@ -245,7 +185,7 @@ services:
         published: 8082
         protocol: tcp
     depends_on:
-      redis:
+      valkey:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081"]
@@ -254,9 +194,9 @@ services:
       retries: 3
     restart: unless-stopped
     labels:
-      - "com.ffprobe-api.service=redis-admin"
+      - "com.ffprobe-api.service=valkey-admin"
       - "traefik.enable=true"
-      - "traefik.http.routers.redis-commander.rule=Host(`redis.localhost`)"
+      - "traefik.http.routers.valkey-commander.rule=Host(`valkey.localhost`)"
     profiles:
       - development
       - dev
@@ -307,16 +247,12 @@ services:
 
 # Development-specific volumes
 volumes:
-  postgres_dev_data:
-    driver: local
-    labels:
-      - "com.ffprobe-api.volume=dev-database"
-      - "com.ffprobe-api.environment=development"
-  redis_dev_data:
+  valkey_dev_data:
     driver: local
     labels:
       - "com.ffprobe-api.volume=dev-cache"
       - "com.ffprobe-api.environment=development"
+      - "com.ffprobe-api.type=valkey"
   ollama_dev_data:
     driver: local
     labels:

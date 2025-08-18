@@ -1,0 +1,368 @@
+# Production Docker Compose configuration for FFprobe API
+# Includes SSL termination, monitoring, and high availability features
+
+services:
+  # Main API Service
+  api:
+    image: rendiffdev/ffprobe-api:latest
+    container_name: ffprobe-api-prod
+    restart: always
+    environment:
+      # Core Configuration
+      - GO_ENV=production
+      - GIN_MODE=release
+      - API_PORT=8080
+      - HOST=0.0.0.0
+      
+      # Security
+      - ENABLE_AUTH=true
+      - API_KEY=${API_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      
+      # Database Configuration (SQLite embedded)
+      - DB_TYPE=sqlite
+      - DB_PATH=/app/data/ffprobe.db
+      
+      # Cache Configuration (Valkey - Redis compatible)
+      - VALKEY_HOST=valkey
+      - VALKEY_PORT=6379
+      - VALKEY_PASSWORD=${VALKEY_PASSWORD:-changeme}
+      
+      # AI/LLM
+      - ENABLE_LOCAL_LLM=true
+      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-gemma3:270m}
+      
+      # Performance
+      - WORKER_POOL_SIZE=${WORKER_POOL_SIZE:-16}
+      - PROCESSING_TIMEOUT=${PROCESSING_TIMEOUT:-600}
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-53687091200}
+      
+      # Rate Limiting
+      - ENABLE_RATE_LIMIT=true
+      - RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE:-100}
+      - RATE_LIMIT_PER_HOUR=${RATE_LIMIT_PER_HOUR:-5000}
+      
+      # Monitoring
+      - ENABLE_METRICS=true
+      - METRICS_PORT=9090
+    volumes:
+      - ./uploads:/app/uploads
+      - ./reports:/app/reports
+      - ./data:/app/data
+      - ./backup:/app/backup
+      - ./logs:/app/logs
+    depends_on:
+      valkey:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+        reservations:
+          cpus: '2'
+          memory: 2G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ffprobe-api.rule=Host(`${DOMAIN:-api.localhost}`)"
+      - "traefik.http.routers.ffprobe-api.entrypoints=websecure"
+      - "traefik.http.routers.ffprobe-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.ffprobe-api.loadbalancer.server.port=8080"
+      - "traefik.http.middlewares.ffprobe-api-auth.basicauth.users=${TRAEFIK_AUTH:-}"
+    networks:
+      - internal
+      - web
+
+  # Valkey (Redis-compatible, open source) with persistence
+  valkey:
+    image: valkey/valkey:8.0-alpine
+    container_name: ffprobe-valkey-prod
+    restart: always
+    command: >
+      sh -c '
+      echo "Starting Valkey with AOF persistence..."
+      valkey-server 
+      --requirepass "${VALKEY_PASSWORD:-changeme}" 
+      --appendonly yes 
+      --appendfsync everysec 
+      --save 900 1 
+      --save 300 10 
+      --save 60 10000
+      --maxmemory 1gb
+      --maxmemory-policy allkeys-lru
+      '
+    environment:
+      - VALKEY_PASSWORD=${VALKEY_PASSWORD:-changeme}
+    volumes:
+      - valkey_data:/data
+      - ./backup/valkey:/backup
+    healthcheck:
+      test: ["CMD", "valkey-cli", "--no-auth-warning", "-a", "${VALKEY_PASSWORD:-changeme}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - internal
+
+  # Ollama AI Service with model management
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ffprobe-ollama-prod
+    restart: always
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_MODELS=${OLLAMA_MODEL:-gemma3:270m}
+      - OLLAMA_NUM_PARALLEL=4
+      - OLLAMA_MAX_LOADED_MODELS=2
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: '4'
+        reservations:
+          memory: 4G
+          cpus: '2'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      "
+      echo 'Starting Ollama server...'
+      ollama serve &
+      
+      echo 'Waiting for Ollama to be ready...'
+      until curl -f http://localhost:11434/api/version; do
+        sleep 2
+      done
+      
+      echo 'Pulling AI models...'
+      ollama pull ${OLLAMA_MODEL:-gemma3:270m} || echo 'Failed to pull main model'
+      ollama pull phi3:mini || echo 'Failed to pull fallback model'
+      
+      echo 'Ollama setup complete!'
+      tail -f /dev/null
+      "
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - internal
+
+  # Traefik Reverse Proxy with SSL
+  traefik:
+    image: traefik:v3.0
+    container_name: ffprobe-traefik-prod
+    profiles: ["production"]
+    restart: always
+    command:
+      # API
+      - "--api.dashboard=true"
+      - "--api.insecure=false"
+      
+      # Docker provider
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=web"
+      
+      # Entrypoints
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      
+      # SSL/TLS
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      
+      # Redirect HTTP to HTTPS
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      
+      # Logging
+      - "--log.level=INFO"
+      - "--accesslog=true"
+      - "--accesslog.filepath=/logs/access.log"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+      - ./logs/traefik:/logs
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik.service=api@internal"
+    networks:
+      - web
+    environment:
+      - TRAEFIK_DASHBOARD_CREDENTIALS=${TRAEFIK_AUTH}
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: ffprobe-prometheus
+    profiles: ["monitoring"]
+    restart: always
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus.rule=Host(`prometheus.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.prometheus.entrypoints=websecure"
+      - "traefik.http.routers.prometheus.tls.certresolver=letsencrypt"
+    networks:
+      - internal
+      - web
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: ffprobe-grafana
+    profiles: ["monitoring"]
+    restart: always
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_INSTALL_PLUGINS=redis-datasource,postgres-datasource
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls.certresolver=letsencrypt"
+    networks:
+      - internal
+      - web
+
+  # Backup Service
+  backup:
+    image: alpine:3.20
+    container_name: ffprobe-backup
+    profiles: ["backup"]
+    restart: "no"
+    environment:
+      - DB_TYPE=sqlite
+      - DB_PATH=/app/data/ffprobe.db
+      - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-30}
+    volumes:
+      - ./backup:/backup
+      - ./uploads:/uploads:ro
+      - ./reports:/reports:ro
+      - ./data:/app/data:ro
+      - valkey_data:/valkey_data:ro
+    command: |
+      sh -c '
+      echo "Installing backup tools..."
+      apk add --no-cache sqlite tar gzip
+
+      echo "Creating backup directory structure..."
+      mkdir -p /backup/{sqlite,valkey,uploads,reports}
+
+      echo "Starting backup process..."
+      DATE=$$(date +%Y%m%d_%H%M%S)
+
+      # Database backup (SQLite)
+      echo "Backing up SQLite database..."
+      cp /app/data/ffprobe.db /backup/sqlite/backup_$$DATE.db 2>/dev/null || echo "SQLite database not found"
+      gzip /backup/sqlite/backup_$$DATE.db
+
+      # Valkey backup
+      echo "Backing up Valkey..."
+      cp /valkey_data/dump.rdb /backup/valkey/dump_$$DATE.rdb 2>/dev/null || echo "Valkey dump not found"
+
+      # File backups
+      echo "Backing up uploads..."
+      tar -czf /backup/uploads/uploads_$$DATE.tar.gz -C /uploads . 2>/dev/null || echo "No uploads to backup"
+
+      echo "Backing up reports..."
+      tar -czf /backup/reports/reports_$$DATE.tar.gz -C /reports . 2>/dev/null || echo "No reports to backup"
+
+      # Cleanup old backups
+      echo "Cleaning up old backups..."
+      find /backup -name "*.db.gz" -mtime +$$BACKUP_RETENTION_DAYS -delete
+      find /backup -name "*.tar.gz" -mtime +$$BACKUP_RETENTION_DAYS -delete
+      find /backup -name "dump_*.rdb" -mtime +$$BACKUP_RETENTION_DAYS -delete
+
+      echo "Backup completed successfully!"
+      '
+    networks:
+      - internal
+
+# Networks
+networks:
+  web:
+    external: true
+  internal:
+    driver: bridge
+    internal: false
+
+# Volumes
+volumes:
+  valkey_data:
+    driver: local
+  ollama_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local

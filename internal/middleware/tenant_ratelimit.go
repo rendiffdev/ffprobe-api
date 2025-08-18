@@ -54,7 +54,13 @@ type RateLimitInfo struct {
 }
 
 // NewTenantRateLimiter creates a new tenant-aware rate limiter
-func NewTenantRateLimiter(redis *redis.Client, logger zerolog.Logger, config RateLimitConfig) *TenantRateLimiter {
+func NewTenantRateLimiter(redisClient interface{}, logger zerolog.Logger, config RateLimitConfig) *TenantRateLimiter {
+	var redis *redis.Client
+	if redisClient != nil {
+		if rc, ok := redisClient.(*redis.Client); ok {
+			redis = rc
+		}
+	}
 	// Set defaults if not configured
 	if config.DefaultRPM == 0 {
 		config.DefaultRPM = 60

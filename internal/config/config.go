@@ -17,19 +17,21 @@ type Config struct {
 	LogLevel string `json:"log_level"`
 
 	// Database configuration
+	DatabaseType     string `json:"database_type"`     // sqlite or postgres
 	DatabaseURL      string `json:"database_url"`
-	DatabaseHost     string `json:"database_host"`
-	DatabasePort     int    `json:"database_port"`
-	DatabaseName     string `json:"database_name"`
-	DatabaseUser     string `json:"database_user"`
-	DatabasePassword string `json:"database_password"`
-	DatabaseSSLMode  string `json:"database_ssl_mode"`
+	DatabasePath     string `json:"database_path"`     // for SQLite
+	DatabaseHost     string `json:"database_host"`     // for PostgreSQL
+	DatabasePort     int    `json:"database_port"`     // for PostgreSQL
+	DatabaseName     string `json:"database_name"`     // for PostgreSQL
+	DatabaseUser     string `json:"database_user"`     // for PostgreSQL
+	DatabasePassword string `json:"database_password"` // for PostgreSQL
+	DatabaseSSLMode  string `json:"database_ssl_mode"` // for PostgreSQL
 
-	// Redis configuration
-	RedisHost     string `json:"redis_host"`
-	RedisPort     int    `json:"redis_port"`
-	RedisPassword string `json:"redis_password"`
-	RedisDB       int    `json:"redis_db"`
+	// Valkey configuration (Redis-compatible)
+	ValkeyHost     string `json:"valkey_host"`
+	ValkeyPort     int    `json:"valkey_port"`
+	ValkeyPassword string `json:"valkey_password"`
+	ValkeyDB       int    `json:"valkey_db"`
 
 	// API configuration
 	APIKey string `json:"api_key"`
@@ -95,16 +97,18 @@ func Load() (*Config, error) {
 		Host:             getEnv("API_HOST", "localhost"),
 		BaseURL:          getEnv("BASE_URL", ""),
 		LogLevel:         getEnv("LOG_LEVEL", "info"),
+		DatabaseType:     getEnv("DB_TYPE", "sqlite"),
+		DatabasePath:     getEnv("DB_PATH", "./data/ffprobe.db"),
 		DatabaseHost:     getEnv("POSTGRES_HOST", "localhost"),
 		DatabasePort:     getEnvAsInt("POSTGRES_PORT", 5432),
 		DatabaseName:     getEnv("POSTGRES_DB", "ffprobe_api"),
 		DatabaseUser:     getEnv("POSTGRES_USER", "postgres"),
 		DatabasePassword: getEnv("POSTGRES_PASSWORD", ""),
 		DatabaseSSLMode:  getEnv("POSTGRES_SSL_MODE", "disable"),
-		RedisHost:        getEnv("REDIS_HOST", "localhost"),
-		RedisPort:        getEnvAsInt("REDIS_PORT", 6379),
-		RedisPassword:    getEnv("REDIS_PASSWORD", ""),
-		RedisDB:          getEnvAsInt("REDIS_DB", 0),
+		ValkeyHost:       getEnv("VALKEY_HOST", "localhost"),
+		ValkeyPort:       getEnvAsInt("VALKEY_PORT", 6379),
+		ValkeyPassword:   getEnv("VALKEY_PASSWORD", ""),
+		ValkeyDB:         getEnvAsInt("VALKEY_DB", 0),
 		APIKey:             getEnv("API_KEY", ""),
 		JWTSecret:          getEnv("JWT_SECRET", "your-super-secret-jwt-key-change-in-production"),
 		TokenExpiry:        getEnvAsInt("TOKEN_EXPIRY_HOURS", 24),
@@ -208,16 +212,24 @@ func getEnvAsStringSlice(key string, fallback []string) []string {
 	return fallback
 }
 
-// buildDatabaseURL constructs a PostgreSQL connection URL
+// buildDatabaseURL constructs a database connection URL
 func buildDatabaseURL(cfg *Config) string {
-	return fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
-		cfg.DatabaseUser,
-		cfg.DatabasePassword,
-		cfg.DatabaseHost,
-		cfg.DatabasePort,
-		cfg.DatabaseName,
-		cfg.DatabaseSSLMode,
-	)
+	switch cfg.DatabaseType {
+	case "sqlite":
+		return fmt.Sprintf("sqlite3://%s", cfg.DatabasePath)
+	case "postgres":
+		return fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
+			cfg.DatabaseUser,
+			cfg.DatabasePassword,
+			cfg.DatabaseHost,
+			cfg.DatabasePort,
+			cfg.DatabaseName,
+			cfg.DatabaseSSLMode,
+		)
+	default:
+		// Default to SQLite
+		return fmt.Sprintf("sqlite3://%s", cfg.DatabasePath)
+	}
 }
 
 // buildBaseURL constructs the base URL for the API
@@ -246,13 +258,21 @@ func validateConfig(cfg *Config) error {
 		errors = append(errors, "JWT_SECRET must be at least 32 characters long")
 	}
 
-	// Validate database configuration
-	if cfg.DatabasePassword == "" {
-		errors = append(errors, "POSTGRES_PASSWORD is required")
-	}
-
-	if cfg.DatabaseHost == "" {
-		errors = append(errors, "POSTGRES_HOST is required")
+	// Validate database configuration based on type
+	switch cfg.DatabaseType {
+	case "sqlite":
+		if cfg.DatabasePath == "" {
+			errors = append(errors, "DB_PATH is required when using SQLite")
+		}
+	case "postgres":
+		if cfg.DatabasePassword == "" {
+			errors = append(errors, "POSTGRES_PASSWORD is required when using PostgreSQL")
+		}
+		if cfg.DatabaseHost == "" {
+			errors = append(errors, "POSTGRES_HOST is required when using PostgreSQL")
+		}
+	default:
+		errors = append(errors, "DB_TYPE must be either 'sqlite' or 'postgres'")
 	}
 
 	// Validate ports
@@ -272,8 +292,8 @@ func validateConfig(cfg *Config) error {
 		}
 	}
 
-	if cfg.DatabasePort <= 0 || cfg.DatabasePort > 65535 {
-		errors = append(errors, "POSTGRES_PORT must be between 1 and 65535")
+	if cfg.DatabaseType == "postgres" && (cfg.DatabasePort <= 0 || cfg.DatabasePort > 65535) {
+		errors = append(errors, "POSTGRES_PORT must be between 1 and 65535 when using PostgreSQL")
 	}
 
 	// Validate file paths and directories
@@ -367,13 +387,13 @@ func validateConfig(cfg *Config) error {
 		errors = append(errors, "REFRESH_EXPIRY_HOURS must be greater than TOKEN_EXPIRY_HOURS")
 	}
 
-	// Validate Redis configuration if used for rate limiting
+	// Validate Valkey configuration if used for rate limiting
 	if cfg.EnableRateLimit {
-		if cfg.RedisPort <= 0 || cfg.RedisPort > 65535 {
-			errors = append(errors, "REDIS_PORT must be between 1 and 65535")
+		if cfg.ValkeyPort <= 0 || cfg.ValkeyPort > 65535 {
+			errors = append(errors, "VALKEY_PORT must be between 1 and 65535")
 		}
-		if cfg.RedisHost == "" {
-			errors = append(errors, "REDIS_HOST is required when rate limiting is enabled")
+		if cfg.ValkeyHost == "" {
+			errors = append(errors, "VALKEY_HOST is required when rate limiting is enabled")
 		}
 	}
 

@@ -45,7 +45,7 @@ type GraphQLConfig struct {
 // NewGraphQLHandler creates a new GraphQL handler
 func NewGraphQLHandler(
 	db *sqlx.DB,
-	redis *redis.Client,
+	redisClient interface{},
 	logger zerolog.Logger,
 	analysisService *services.AnalysisService,
 	comparisonService *services.ComparisonService,
@@ -57,7 +57,7 @@ func NewGraphQLHandler(
 ) *GraphQLHandler {
 	// Create resolver
 	resolver := gql.NewResolver(
-		db, redis, logger,
+		db, redisClient, logger,
 		analysisService, comparisonService, reportService,
 		rotationService, userService, storageService,
 	)

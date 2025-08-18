@@ -13,7 +13,7 @@
 
 [![Production Ready](https://img.shields.io/badge/production-ready-green.svg)](PRODUCTION_READINESS_REPORT.md)
 [![QC Analysis](https://img.shields.io/badge/QC-20%20Categories-blue.svg)](#advanced-quality-control-features)
-[![Docker](https://img.shields.io/badge/docker-latest%20compose-blue.svg)](docs/deployment/modern-docker-compose.md)
+[![Docker](https://img.shields.io/badge/docker-ready--to--deploy-blue.svg)](docker-image/QUICK_START.md)
 
 ## 🧠 Core GenAI Differentiators
 
@@ -106,16 +106,17 @@ curl http://localhost:8080/api/v1/analysis/{id} | jq '.llm_report'
 ## 📋 System Requirements
 
 - **Docker** 24.0+ with Compose
-- **4GB RAM** minimum (6GB recommended)
-- **10GB disk space** for models and data
+- **2GB RAM** minimum (4GB recommended)
+- **5GB disk space** for models and data
 - **Internet connection** for initial setup
+- **No external database required** - SQLite embedded by default
 
 ## 🏗️ Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   FFprobe API   │───▶│   PostgreSQL    │    │     Redis       │
-│   (Latest)      │    │   (Database)    │    │   (Cache)       │
+│   FFprobe API   │───▶│     SQLite      │    │     Valkey      │
+│   (Latest)      │    │ (Embedded DB)   │    │ (Redis-compatible)│
 └─────────┬───────┘    └─────────────────┘    └─────────────────┘
           │
           ▼
@@ -134,8 +135,8 @@ curl http://localhost:8080/api/v1/analysis/{id} | jq '.llm_report'
 ```bash
 make minimal
 ```
-- **Ultra-lightweight**: Only 4 core services
-- **Services**: API + PostgreSQL + Redis + Ollama
+- **Ultra-lightweight**: Only 3 core services
+- **Services**: API + Valkey + Ollama (SQLite embedded)
 - **Memory**: ~2-3GB total
 - **Perfect for**: Development, testing, resource-constrained environments
 
@@ -153,7 +154,7 @@ make quick
 make dev
 ```
 - Hot reload and debugging
-- Database/Redis admin tools
+- Database/Valkey admin tools
 - File browser interface for uploads
 - Development-focused tooling
 
@@ -166,6 +167,7 @@ make prod
 - Automated backups
 - **Traefik**: Combined reverse proxy + automatic SSL
 - Enterprise-ready infrastructure
+- **Database**: SQLite with WAL mode for production performance
 
 ## 🔍 Advanced Quality Control Features
 
@@ -210,8 +212,8 @@ The FFprobe API provides **comprehensive professional QC analysis** with industr
 ## ⚡ Optimized Component Architecture
 
 ### **Essential Components** (All Deployments)
-- **PostgreSQL 16**: Primary database
-- **Redis 7**: High-performance caching
+- **SQLite**: Embedded database (zero configuration)
+- **Valkey 8**: High-performance caching (Redis-compatible, open source)
 - **Ollama**: Local AI processing (Gemma 3 270M + Phi-3 Mini)
 - **FFprobe API**: Core video analysis service
 
@@ -222,12 +224,12 @@ The FFprobe API provides **comprehensive professional QC analysis** with industr
 - **Backup Service**: Automated data protection
 
 ### **Development Tools** (Development Only)
-- **Adminer**: Database administration
-- **Redis Commander**: Redis administration  
+- **SQLite Browser**: Database administration
+- **Valkey Commander**: Cache administration  
 - **File Browser**: Upload management
 
 
-**Resource Savings**: ~150MB RAM, faster startup, fewer containers to manage
+**Resource Savings**: ~300MB RAM, faster startup, fewer containers to manage
 
 ## 📖 API Documentation
 
@@ -447,7 +449,7 @@ make logs               # View all logs
 make dev                # Development environment
 make shell              # Access API container
 make db-shell           # Access database
-make redis-shell        # Access Redis
+make valkey-shell       # Access Valkey
 
 # Maintenance
 make update             # Update to latest versions
@@ -534,13 +536,14 @@ curl http://localhost:11434/api/version
 docker compose exec ollama ollama pull gemma3:270m
 ```
 
-## 📚 Additional Documentation
+## 📚 Documentation
 
-- [Docker Compose Guide](docs/deployment/modern-docker-compose.md)
-- [FFmpeg Management](docs/operations/ffmpeg-management.md)
-- [AI Model Setup](docs/tutorials/local-llm-setup.md)
-- [Production Deployment](docs/deployment/README.md)
-- [API Reference](docs/api/README.md)
+- **[🚀 Quick Start (Docker)](docker-image/QUICK_START.md)** - One-command deployment
+- **[📖 Complete Documentation](docs/README.md)** - Full documentation index  
+- **[📡 API Reference](docs/api/README.md)** - REST and GraphQL APIs
+- **[🔍 QC Features](QC_ANALYSIS_LIST.md)** - All 20+ quality control categories
+- **[🏢 Production Guide](docs/deployment/README.md)** - Enterprise deployment
+- **[🤖 AI Setup](docs/tutorials/local-llm-setup.md)** - Local AI analysis setup
 
 ## 🤝 Contributing
 

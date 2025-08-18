@@ -1,0 +1,131 @@
+# FFprobe API Docker Image - Ignore file for optimized builds
+
+# Development files
+.git/
+.gitignore
+.gitattributes
+.github/
+.vscode/
+.idea/
+
+# Documentation
+docs/
+*.md
+!docker-image/README.md
+CHANGELOG.md
+CONTRIBUTING.md
+SECURITY.md
+
+# Test files
+tests/
+test/
+*_test.go
+**/*_test.go
+testdata/
+
+# Development scripts
+scripts/
+Makefile
+*.sh
+!docker-image/build.sh
+
+# Environment and config files
+.env*
+!.env.example
+config.local.yml
+*.local.yml
+.air.toml
+
+# Build artifacts
+bin/
+build/
+dist/
+target/
+node_modules/
+
+# IDE files
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Dependency directories
+vendor/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Docker files not needed in build context
+docker-compose*.yml
+Dockerfile*
+!docker-image/Dockerfile
+
+# Upload and temporary directories
+uploads/
+temp/
+tmp/
+cache/
+reports/
+backup/
+data/
+
+# Database files
+*.sqlite
+*.db
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+ssl/
+certs/
+
+# Monitoring and metrics
+prometheus/
+grafana/
+
+# Local development overrides
+docker-compose.override.yml
+compose.override.yml
+
+# CI/CD files (not needed in image)
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+.jenkins/
+
+# Package manager locks (we copy go.mod/go.sum separately)
+package-lock.json
+yarn.lock
+composer.lock
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp

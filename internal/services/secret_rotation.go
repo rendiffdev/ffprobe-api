@@ -67,7 +67,13 @@ type JWTSecret struct {
 }
 
 // NewSecretRotationService creates a new secret rotation service
-func NewSecretRotationService(db *sqlx.DB, redis *redis.Client, logger zerolog.Logger, config SecretRotationConfig) *SecretRotationService {
+func NewSecretRotationService(db *sqlx.DB, redisClient interface{}, logger zerolog.Logger, config SecretRotationConfig) *SecretRotationService {
+	var redis *redis.Client
+	if redisClient != nil {
+		if rc, ok := redisClient.(*redis.Client); ok {
+			redis = rc
+		}
+	}
 	if config.RotationInterval == 0 {
 		config.RotationInterval = 90 * 24 * time.Hour // 90 days default
 	}
