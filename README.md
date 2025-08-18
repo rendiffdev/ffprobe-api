@@ -17,15 +17,15 @@
 
 ## 🧠 Core GenAI Differentiators
 
-### **Why FFprobe API vs Direct FFmpeg/FFprobe?**
+### **FFprobe API: Enhanced Video Analysis**
 
-| Traditional FFprobe | FFprobe API with GenAI |
+| Standard Workflow | FFprobe API Enhancement |
 |-------------------|------------------------|
-| Raw technical data | 🎯 **AI-interpreted insights** |
-| Manual analysis required | 🤖 **Automated risk assessment** |
-| No recommendations | 💡 **Smart optimization suggestions** |
-| Technical jargon only | 📝 **Executive-friendly summaries** |
-| Single file analysis | 🔄 **Workflow integration recommendations** |
+| Technical data output | 🎯 **AI-interpreted insights** |
+| Analysis workflow | 🤖 **Automated risk assessment** |
+| Raw metrics | 💡 **Smart optimization suggestions** |
+| Technical format | 📝 **Executive-friendly summaries** |
+| Individual file processing | 🔄 **Workflow integration recommendations** |
 
 ### **🚀 GenAI-Powered Features**
 
