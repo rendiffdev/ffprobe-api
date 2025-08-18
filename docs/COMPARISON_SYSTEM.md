@@ -18,7 +18,7 @@ The Video Comparison System allows you to analyze improvements between an origin
 ## 🚀 Quick Start
 
 ### Prerequisites
-- API authentication set up (see [API Authentication Guide](API_AUTHENTICATION.md))
+- API authentication set up (see [API Authentication Guide](api/authentication.md))
 - Two video analyses to compare
 
 ### Basic Comparison Workflow
@@ -216,4 +216,4 @@ File Size: Minimal increase (+5%)
 Result: Broadcast-ready content ✅
 ```
 
-For complete API authentication setup, see the [API Authentication Guide](API_AUTHENTICATION.md).
+For complete API authentication setup, see the [API Authentication Guide](api/authentication.md).

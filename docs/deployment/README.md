@@ -381,7 +381,7 @@ docker compose exec ffprobe-api ./migrate -path ./migrations -database "postgres
 
 - [Configuration Reference](configuration.md)
 - [Monitoring Setup](monitoring.md) 
-- [Production Checklist](production-checklist.md)
+- [Production Readiness Checklist](PRODUCTION_READINESS_CHECKLIST.md)
 - [Troubleshooting Guide](../troubleshooting/README.md)
 
 *For support, see [GitHub Issues](https://github.com/rendiffdev/ffprobe-api/issues)*

@@ -115,4 +115,4 @@ What have you tried to resolve this issue?
 
 ---
 
-**Note:** Please ensure you've checked the [FAQ](../docs/FAQ.md) and [existing issues](https://github.com/rendiffdev/ffprobe-api/issues) before submitting.
+**Note:** Please ensure you've checked the [documentation](../docs/README.md) and [existing issues](https://github.com/rendiffdev/ffprobe-api/issues) before submitting.

@@ -359,7 +359,7 @@ ENABLE_DATA_EXPORT=true
 
 ## Next Steps
 
-- [Production Checklist](../deployment/production-checklist.md)
+- [Production Readiness Checklist](../deployment/PRODUCTION_READINESS_CHECKLIST.md)
 - [Monitoring Guide](monitoring.md)
 - [Troubleshooting](troubleshooting.md)
 - [API Authentication](../api/authentication.md)

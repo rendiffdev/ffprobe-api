@@ -471,4 +471,4 @@ docker compose restart ffprobe-api
 - [Security Guide](security.md)
 - [Backup & Recovery](backup.md)
 - [Troubleshooting Guide](troubleshooting.md)
-- [Production Checklist](../deployment/production-checklist.md)
+- [Production Readiness Checklist](../deployment/PRODUCTION_READINESS_CHECKLIST.md)
