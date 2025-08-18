@@ -1,5 +1,5 @@
 -- Migration: Create video_comparisons table for storing video comparison results
--- Version: 20240131000003_create_video_comparisons.sql
+-- Version: 004_create_video_comparisons.up.sql
 
 -- Create comparison types enum
 CREATE TYPE comparison_type AS ENUM (

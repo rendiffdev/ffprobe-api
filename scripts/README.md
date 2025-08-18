@@ -16,19 +16,19 @@ scripts/
 
 | Script | Description | Usage |
 |--------|-------------|-------|
-| [`setup/install.sh`](setup/install.sh) | **Interactive installer** - Complete guided setup | `./scripts/setup/install.sh` |
-| [`setup/quick-setup.sh`](setup/quick-setup.sh) | **Quick setup** - 3-mode rapid deployment | `./scripts/setup/quick-setup.sh` |
+| [`setup-ollama.sh`](setup/setup-ollama.sh) | **Ollama setup** - Configure local AI models | `./scripts/setup/setup-ollama.sh` |
+| [`../setup.sh`](../setup.sh) | **Smart installer** - System requirements check & deployment | `./setup.sh` |
 | [`setup/validate-config.sh`](setup/validate-config.sh) | **Configuration validator** - Validates env files | `./scripts/setup/validate-config.sh [.env]` |
 
-### 🎯 Interactive Installer Features
-The `install.sh` script provides a comprehensive setup experience:
+### 🎯 Smart Installer Features
+The main `setup.sh` script provides comprehensive deployment with system validation:
 
-- **🔧 Deployment Mode Selection** (Development/Staging/Production/Swarm/K8s)
-- **🔐 Security Configuration** (API keys, passwords, SSL certificates)
-- **🌐 Network Setup** (Domain, ports, SSL type)
-- **💾 Storage Configuration** (Local/Cloud storage, backup settings)
-- **📊 Monitoring Setup** (Prometheus, Grafana)
-- **⚙️ Resource Allocation** (Memory, CPU limits)
+- **🔧 Deployment Mode Selection** (Quick/Minimal/Production/Development)
+- **⚙️ System Requirements Validation** (RAM, CPU, disk, ports)
+- **🐳 Docker Capability Testing** (container runtime validation)
+- **🔐 Automatic Security Configuration** (API keys, passwords)
+- **📊 Optional Monitoring Setup** (Prometheus, Grafana)
+- **🤖 AI Model Integration** (Ollama with local LLM)
 
 ## 🚀 Deployment Scripts
 
@@ -74,11 +74,11 @@ The `install.sh` script provides a comprehensive setup experience:
 
 ### 1. **New Installation**
 ```bash
-# Run interactive installer (recommended)
-./scripts/setup/install.sh
+# Run smart installer with system validation (recommended)
+./setup.sh
 
-# OR quick 3-mode setup
-./scripts/setup/quick-setup.sh
+# OR non-interactive mode
+./setup.sh --quick  # or --minimal, --production, --development
 ```
 
 ### 2. **Existing Configuration**
