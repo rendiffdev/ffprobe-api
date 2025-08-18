@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/ffprobe-api/internal/storage"
+	"github.com/rendiffdev/ffprobe-api/internal/storage"
 	"github.com/rs/zerolog"
 )
 

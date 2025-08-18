@@ -18,6 +18,7 @@ require (
 	github.com/99designs/gqlgen v0.17.45
 	github.com/vektah/gqlparser/v2 v2.5.11
 	github.com/redis/go-redis/v9 v9.3.0
+	github.com/jackc/pgx/v5 v5.5.1
 )
 
 require (

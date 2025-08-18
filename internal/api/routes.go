@@ -172,7 +172,7 @@ func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Rout
 	rotationService := services.NewSecretRotationService(db.DB, redisClient, logger, rotationConfig)
 	
 	// Create tenant rate limiter
-	tenantRateLimitConfig := middleware.RateLimitConfig{
+	tenantRateLimitConfig := middleware.TenantRateLimitConfig{
 		DefaultRPM:         cfg.RateLimitPerMinute,
 		DefaultRPH:         cfg.RateLimitPerHour,
 		DefaultRPD:         cfg.RateLimitPerDay,
@@ -183,23 +183,24 @@ func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Rout
 	}
 	tenantRateLimiter := middleware.NewTenantRateLimiter(redisClient, logger, tenantRateLimitConfig)
 	
-	// Create GraphQL handler
-	graphqlConfig := handlers.GraphQLConfig{
-		EnablePlayground:      cfg.LogLevel == "debug",
-		EnableIntrospection:   cfg.LogLevel == "debug",
-		EnableQueryComplexity: true,
-		MaxQueryComplexity:    1000,
-		MaxQueryDepth:         15,
-		QueryCacheSize:        1000,
-		EnableTracing:         cfg.LogLevel == "debug",
-		EnableAPQ:             true,
-	}
-	graphqlHandler := handlers.NewGraphQLHandler(
-		db.DB, redisClient, logger,
-		analysisService, comparisonService, reportService,
-		rotationService, userService, storageService,
-		graphqlConfig,
-	)
+	// Create GraphQL handler (DISABLED - incomplete implementation)
+	// TODO: Complete GraphQL schema implementation before enabling
+	// graphqlConfig := handlers.GraphQLConfig{
+	// 	EnablePlayground:      cfg.LogLevel == "debug",
+	// 	EnableIntrospection:   cfg.LogLevel == "debug",
+	// 	EnableQueryComplexity: true,
+	// 	MaxQueryComplexity:    1000,
+	// 	MaxQueryDepth:         15,
+	// 	QueryCacheSize:        1000,
+	// 	EnableTracing:         cfg.LogLevel == "debug",
+	// 	EnableAPQ:             true,
+	// }
+	// graphqlHandler := handlers.NewGraphQLHandler(
+	// 	db.DB, redisClient, logger,
+	// 	analysisService, comparisonService, reportService,
+	// 	rotationService, userService, storageService,
+	// 	graphqlConfig,
+	// )
 	
 	// Create API key handler
 	apiKeyHandler := handlers.NewAPIKeyHandler(rotationService, logger)
@@ -223,7 +224,7 @@ func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Rout
 		comparisonHandler: handlers.NewComparisonHandler(comparisonService),
 		rawHandler:        handlers.NewRawHandler(analysisService, logger),
 		storageHandler:    handlers.NewStorageHandler(storageService, logger),
-		graphqlHandler:    graphqlHandler,
+		// graphqlHandler:    graphqlHandler,  // DISABLED - incomplete implementation
 		apiKeyHandler:     apiKeyHandler,
 		authMiddleware:    authMiddleware,
 		rateLimiter:       rateLimiter,
@@ -288,22 +289,23 @@ func (r *Router) SetupRoutes() *gin.Engine {
 		}
 
 
-		// GraphQL endpoints (optional authentication)
-		graphql := v1.Group("/graphql")
-		{
-			// GraphQL playground (development only)
-			if r.config.LogLevel == "debug" {
-				graphql.GET("/playground", r.graphqlHandler.GraphQLPlaygroundHandler())
-			}
-			
-			// GraphQL schema introspection
-			graphql.GET("/schema", r.graphqlHandler.GraphQLSchemaHandler())
-			
-			// Main GraphQL endpoint with optional authentication
-			graphql.Use(r.graphqlHandler.GraphQLMiddleware())
-			graphql.POST("", r.graphqlHandler.GraphQLEndpoint())
-			graphql.GET("", r.graphqlHandler.GraphQLEndpoint()) // For GET queries
-		}
+		// GraphQL endpoints (DISABLED - incomplete implementation)
+		// TODO: Complete GraphQL schema implementation before enabling
+		// graphql := v1.Group("/graphql")
+		// {
+		// 	// GraphQL playground (development only)
+		// 	if r.config.LogLevel == "debug" {
+		// 		graphql.GET("/playground", r.graphqlHandler.GraphQLPlaygroundHandler())
+		// 	}
+		// 	
+		// 	// GraphQL schema introspection
+		// 	graphql.GET("/schema", r.graphqlHandler.GraphQLSchemaHandler())
+		// 	
+		// 	// Main GraphQL endpoint with optional authentication
+		// 	graphql.Use(r.graphqlHandler.GraphQLMiddleware())
+		// 	graphql.POST("", r.graphqlHandler.GraphQLEndpoint())
+		// 	graphql.GET("", r.graphqlHandler.GraphQLEndpoint()) // For GET queries
+		// }
 
 		// Apply authentication to protected routes
 		protected := v1.Group("", authMiddleware)

@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ffprobe-api/internal/services"
+	"github.com/rendiffdev/ffprobe-api/internal/services"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"

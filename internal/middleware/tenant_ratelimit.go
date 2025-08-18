@@ -16,11 +16,11 @@ import (
 type TenantRateLimiter struct {
 	redis  *redis.Client
 	logger zerolog.Logger
-	config RateLimitConfig
+	config TenantRateLimitConfig
 }
 
-// RateLimitConfig holds rate limiting configuration
-type RateLimitConfig struct {
+// TenantRateLimitConfig holds tenant-specific rate limiting configuration
+type TenantRateLimitConfig struct {
 	// Default limits
 	DefaultRPM int // Requests per minute
 	DefaultRPH int // Requests per hour
@@ -54,7 +54,7 @@ type RateLimitInfo struct {
 }
 
 // NewTenantRateLimiter creates a new tenant-aware rate limiter
-func NewTenantRateLimiter(redisClient interface{}, logger zerolog.Logger, config RateLimitConfig) *TenantRateLimiter {
+func NewTenantRateLimiter(redisClient interface{}, logger zerolog.Logger, config TenantRateLimitConfig) *TenantRateLimiter {
 	var redis *redis.Client
 	if redisClient != nil {
 		if rc, ok := redisClient.(*redis.Client); ok {

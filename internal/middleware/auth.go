@@ -515,7 +515,7 @@ func (m *AuthMiddleware) validateToken(tokenString string) (*Claims, error) {
 	// First check if token is blacklisted
 	if m.isTokenBlacklisted(tokenString) {
 		m.logger.Warn().Str("token_prefix", tokenString[:min(20, len(tokenString))]).Msg("Attempting to use blacklisted token")
-		return nil, jwt.ErrTokenInvalid
+		return nil, fmt.Errorf("token is blacklisted")
 	}
 
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
@@ -533,7 +533,7 @@ func (m *AuthMiddleware) validateToken(tokenString string) (*Claims, error) {
 		return claims, nil
 	}
 	
-	return nil, jwt.ErrTokenInvalid
+	return nil, fmt.Errorf("invalid token")
 }
 
 // ValidateUserPassword validates a user's password

@@ -10,7 +10,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: Dockerfile.btbn
+      dockerfile: docker-image/Dockerfile
       args:
         - BUILDKIT_INLINE_CACHE=1
       cache_from:
