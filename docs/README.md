@@ -1,6 +1,6 @@
 # FFprobe API Documentation
 
-**Complete documentation for the AI-powered FFprobe API**
+**Complete documentation for the professional video analysis API with advanced QC features**
 
 ## 📖 Quick Navigation
 
@@ -17,8 +17,10 @@
 
 ### 📡 API Reference
 - **[REST API Documentation](api/README.md)** - Complete endpoint reference
+- **[QC Features API Guide](api/QC_FEATURES.md)** - Quality Control analysis integration
+- **[Complete QC Analysis List](../QC_ANALYSIS_LIST.md)** - All 20+ QC categories detailed
+- **[GraphQL API Guide](api/GRAPHQL_API_GUIDE.md)** - GraphQL endpoints  
 - **[Authentication Guide](api/authentication.md)** - API keys and security
-- **[GraphQL API Guide](api/GRAPHQL_API_GUIDE.md)** - GraphQL endpoints
 - **[Secret Rotation Guide](api/SECRET_ROTATION_GUIDE.md)** - Security management
 
 ### 🏗️ Development & Architecture

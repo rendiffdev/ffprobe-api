@@ -147,7 +147,7 @@ The FFprobe API is a **well-architected, enterprise-grade video analysis platfor
 - Deployment guides for multiple platforms
 - Troubleshooting documentation
 - Architecture documentation
-- Quality checks documentation (49 parameters)
+- Quality checks documentation (20+ QC categories)
 
 **Minor Improvements:**
 - Add API versioning strategy documentation

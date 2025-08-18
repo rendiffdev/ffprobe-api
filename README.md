@@ -2,15 +2,15 @@
 
 **Professional video analysis API with comprehensive Quality Control (QC) features**
 
-Complete media analysis solution with 49+ professional QC parameters and AI-powered insights.
+Complete media analysis solution with 20+ professional QC analysis categories and AI-powered insights.
 
 [![Production Ready](https://img.shields.io/badge/production-ready-green.svg)](PRODUCTION_READINESS_REPORT.md)
-[![QC Analysis](https://img.shields.io/badge/QC-49%20Parameters-blue.svg)](#advanced-quality-control-features)
+[![QC Analysis](https://img.shields.io/badge/QC-20%20Categories-blue.svg)](#advanced-quality-control-features)
 [![Docker](https://img.shields.io/badge/docker-latest%20compose-blue.svg)](docs/deployment/modern-docker-compose.md)
 
 ## ✨ Features
 
-- **Advanced Quality Control**: 49+ professional QC parameters including timecode, AFD, MXF validation, dead pixel detection, PSE analysis
+- **Advanced Quality Control**: 20+ professional QC analysis categories including timecode, AFD, MXF validation, dead pixel detection, PSE analysis
 - **Latest FFmpeg**: Always uses latest stable BtbN builds with all codecs
 - **AI-Enhanced Analysis**: Optional LLM integration for intelligent insights and risk assessment
 - **Professional Reports**: Comprehensive technical analysis with quality metrics and compliance validation
@@ -112,7 +112,20 @@ make prod
 
 ## 🔍 Advanced Quality Control Features
 
-### Comprehensive QC Analysis (49+ Parameters)
+The FFprobe API provides **comprehensive professional QC analysis** with industry-standard compliance checking.
+
+📋 **[Complete QC Analysis List](QC_ANALYSIS_LIST.md)** - Detailed breakdown of all 20+ QC categories
+
+### QC Analysis Categories Overview
+
+#### Standard Technical Analysis (11 Categories)
+- Stream analysis and counting
+- Video/audio technical validation  
+- Codec and container compliance
+- Frame and GOP structure analysis
+- Bit depth and resolution validation
+
+#### Advanced Professional QC (9 Categories)
 - **Timecode Analysis**: SMPTE timecode parsing, drop frame detection
 - **Active Format Description (AFD)**: Broadcast signaling compliance
 - **Transport Stream Analysis**: MPEG-TS PID analysis and error detection
@@ -122,7 +135,6 @@ make prod
 - **MXF Format Validation**: Material Exchange Format compliance checking
 - **Dead Pixel Detection**: Computer vision-based pixel defect analysis
 - **Photosensitive Epilepsy (PSE) Risk**: Automated PSE safety analysis
-- **Professional Metadata**: Complete technical parameter extraction
 
 ### AI-Enhanced Analysis (Optional)
 - **Risk Assessment**: Automated technical, compliance, and safety risk evaluation
