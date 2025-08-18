@@ -48,19 +48,33 @@
 
 ## 🚀 Quick Start
 
-### One-Command Installation
+### Smart Installation with System Requirements Checking
+
+**🤖 The setup script automatically validates your system meets the requirements for your chosen deployment mode:**
+
 ```bash
-# Option 1: Interactive setup (recommended)
+# 🎯 Interactive setup with automatic system validation (recommended)
 curl -fsSL https://raw.githubusercontent.com/rendiffdev/ffprobe-api/main/setup.sh | bash
 
-# Option 2: Ultra-quick install
-curl -fsSL https://raw.githubusercontent.com/rendiffdev/ffprobe-api/main/install.sh | bash
+# ⚡ Non-interactive modes with automatic requirements checking:
+curl -fsSL setup.sh | bash -s -- --quick      # 3GB RAM, 8GB disk
+curl -fsSL setup.sh | bash -s -- --minimal    # 2GB RAM, 6GB disk
+curl -fsSL setup.sh | bash -s -- --production # 8GB RAM, 20GB disk
+curl -fsSL setup.sh | bash -s -- --development # 4GB RAM, 15GB disk
 
-# Option 3: Clone and run
+# 🔧 Manual setup (no requirements checking)
 git clone https://github.com/rendiffdev/ffprobe-api.git
 cd ffprobe-api
 make quick
 ```
+
+**✨ What the smart installer checks:**
+- 📊 RAM: Deployment-specific minimum (2-8GB)
+- 💾 Disk space: Mode-specific requirements (6-20GB) 
+- 🖥️ CPU cores: Sufficient processing power (1-4 cores)
+- 🔌 Network ports: Required ports available
+- 🐳 Docker: Installation and container capabilities
+- 🌐 Internet: Connection for downloading images
 
 Your API is now running at **http://localhost:8080**
 

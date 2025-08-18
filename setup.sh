@@ -22,8 +22,10 @@ INSTALL_DIR="${HOME}/ffprobe-api"
 DATA_DIR="${HOME}/ffprobe-api-data"
 COMPOSE_VERSION="latest"
 MIN_DOCKER_VERSION="24.0.0"
+# Default minimum requirements - will be updated based on deployment mode
 MIN_RAM_GB=4
 MIN_DISK_GB=10
+MIN_CPU_CORES=2
 
 # Deployment modes
 DEPLOYMENT_MODES=("quick" "production" "development" "custom")
@@ -100,6 +102,49 @@ spinner() {
     printf "    \b\b\b\b"
 }
 
+# Set deployment-specific requirements
+set_deployment_requirements() {
+    local mode=$1
+    
+    case $mode in
+        quick)
+            MIN_RAM_GB=3
+            MIN_DISK_GB=8
+            MIN_CPU_CORES=2
+            REQUIRED_PORTS=(8080 5432 6379 11434)
+            log_info "Quick Start mode requirements: ${MIN_RAM_GB}GB RAM, ${MIN_DISK_GB}GB disk, ${MIN_CPU_CORES} CPU cores"
+            ;;
+        production)
+            MIN_RAM_GB=8
+            MIN_DISK_GB=20
+            MIN_CPU_CORES=4
+            REQUIRED_PORTS=(8080 5432 6379 11434 80 443 3000 9090)
+            log_info "Production mode requirements: ${MIN_RAM_GB}GB RAM, ${MIN_DISK_GB}GB disk, ${MIN_CPU_CORES} CPU cores"
+            ;;
+        development)
+            MIN_RAM_GB=4
+            MIN_DISK_GB=15
+            MIN_CPU_CORES=2
+            REQUIRED_PORTS=(8080 5432 6379 11434 2345)
+            log_info "Development mode requirements: ${MIN_RAM_GB}GB RAM, ${MIN_DISK_GB}GB disk, ${MIN_CPU_CORES} CPU cores"
+            ;;
+        minimal)
+            MIN_RAM_GB=2
+            MIN_DISK_GB=6
+            MIN_CPU_CORES=1
+            REQUIRED_PORTS=(8080 5432 6379 11434)
+            log_info "Minimal mode requirements: ${MIN_RAM_GB}GB RAM, ${MIN_DISK_GB}GB disk, ${MIN_CPU_CORES} CPU cores"
+            ;;
+        *)
+            # Default/unknown mode
+            MIN_RAM_GB=4
+            MIN_DISK_GB=10
+            MIN_CPU_CORES=2
+            REQUIRED_PORTS=(8080 5432 6379 11434)
+            ;;
+    esac
+}
+
 # OS Detection
 detect_os() {
     case "$(uname -s)" in
@@ -119,12 +164,18 @@ detect_os() {
     log_info "Detected OS: ${CYAN}$OS${NC} (${ARCH})"
 }
 
-# Check system requirements
+# Check system requirements based on deployment mode
 check_requirements() {
-    log_step "Checking System Requirements"
+    local mode=${1:-"quick"}
+    
+    # Set requirements based on deployment mode
+    set_deployment_requirements "$mode"
+    
+    log_step "Checking System Requirements for $mode Mode"
     
     local checks_passed=0
     local checks_total=5
+    local warnings=0
     
     # Check RAM
     echo -n "  Checking RAM... "
@@ -167,38 +218,120 @@ check_requirements() {
     # Check ports
     echo -n "  Checking required ports... "
     local ports_available=true
-    for port in 8080 5432 6379 11434; do
+    local port_conflicts=()
+    for port in "${REQUIRED_PORTS[@]}"; do
         if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
-            echo -e "${YELLOW}⚠${NC} Port $port is in use"
+            port_conflicts+=("$port")
             ports_available=false
         fi
     done
     if $ports_available; then
-        echo -e "${GREEN}✓${NC} All ports available"
+        echo -e "${GREEN}✓${NC} All required ports available (${REQUIRED_PORTS[*]})"
         ((checks_passed++))
+    else
+        echo -e "${YELLOW}⚠${NC} Ports in use: ${port_conflicts[*]}"
+        ((warnings++))
     fi
     show_progress $((checks_passed)) $checks_total
     
     # Check CPU cores
     echo -n "  Checking CPU cores... "
     local cpu_cores=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 1)
-    if [ $cpu_cores -ge 2 ]; then
-        echo -e "${GREEN}✓${NC} ${cpu_cores} cores available"
+    if [ $cpu_cores -ge $MIN_CPU_CORES ]; then
+        echo -e "${GREEN}✓${NC} ${cpu_cores} cores available (need $MIN_CPU_CORES)"
         ((checks_passed++))
     else
-        echo -e "${YELLOW}⚠${NC} Only ${cpu_cores} core(s) available"
+        echo -e "${YELLOW}⚠${NC} Only ${cpu_cores} core(s) available (need $MIN_CPU_CORES)"
+        ((warnings++))
     fi
     show_progress $checks_total $checks_total
     
-    if [ $checks_passed -lt 3 ]; then
-        log_error "System requirements not met. Continue anyway? (y/N)"
-        read -r response
-        if [[ ! "$response" =~ ^[Yy]$ ]]; then
-            exit 1
+    # Enhanced requirements evaluation
+    echo
+    if [ $checks_passed -eq $checks_total ]; then
+        log_success "✅ All system requirements met for $mode mode ($checks_passed/$checks_total)"
+    elif [ $checks_passed -ge 3 ]; then
+        if [ $warnings -gt 0 ]; then
+            log_warning "⚠️  System requirements mostly met with $warnings warning(s) ($checks_passed/$checks_total)"
+            echo "   This may impact performance but should still work."
+        else
+            log_success "System requirements check passed ($checks_passed/$checks_total)"
         fi
     else
-        log_success "System requirements check passed ($checks_passed/$checks_total)"
+        log_error "❌ Critical system requirements not met for $mode mode!"
+        echo
+        echo "   Requirements Summary:"
+        echo "   • RAM: ${MIN_RAM_GB}GB minimum"
+        echo "   • Disk: ${MIN_DISK_GB}GB free space"
+        echo "   • CPU: ${MIN_CPU_CORES}+ cores"
+        echo "   • Ports: ${REQUIRED_PORTS[*]}"
+        echo "   • Internet connection"
+        echo
+        
+        if [ "$mode" = "production" ]; then
+            echo "   💡 Consider switching to 'quick' or 'development' mode for lower requirements."
+            echo
+            echo "   Continue with production mode anyway? (y/N)"
+        else
+            echo "   Continue anyway? (y/N)"
+        fi
+        
+        read -r response
+        if [[ ! "$response" =~ ^[Yy]$ ]]; then
+            echo
+            log_info "Installation cancelled. You can try:"
+            echo "   • Free up system resources"
+            echo "   • Use 'quick' mode: curl -fsSL setup.sh | bash -s -- --quick"
+            echo "   • Use minimal setup with lower requirements"
+            exit 1
+        fi
+        
+        log_warning "⚠️  Proceeding with insufficient resources - performance may be degraded"
     fi
+}
+
+# Validate Docker can run the required containers
+validate_docker_capabilities() {
+    local mode=$1
+    
+    log_step "Validating Docker Capabilities for $mode Mode"
+    
+    if ! command -v docker &> /dev/null; then
+        log_error "Docker not installed - cannot validate capabilities"
+        return 1
+    fi
+    
+    if ! docker info &> /dev/null; then
+        log_error "Docker daemon not running - cannot validate capabilities"
+        return 1
+    fi
+    
+    # Check Docker memory limit
+    echo -n "  Checking Docker memory limit... "
+    local docker_memory=$(docker system info --format '{{.MemTotal}}' 2>/dev/null || echo 0)
+    local docker_memory_gb=$((docker_memory / 1024 / 1024 / 1024))
+    
+    if [ $docker_memory_gb -ge $MIN_RAM_GB ]; then
+        echo -e "${GREEN}✓${NC} ${docker_memory_gb}GB available to Docker"
+    else
+        echo -e "${YELLOW}⚠${NC} Only ${docker_memory_gb}GB available to Docker (need ${MIN_RAM_GB}GB)"
+        if [ "$mode" = "production" ]; then
+            log_warning "Docker memory limit too low for production mode"
+            echo "   💡 Increase Docker Desktop memory allocation in settings"
+        fi
+    fi
+    
+    # Test basic container functionality
+    echo -n "  Testing container functionality... "
+    if docker run --rm hello-world &> /dev/null; then
+        echo -e "${GREEN}✓${NC} Docker can run containers"
+    else
+        echo -e "${RED}✗${NC} Docker cannot run containers"
+        log_error "Docker installation appears to be broken"
+        return 1
+    fi
+    
+    log_success "Docker validation complete"
 }
 
 # Install Docker if not present
@@ -261,12 +394,13 @@ setup_wizard() {
     log_step "Configuration Wizard"
     
     echo -e "\n${CYAN}Choose deployment mode:${NC}"
-    echo "  1) ${GREEN}Quick Start${NC} - Minimal config, get running in 2 minutes"
-    echo "  2) ${YELLOW}Production${NC} - Full features, security, monitoring"
-    echo "  3) ${BLUE}Development${NC} - Hot reload, debug tools"
-    echo "  4) ${MAGENTA}Custom${NC} - Configure everything"
+    echo "  1) ${GREEN}Quick Start${NC} - Minimal config, get running in 2 minutes (3GB RAM, 8GB disk)"
+    echo "  2) ${CYAN}Minimal${NC} - Ultra-lightweight for testing (2GB RAM, 6GB disk)"
+    echo "  3) ${YELLOW}Production${NC} - Full features, security, monitoring (8GB RAM, 20GB disk)"
+    echo "  4) ${BLUE}Development${NC} - Hot reload, debug tools (4GB RAM, 15GB disk)"
+    echo "  5) ${MAGENTA}Custom${NC} - Configure everything"
     
-    read -p "Select mode [1-4] (default: 1): " mode_choice
+    read -p "Select mode [1-5] (default: 1): " mode_choice
     mode_choice=${mode_choice:-1}
     
     case $mode_choice in
@@ -275,14 +409,18 @@ setup_wizard() {
             log_info "Quick Start mode selected"
             ;;
         2)
+            DEPLOYMENT_MODE="minimal"
+            log_info "Minimal mode selected"
+            ;;
+        3)
             DEPLOYMENT_MODE="production"
             log_info "Production mode selected"
             ;;
-        3)
+        4)
             DEPLOYMENT_MODE="development"
             log_info "Development mode selected"
             ;;
-        4)
+        5)
             DEPLOYMENT_MODE="custom"
             log_info "Custom mode selected"
             ;;
@@ -397,8 +535,8 @@ prepare_compose() {
     log_step "Preparing Docker Compose Configuration"
     
     case $DEPLOYMENT_MODE in
-        quick)
-            # Minimal setup for quick start
+        quick|minimal)
+            # Lightweight setup for quick start and minimal deployments
             cat > "$INSTALL_DIR/docker-compose.yml" << 'EOF'
 version: '3.8'
 
@@ -827,14 +965,19 @@ main() {
     # Detect OS
     detect_os
     
-    # Check system requirements
-    check_requirements
+    # Run setup wizard (unless non-interactive mode)
+    if [ "$NON_INTERACTIVE" != "true" ]; then
+        setup_wizard
+    fi
+    
+    # Check system requirements based on selected deployment mode
+    check_requirements "$DEPLOYMENT_MODE"
     
     # Install Docker if needed
     install_docker
     
-    # Run setup wizard
-    setup_wizard
+    # Validate Docker can handle the deployment mode
+    validate_docker_capabilities "$DEPLOYMENT_MODE"
     
     # Clone or update repository
     log_step "Setting up FFprobe API"
@@ -876,21 +1019,49 @@ main() {
 }
 
 # Handle arguments for non-interactive mode
-if [ "$1" = "--quick" ] || [ "$1" = "-q" ]; then
-    DEPLOYMENT_MODE="quick"
-    NON_INTERACTIVE=true
-elif [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
-    echo "FFprobe API Automated Setup"
-    echo ""
-    echo "Usage: $0 [options]"
-    echo ""
-    echo "Options:"
-    echo "  -q, --quick     Quick installation with defaults"
-    echo "  -h, --help      Show this help message"
-    echo ""
-    echo "Without options, runs interactive setup wizard"
-    exit 0
-fi
+case "$1" in
+    "--quick" | "-q")
+        DEPLOYMENT_MODE="quick"
+        NON_INTERACTIVE=true
+        log_info "Non-interactive quick mode selected"
+        ;;
+    "--minimal" | "-m")
+        DEPLOYMENT_MODE="minimal"
+        NON_INTERACTIVE=true
+        log_info "Non-interactive minimal mode selected"
+        ;;
+    "--production" | "-p")
+        DEPLOYMENT_MODE="production"
+        NON_INTERACTIVE=true
+        log_info "Non-interactive production mode selected"
+        ;;
+    "--development" | "-d")
+        DEPLOYMENT_MODE="development"
+        NON_INTERACTIVE=true
+        log_info "Non-interactive development mode selected"
+        ;;
+    "--help" | "-h")
+        echo "FFprobe API Automated Setup"
+        echo ""
+        echo "Usage: $0 [options]"
+        echo ""
+        echo "Deployment Options:"
+        echo "  -q, --quick       Quick installation (3GB RAM, 8GB disk)"
+        echo "  -m, --minimal     Minimal installation (2GB RAM, 6GB disk)"
+        echo "  -p, --production  Production installation (8GB RAM, 20GB disk)"
+        echo "  -d, --development Development installation (4GB RAM, 15GB disk)"
+        echo ""
+        echo "Other Options:"
+        echo "  -h, --help        Show this help message"
+        echo ""
+        echo "Without options, runs interactive setup wizard"
+        echo ""
+        echo "System Requirements Check:"
+        echo "The script will automatically check if your system meets the"
+        echo "minimum requirements for the selected deployment mode."
+        exit 0
+        ;;
+esac
 
 # Run main installation
 main
