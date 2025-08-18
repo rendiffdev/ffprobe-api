@@ -157,9 +157,6 @@ make prod
 - **Redis Commander**: Redis administration  
 - **File Browser**: Upload management
 
-### **Removed Components** (Optimizations)
-- ❌ **MailHog**: Removed (no email functionality implemented)
-- ❌ **Nginx**: Replaced by Traefik (single solution for proxy + SSL)
 
 **Resource Savings**: ~150MB RAM, faster startup, fewer containers to manage
 
