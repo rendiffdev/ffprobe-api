@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -29,7 +30,7 @@ type Repository interface {
 	CreateHLSAnalysis(ctx context.Context, hls *models.HLSAnalysis) error
 	GetHLSAnalysis(ctx context.Context, analysisID uuid.UUID) (*models.HLSAnalysis, error)
 	CreateHLSSegment(ctx context.Context, segment *models.HLSSegment) error
-	GetHLSSegments(ctx context.Context, hlsAnalysisID uuid.UUID) ([]models.HLSSegment, error)
+	GetHLSSegments(ctx context.Context, hlsAnalysisID uuid.UUID, limit int) ([]*models.HLSSegment, error)
 
 	// User operations
 	CreateUser(ctx context.Context, user *models.User) error
@@ -53,31 +54,29 @@ type Repository interface {
 	UpdateCacheHit(ctx context.Context, id uuid.UUID) error
 	CleanupExpiredCache(ctx context.Context) error
 
-	// Report operations
-	CreateReport(ctx context.Context, report *models.Report) error
-	GetReport(ctx context.Context, id uuid.UUID) (*models.Report, error)
-	GetReportsByAnalysis(ctx context.Context, analysisID uuid.UUID) ([]models.Report, error)
-	UpdateReportDownload(ctx context.Context, id uuid.UUID) error
+	// Report operations (placeholder)
+	// CreateReport(ctx context.Context, report *models.Report) error
+	// GetReport(ctx context.Context, id uuid.UUID) (*models.Report, error)
 }
 
-// PostgreSQLRepository implements Repository interface for PostgreSQL
-type PostgreSQLRepository struct {
+// SQLiteRepository implements Repository interface for SQLite
+type SQLiteRepository struct {
 	db *DB
 }
 
-// NewRepository creates a new PostgreSQL repository
+// NewRepository creates a new SQLite repository
 func NewRepository(db *DB) Repository {
-	return &PostgreSQLRepository{db: db}
+	return &SQLiteRepository{db: db}
 }
 
 // CreateAnalysis creates a new analysis record
-func (r *PostgreSQLRepository) CreateAnalysis(ctx context.Context, analysis *models.Analysis) error {
+func (r *SQLiteRepository) CreateAnalysis(ctx context.Context, analysis *models.Analysis) error {
 	query := `
 		INSERT INTO analyses (id, user_id, file_name, file_path, file_size, content_hash, 
 			source_type, status, ffprobe_data, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-	_, err := r.db.Pool.Exec(ctx, query,
+	_, err := r.db.DB.ExecContext(ctx, query,
 		analysis.ID,
 		analysis.UserID,
 		analysis.FileName,
@@ -99,14 +98,14 @@ func (r *PostgreSQLRepository) CreateAnalysis(ctx context.Context, analysis *mod
 }
 
 // GetAnalysis retrieves an analysis by ID
-func (r *PostgreSQLRepository) GetAnalysis(ctx context.Context, id uuid.UUID) (*models.Analysis, error) {
+func (r *SQLiteRepository) GetAnalysis(ctx context.Context, id uuid.UUID) (*models.Analysis, error) {
 	query := `
 		SELECT id, user_id, file_name, file_path, file_size, content_hash, source_type,
 			status, ffprobe_data, llm_report, processed_at, created_at, updated_at, error_msg
-		FROM analyses WHERE id = $1`
+		FROM analyses WHERE id = ?`
 
 	var analysis models.Analysis
-	err := r.db.Pool.QueryRow(ctx, query, id).Scan(
+	err := r.db.DB.QueryRowContext(ctx, query, id).Scan(
 		&analysis.ID,
 		&analysis.UserID,
 		&analysis.FileName,
@@ -131,16 +130,16 @@ func (r *PostgreSQLRepository) GetAnalysis(ctx context.Context, id uuid.UUID) (*
 }
 
 // GetAnalysesByUser retrieves analyses for a specific user with pagination
-func (r *PostgreSQLRepository) GetAnalysesByUser(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Analysis, error) {
+func (r *SQLiteRepository) GetAnalysesByUser(ctx context.Context, userID uuid.UUID, limit, offset int) ([]models.Analysis, error) {
 	query := `
 		SELECT id, user_id, file_name, file_path, file_size, content_hash, source_type,
 			status, ffprobe_data, llm_report, processed_at, created_at, updated_at, error_msg
 		FROM analyses 
-		WHERE user_id = $1 
+		WHERE user_id = ? 
 		ORDER BY created_at DESC 
-		LIMIT $2 OFFSET $3`
+		LIMIT ? OFFSET ?`
 
-	rows, err := r.db.Pool.Query(ctx, query, userID, limit, offset)
+	rows, err := r.db.DB.QueryContext(ctx, query, userID, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get analyses by user: %w", err)
 	}
@@ -175,13 +174,13 @@ func (r *PostgreSQLRepository) GetAnalysesByUser(ctx context.Context, userID uui
 }
 
 // UpdateAnalysisStatus updates the status of an analysis
-func (r *PostgreSQLRepository) UpdateAnalysisStatus(ctx context.Context, id uuid.UUID, status models.AnalysisStatus, errorMsg *string) error {
+func (r *SQLiteRepository) UpdateAnalysisStatus(ctx context.Context, id uuid.UUID, status models.AnalysisStatus, errorMsg *string) error {
 	query := `
 		UPDATE analyses 
-		SET status = $2, error_msg = $3, updated_at = $4
-		WHERE id = $1`
+		SET status = ?, error_msg = ?, updated_at = ?
+		WHERE id = ?`
 
-	_, err := r.db.Pool.Exec(ctx, query, id, status, errorMsg, time.Now())
+	_, err := r.db.DB.ExecContext(ctx, query, id, status, errorMsg, time.Now())
 	if err != nil {
 		return fmt.Errorf("failed to update analysis status: %w", err)
 	}
@@ -190,13 +189,13 @@ func (r *PostgreSQLRepository) UpdateAnalysisStatus(ctx context.Context, id uuid
 }
 
 // UpdateAnalysisLLMReport updates the LLM report of an analysis
-func (r *PostgreSQLRepository) UpdateAnalysisLLMReport(ctx context.Context, id uuid.UUID, report string) error {
+func (r *SQLiteRepository) UpdateAnalysisLLMReport(ctx context.Context, id uuid.UUID, report string) error {
 	query := `
 		UPDATE analyses 
-		SET llm_report = $2, updated_at = $3
-		WHERE id = $1`
+		SET llm_report = ?, updated_at = ?
+		WHERE id = ?`
 
-	_, err := r.db.Pool.Exec(ctx, query, id, report, time.Now())
+	_, err := r.db.DB.ExecContext(ctx, query, id, report, time.Now())
 	if err != nil {
 		return fmt.Errorf("failed to update analysis LLM report: %w", err)
 	}
@@ -205,10 +204,10 @@ func (r *PostgreSQLRepository) UpdateAnalysisLLMReport(ctx context.Context, id u
 }
 
 // DeleteAnalysis deletes an analysis record
-func (r *PostgreSQLRepository) DeleteAnalysis(ctx context.Context, id uuid.UUID) error {
-	query := `DELETE FROM analyses WHERE id = $1`
+func (r *SQLiteRepository) DeleteAnalysis(ctx context.Context, id uuid.UUID) error {
+	query := `DELETE FROM analyses WHERE id = ?`
 	
-	_, err := r.db.Pool.Exec(ctx, query, id)
+	_, err := r.db.DB.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete analysis: %w", err)
 	}
@@ -216,16 +215,116 @@ func (r *PostgreSQLRepository) DeleteAnalysis(ctx context.Context, id uuid.UUID)
 	return nil
 }
 
+// CreateQualityFrame creates a single quality frame record
+func (r *SQLiteRepository) CreateQualityFrame(ctx context.Context, frame *models.QualityFrame) error {
+	query := `
+		INSERT INTO quality_frames (
+			id, quality_metric_id, frame_number, timestamp, score, 
+			component_scores, created_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?)
+	`
+	
+	_, err := r.db.DB.ExecContext(
+		ctx, query,
+		frame.ID, frame.QualityMetricID, frame.FrameNumber, frame.Timestamp, frame.Score,
+		frame.ComponentScores, frame.CreatedAt,
+	)
+	return err
+}
+
+// CreateQualityMetrics creates a quality metrics record
+func (r *SQLiteRepository) CreateQualityMetrics(ctx context.Context, metrics *models.QualityMetrics) error {
+	query := `
+		INSERT INTO quality_metrics (
+			id, analysis_id, reference_file_id, metric_type, overall_score,
+			min_score, max_score, mean_score, std_deviation, percentile_data,
+			frame_count, processing_time, model_version, created_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`
+	
+	_, err := r.db.DB.ExecContext(
+		ctx, query,
+		metrics.ID, metrics.AnalysisID, metrics.ReferenceFileID, metrics.MetricType, metrics.OverallScore,
+		metrics.MinScore, metrics.MaxScore, metrics.MeanScore, metrics.StdDeviation, metrics.PercentileData,
+		metrics.FrameCount, metrics.ProcessingTime, metrics.ModelVersion, metrics.CreatedAt,
+	)
+	return err
+}
+
+// GetQualityMetrics retrieves quality metrics for an analysis
+func (r *SQLiteRepository) GetQualityMetrics(ctx context.Context, analysisID uuid.UUID) ([]models.QualityMetrics, error) {
+	query := `
+		SELECT id, analysis_id, reference_file_id, metric_type, overall_score,
+			   min_score, max_score, mean_score, std_deviation, percentile_data,
+			   frame_count, processing_time, model_version, created_at
+		FROM quality_metrics WHERE analysis_id = ?
+	`
+	
+	rows, err := r.db.DB.QueryContext(ctx, query, analysisID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	
+	var metrics []models.QualityMetrics
+	for rows.Next() {
+		var m models.QualityMetrics
+		err := rows.Scan(
+			&m.ID, &m.AnalysisID, &m.ReferenceFileID, &m.MetricType, &m.OverallScore,
+			&m.MinScore, &m.MaxScore, &m.MeanScore, &m.StdDeviation, &m.PercentileData,
+			&m.FrameCount, &m.ProcessingTime, &m.ModelVersion, &m.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		metrics = append(metrics, m)
+	}
+	
+	return metrics, rows.Err()
+}
+
+// GetQualityFrames retrieves quality frames for a metric
+func (r *SQLiteRepository) GetQualityFrames(ctx context.Context, metricID uuid.UUID, limit, offset int) ([]models.QualityFrame, error) {
+	query := `
+		SELECT id, quality_metric_id, frame_number, timestamp, score,
+			   component_scores, created_at
+		FROM quality_frames WHERE quality_metric_id = ?
+		ORDER BY frame_number LIMIT ? OFFSET ?
+	`
+	
+	rows, err := r.db.DB.QueryContext(ctx, query, metricID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	
+	var frames []models.QualityFrame
+	for rows.Next() {
+		var f models.QualityFrame
+		err := rows.Scan(
+			&f.ID, &f.QualityMetricID, &f.FrameNumber, &f.Timestamp, &f.Score,
+			&f.ComponentScores, &f.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		frames = append(frames, f)
+	}
+	
+	return frames, rows.Err()
+}
+
+
 // Quality metrics operations are implemented in quality_repository.go
 
-func (r *PostgreSQLRepository) CreateHLSAnalysis(ctx context.Context, hls *models.HLSAnalysis) error {
+func (r *SQLiteRepository) CreateHLSAnalysis(ctx context.Context, hls *models.HLSAnalysis) error {
 	query := `
 		INSERT INTO hls_analyses (
 			id, analysis_id, manifest_path, manifest_type, manifest_data,
 			segment_count, total_duration, bitrate_variants, segment_duration,
 			playlist_version, status, processing_time, created_at, completed_at, error_msg
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
+			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 		)
 	`
 	
@@ -238,13 +337,13 @@ func (r *PostgreSQLRepository) CreateHLSAnalysis(ctx context.Context, hls *model
 	return err
 }
 
-func (r *PostgreSQLRepository) GetHLSAnalysis(ctx context.Context, analysisID uuid.UUID) (*models.HLSAnalysis, error) {
+func (r *SQLiteRepository) GetHLSAnalysis(ctx context.Context, analysisID uuid.UUID) (*models.HLSAnalysis, error) {
 	query := `
 		SELECT id, analysis_id, manifest_path, manifest_type, manifest_data,
 			segment_count, total_duration, bitrate_variants, segment_duration,
 			playlist_version, status, processing_time, created_at, completed_at, error_msg
 		FROM hls_analyses
-		WHERE analysis_id = $1
+		WHERE analysis_id = ?
 	`
 	
 	var hls models.HLSAnalysis
@@ -255,14 +354,14 @@ func (r *PostgreSQLRepository) GetHLSAnalysis(ctx context.Context, analysisID uu
 	return &hls, nil
 }
 
-func (r *PostgreSQLRepository) CreateHLSSegment(ctx context.Context, segment *models.HLSSegment) error {
+func (r *SQLiteRepository) CreateHLSSegment(ctx context.Context, segment *models.HLSSegment) error {
 	query := `
 		INSERT INTO hls_segments (
 			id, hls_analysis_id, segment_uri, sequence_number, duration,
 			file_size, bitrate, resolution, frame_rate, segment_data,
 			quality_score, status, processed_at, created_at, error_msg
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
+			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 		)
 	`
 	
@@ -275,15 +374,15 @@ func (r *PostgreSQLRepository) CreateHLSSegment(ctx context.Context, segment *mo
 	return err
 }
 
-func (r *PostgreSQLRepository) GetHLSSegments(ctx context.Context, hlsAnalysisID uuid.UUID, limit int) ([]*models.HLSSegment, error) {
+func (r *SQLiteRepository) GetHLSSegments(ctx context.Context, hlsAnalysisID uuid.UUID, limit int) ([]*models.HLSSegment, error) {
 	query := `
 		SELECT id, hls_analysis_id, segment_uri, sequence_number, duration,
 			file_size, bitrate, resolution, frame_rate, segment_data,
 			quality_score, status, processed_at, created_at, error_msg
 		FROM hls_segments
-		WHERE hls_analysis_id = $1
+		WHERE hls_analysis_id = ?
 		ORDER BY sequence_number
-		LIMIT $2
+		LIMIT ?
 	`
 	
 	var segments []*models.HLSSegment
@@ -294,13 +393,13 @@ func (r *PostgreSQLRepository) GetHLSSegments(ctx context.Context, hlsAnalysisID
 	return segments, nil
 }
 
-func (r *PostgreSQLRepository) GetHLSAnalysisByAnalysisID(ctx context.Context, analysisID uuid.UUID) (*models.HLSAnalysis, error) {
+func (r *SQLiteRepository) GetHLSAnalysisByAnalysisID(ctx context.Context, analysisID uuid.UUID) (*models.HLSAnalysis, error) {
 	query := `
 		SELECT id, analysis_id, manifest_path, manifest_type, manifest_data,
 			segment_count, total_duration, bitrate_variants, segment_duration,
 			playlist_version, status, processing_time, created_at, completed_at, error_msg
 		FROM hls_analyses
-		WHERE analysis_id = $1
+		WHERE analysis_id = ?
 	`
 	
 	var hls models.HLSAnalysis
@@ -311,7 +410,7 @@ func (r *PostgreSQLRepository) GetHLSAnalysisByAnalysisID(ctx context.Context, a
 	return &hls, nil
 }
 
-func (r *PostgreSQLRepository) ListHLSAnalyses(ctx context.Context, userID *uuid.UUID, limit, offset int) ([]*models.HLSAnalysis, int, error) {
+func (r *SQLiteRepository) ListHLSAnalyses(ctx context.Context, userID *uuid.UUID, limit, offset int) ([]*models.HLSAnalysis, int, error) {
 	var analyses []*models.HLSAnalysis
 	var total int
 	
@@ -359,24 +458,24 @@ func (r *PostgreSQLRepository) ListHLSAnalyses(ctx context.Context, userID *uuid
 }
 
 // User and API Key operations - stub implementations for basic functionality
-func (r *PostgreSQLRepository) CreateUser(ctx context.Context, user *models.User) error {
+func (r *SQLiteRepository) CreateUser(ctx context.Context, user *models.User) error {
 	query := `
 		INSERT INTO users (id, email, username, password_hash, role, is_active, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 	
-	_, err := r.db.Pool.Exec(ctx, query,
+	_, err := r.db.DB.ExecContext(ctx, query,
 		user.ID, user.Email, user.Username, user.PasswordHash,
 		user.Role, user.IsActive, user.CreatedAt, user.UpdatedAt)
 	return err
 }
 
-func (r *PostgreSQLRepository) GetUser(ctx context.Context, id uuid.UUID) (*models.User, error) {
+func (r *SQLiteRepository) GetUser(ctx context.Context, id uuid.UUID) (*models.User, error) {
 	query := `
 		SELECT id, email, username, password_hash, role, is_active, created_at, updated_at
-		FROM users WHERE id = $1`
+		FROM users WHERE id = ?`
 	
 	var user models.User
-	err := r.db.Pool.QueryRow(ctx, query, id).Scan(
+	err := r.db.DB.QueryRowContext(ctx, query, id).Scan(
 		&user.ID, &user.Email, &user.Username, &user.PasswordHash,
 		&user.Role, &user.IsActive, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
@@ -385,13 +484,13 @@ func (r *PostgreSQLRepository) GetUser(ctx context.Context, id uuid.UUID) (*mode
 	return &user, nil
 }
 
-func (r *PostgreSQLRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
+func (r *SQLiteRepository) GetUserByEmail(ctx context.Context, email string) (*models.User, error) {
 	query := `
 		SELECT id, email, username, password_hash, role, is_active, created_at, updated_at
-		FROM users WHERE email = $1`
+		FROM users WHERE email = ?`
 	
 	var user models.User
-	err := r.db.Pool.QueryRow(ctx, query, email).Scan(
+	err := r.db.DB.QueryRowContext(ctx, query, email).Scan(
 		&user.ID, &user.Email, &user.Username, &user.PasswordHash,
 		&user.Role, &user.IsActive, &user.CreatedAt, &user.UpdatedAt)
 	if err != nil {
@@ -400,25 +499,25 @@ func (r *PostgreSQLRepository) GetUserByEmail(ctx context.Context, email string)
 	return &user, nil
 }
 
-func (r *PostgreSQLRepository) CreateAPIKey(ctx context.Context, apiKey *models.APIKey) error {
+func (r *SQLiteRepository) CreateAPIKey(ctx context.Context, apiKey *models.APIKey) error {
 	query := `
 		INSERT INTO api_keys (id, user_id, key_hash, name, permissions, is_active, expires_at, created_at, last_used)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	
-	_, err := r.db.Pool.Exec(ctx, query,
+	_, err := r.db.DB.ExecContext(ctx, query,
 		apiKey.ID, apiKey.UserID, apiKey.KeyHash, apiKey.Name,
 		apiKey.Permissions, apiKey.IsActive, apiKey.ExpiresAt,
 		apiKey.CreatedAt, apiKey.LastUsed)
 	return err
 }
 
-func (r *PostgreSQLRepository) GetAPIKey(ctx context.Context, keyHash string) (*models.APIKey, error) {
+func (r *SQLiteRepository) GetAPIKey(ctx context.Context, keyHash string) (*models.APIKey, error) {
 	query := `
 		SELECT id, user_id, key_hash, name, permissions, is_active, expires_at, created_at, last_used
-		FROM api_keys WHERE key_hash = $1 AND is_active = true`
+		FROM api_keys WHERE key_hash = ? AND is_active = true`
 	
 	var apiKey models.APIKey
-	err := r.db.Pool.QueryRow(ctx, query, keyHash).Scan(
+	err := r.db.DB.QueryRowContext(ctx, query, keyHash).Scan(
 		&apiKey.ID, &apiKey.UserID, &apiKey.KeyHash, &apiKey.Name,
 		&apiKey.Permissions, &apiKey.IsActive, &apiKey.ExpiresAt,
 		&apiKey.CreatedAt, &apiKey.LastUsed)
@@ -428,20 +527,20 @@ func (r *PostgreSQLRepository) GetAPIKey(ctx context.Context, keyHash string) (*
 	return &apiKey, nil
 }
 
-func (r *PostgreSQLRepository) UpdateAPIKeyLastUsed(ctx context.Context, id uuid.UUID) error {
-	query := `UPDATE api_keys SET last_used = NOW() WHERE id = $1`
-	_, err := r.db.Pool.Exec(ctx, query, id)
+func (r *SQLiteRepository) UpdateAPIKeyLastUsed(ctx context.Context, id uuid.UUID) error {
+	query := `UPDATE api_keys SET last_used = datetime('now') WHERE id = ?`
+	_, err := r.db.DB.ExecContext(ctx, query, id)
 	return err
 }
 
 // Report methods
-func (r *PostgreSQLRepository) CreateReport(ctx context.Context, report *models.Report) error {
+func (r *SQLiteRepository) CreateReport(ctx context.Context, report *models.Report) error {
 	query := `
 		INSERT INTO reports (
 			id, analysis_id, user_id, report_type, format, title, description,
 			file_path, file_size, download_count, is_public, expires_at, created_at
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
+			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 		)
 	`
 	
@@ -454,12 +553,12 @@ func (r *PostgreSQLRepository) CreateReport(ctx context.Context, report *models.
 	return err
 }
 
-func (r *PostgreSQLRepository) GetReport(ctx context.Context, id uuid.UUID) (*models.Report, error) {
+func (r *SQLiteRepository) GetReport(ctx context.Context, id uuid.UUID) (*models.Report, error) {
 	query := `
 		SELECT id, analysis_id, user_id, report_type, format, title, description,
 			file_path, file_size, download_count, is_public, expires_at, created_at, last_download
 		FROM reports
-		WHERE id = $1
+		WHERE id = ?
 	`
 	
 	var report models.Report
@@ -470,7 +569,7 @@ func (r *PostgreSQLRepository) GetReport(ctx context.Context, id uuid.UUID) (*mo
 	return &report, nil
 }
 
-func (r *PostgreSQLRepository) ListReports(ctx context.Context, userID *uuid.UUID, analysisID, reportType, format string, limit, offset int) ([]*models.Report, int, error) {
+func (r *SQLiteRepository) ListReports(ctx context.Context, userID *uuid.UUID, analysisID, reportType, format string, limit, offset int) ([]*models.Report, int, error) {
 	var reports []*models.Report
 	var total int
 	
@@ -541,30 +640,30 @@ func (r *PostgreSQLRepository) ListReports(ctx context.Context, userID *uuid.UUI
 	return reports, total, nil
 }
 
-func (r *PostgreSQLRepository) DeleteReport(ctx context.Context, id uuid.UUID) error {
-	query := "DELETE FROM reports WHERE id = $1"
+func (r *SQLiteRepository) DeleteReport(ctx context.Context, id uuid.UUID) error {
+	query := "DELETE FROM reports WHERE id = ?"
 	_, err := r.db.DB.ExecContext(ctx, query, id)
 	return err
 }
 
-func (r *PostgreSQLRepository) IncrementReportDownloadCount(ctx context.Context, id uuid.UUID) error {
+func (r *SQLiteRepository) IncrementReportDownloadCount(ctx context.Context, id uuid.UUID) error {
 	query := `
 		UPDATE reports 
-		SET download_count = download_count + 1, last_download = NOW()
-		WHERE id = $1
+		SET download_count = download_count + 1, last_download = datetime('now')
+		WHERE id = ?
 	`
 	_, err := r.db.DB.ExecContext(ctx, query, id)
 	return err
 }
 
 // Quality comparison methods
-func (r *PostgreSQLRepository) CreateQualityComparison(ctx context.Context, comparison *models.QualityComparison) error {
+func (r *SQLiteRepository) CreateQualityComparison(ctx context.Context, comparison *models.QualityComparison) error {
 	query := `
 		INSERT INTO quality_comparisons (
 			id, reference_id, distorted_id, comparison_type, status,
 			result_summary, processing_time, created_at, completed_at, error_msg
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+			?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 		)
 	`
 	
@@ -577,12 +676,12 @@ func (r *PostgreSQLRepository) CreateQualityComparison(ctx context.Context, comp
 	return err
 }
 
-func (r *PostgreSQLRepository) GetQualityComparison(ctx context.Context, id uuid.UUID) (*models.QualityComparison, error) {
+func (r *SQLiteRepository) GetQualityComparison(ctx context.Context, id uuid.UUID) (*models.QualityComparison, error) {
 	query := `
 		SELECT id, reference_id, distorted_id, comparison_type, status,
 			result_summary, processing_time, created_at, completed_at, error_msg
 		FROM quality_comparisons
-		WHERE id = $1
+		WHERE id = ?
 	`
 	
 	var comparison models.QualityComparison
@@ -593,12 +692,12 @@ func (r *PostgreSQLRepository) GetQualityComparison(ctx context.Context, id uuid
 	return &comparison, nil
 }
 
-func (r *PostgreSQLRepository) UpdateQualityComparison(ctx context.Context, comparison *models.QualityComparison) error {
+func (r *SQLiteRepository) UpdateQualityComparison(ctx context.Context, comparison *models.QualityComparison) error {
 	query := `
 		UPDATE quality_comparisons 
-		SET status = $2, result_summary = $3, processing_time = $4,
-			completed_at = $5, error_msg = $6, updated_at = NOW()
-		WHERE id = $1
+		SET status = ?, result_summary = ?, processing_time = ?,
+			completed_at = ?, error_msg = ?, updated_at = datetime('now')
+		WHERE id = ?
 	`
 	
 	_, err := r.db.DB.ExecContext(
@@ -609,13 +708,13 @@ func (r *PostgreSQLRepository) UpdateQualityComparison(ctx context.Context, comp
 	return err
 }
 
-func (r *PostgreSQLRepository) UpdateQualityComparisonStatus(ctx context.Context, id uuid.UUID, status models.AnalysisStatus) error {
-	query := "UPDATE quality_comparisons SET status = $2, updated_at = NOW() WHERE id = $1"
+func (r *SQLiteRepository) UpdateQualityComparisonStatus(ctx context.Context, id uuid.UUID, status models.AnalysisStatus) error {
+	query := "UPDATE quality_comparisons SET status = ?, updated_at = datetime('now') WHERE id = ?"
 	_, err := r.db.DB.ExecContext(ctx, query, id, status)
 	return err
 }
 
-func (r *PostgreSQLRepository) ListQualityComparisons(ctx context.Context, userID *uuid.UUID, referenceID, distortedID, status string, limit, offset int) ([]*models.QualityComparison, int, error) {
+func (r *SQLiteRepository) ListQualityComparisons(ctx context.Context, userID *uuid.UUID, referenceID, distortedID, status string, limit, offset int) ([]*models.QualityComparison, int, error) {
 	var comparisons []*models.QualityComparison
 	var total int
 	
@@ -690,8 +789,8 @@ func (r *PostgreSQLRepository) ListQualityComparisons(ctx context.Context, userI
 	return comparisons, total, nil
 }
 
-func (r *PostgreSQLRepository) DeleteQualityComparison(ctx context.Context, id uuid.UUID) error {
-	query := "DELETE FROM quality_comparisons WHERE id = $1"
+func (r *SQLiteRepository) DeleteQualityComparison(ctx context.Context, id uuid.UUID) error {
+	query := "DELETE FROM quality_comparisons WHERE id = ?"
 	result, err := r.db.DB.ExecContext(ctx, query, id)
 	if err != nil {
 		return err
@@ -703,34 +802,34 @@ func (r *PostgreSQLRepository) DeleteQualityComparison(ctx context.Context, id u
 	}
 	
 	if rowsAffected == 0 {
-		return database.ErrNotFound
+		return fmt.Errorf("processing job not found")
 	}
 	
 	return nil
 }
 
 // Processing job operations - basic implementations
-func (r *PostgreSQLRepository) CreateProcessingJob(ctx context.Context, job *models.ProcessingJob) error {
+func (r *SQLiteRepository) CreateProcessingJob(ctx context.Context, job *models.ProcessingJob) error {
 	query := `
 		INSERT INTO processing_jobs (id, analysis_id, job_type, status, priority, 
 			scheduled_at, started_at, completed_at, error_msg, retry_count, max_retries)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	
-	_, err := r.db.Pool.Exec(ctx, query,
+	_, err := r.db.DB.ExecContext(ctx, query,
 		job.ID, job.AnalysisID, job.JobType, job.Status, job.Priority,
 		job.ScheduledAt, job.StartedAt, job.CompletedAt, job.ErrorMsg,
 		job.RetryCount, job.MaxRetries)
 	return err
 }
 
-func (r *PostgreSQLRepository) GetProcessingJob(ctx context.Context, id uuid.UUID) (*models.ProcessingJob, error) {
+func (r *SQLiteRepository) GetProcessingJob(ctx context.Context, id uuid.UUID) (*models.ProcessingJob, error) {
 	query := `
 		SELECT id, analysis_id, job_type, status, priority, scheduled_at, 
 			started_at, completed_at, error_msg, retry_count, max_retries, created_at
-		FROM processing_jobs WHERE id = $1`
+		FROM processing_jobs WHERE id = ?`
 	
 	var job models.ProcessingJob
-	err := r.db.Pool.QueryRow(ctx, query, id).Scan(
+	err := r.db.DB.QueryRowContext(ctx, query, id).Scan(
 		&job.ID, &job.AnalysisID, &job.JobType, &job.Status, &job.Priority,
 		&job.ScheduledAt, &job.StartedAt, &job.CompletedAt, &job.ErrorMsg,
 		&job.RetryCount, &job.MaxRetries, &job.CreatedAt)
@@ -740,27 +839,27 @@ func (r *PostgreSQLRepository) GetProcessingJob(ctx context.Context, id uuid.UUI
 	return &job, nil
 }
 
-func (r *PostgreSQLRepository) UpdateProcessingJob(ctx context.Context, job *models.ProcessingJob) error {
+func (r *SQLiteRepository) UpdateProcessingJob(ctx context.Context, job *models.ProcessingJob) error {
 	query := `
 		UPDATE processing_jobs 
-		SET status = $2, started_at = $3, completed_at = $4, error_msg = $5, retry_count = $6
-		WHERE id = $1`
+		SET status = ?, started_at = ?, completed_at = ?, error_msg = ?, retry_count = ?
+		WHERE id = ?`
 	
-	_, err := r.db.Pool.Exec(ctx, query,
+	_, err := r.db.DB.ExecContext(ctx, query,
 		job.ID, job.Status, job.StartedAt, job.CompletedAt, job.ErrorMsg, job.RetryCount)
 	return err
 }
 
-func (r *PostgreSQLRepository) GetPendingJobs(ctx context.Context, jobType models.JobType, limit int) ([]models.ProcessingJob, error) {
+func (r *SQLiteRepository) GetPendingJobs(ctx context.Context, jobType models.JobType, limit int) ([]models.ProcessingJob, error) {
 	query := `
 		SELECT id, analysis_id, job_type, status, priority, scheduled_at, 
 			started_at, completed_at, error_msg, retry_count, max_retries, created_at
 		FROM processing_jobs 
-		WHERE job_type = $1 AND status = 'pending' 
+		WHERE job_type = ? AND status = 'pending' 
 		ORDER BY priority DESC, scheduled_at ASC 
-		LIMIT $2`
+		LIMIT ?`
 	
-	rows, err := r.db.Pool.Query(ctx, query, jobType, limit)
+	rows, err := r.db.DB.QueryContext(ctx, query, jobType, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -782,26 +881,26 @@ func (r *PostgreSQLRepository) GetPendingJobs(ctx context.Context, jobType model
 }
 
 // Cache operations - basic implementations  
-func (r *PostgreSQLRepository) CreateCacheEntry(ctx context.Context, entry *models.CacheEntry) error {
+func (r *SQLiteRepository) CreateCacheEntry(ctx context.Context, entry *models.CacheEntry) error {
 	query := `
 		INSERT INTO cache_entries (id, content_hash, cache_type, file_path, 
 			hit_count, expires_at, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)`
+		VALUES (?, ?, ?, ?, ?, ?, ?)`
 	
-	_, err := r.db.Pool.Exec(ctx, query,
+	_, err := r.db.DB.ExecContext(ctx, query,
 		entry.ID, entry.ContentHash, entry.CacheType, entry.FilePath,
 		entry.HitCount, entry.ExpiresAt, entry.CreatedAt)
 	return err
 }
 
-func (r *PostgreSQLRepository) GetCacheEntry(ctx context.Context, contentHash string, cacheType models.CacheType) (*models.CacheEntry, error) {
+func (r *SQLiteRepository) GetCacheEntry(ctx context.Context, contentHash string, cacheType models.CacheType) (*models.CacheEntry, error) {
 	query := `
 		SELECT id, content_hash, cache_type, file_path, hit_count, expires_at, created_at
 		FROM cache_entries 
-		WHERE content_hash = $1 AND cache_type = $2 AND expires_at > NOW()`
+		WHERE content_hash = ? AND cache_type = ? AND expires_at > datetime('now')`
 	
 	var entry models.CacheEntry
-	err := r.db.Pool.QueryRow(ctx, query, contentHash, cacheType).Scan(
+	err := r.db.DB.QueryRowContext(ctx, query, contentHash, cacheType).Scan(
 		&entry.ID, &entry.ContentHash, &entry.CacheType, &entry.FilePath,
 		&entry.HitCount, &entry.ExpiresAt, &entry.CreatedAt)
 	if err != nil {
@@ -810,14 +909,14 @@ func (r *PostgreSQLRepository) GetCacheEntry(ctx context.Context, contentHash st
 	return &entry, nil
 }
 
-func (r *PostgreSQLRepository) UpdateCacheHit(ctx context.Context, id uuid.UUID) error {
-	query := `UPDATE cache_entries SET hit_count = hit_count + 1 WHERE id = $1`
-	_, err := r.db.Pool.Exec(ctx, query, id)
+func (r *SQLiteRepository) UpdateCacheHit(ctx context.Context, id uuid.UUID) error {
+	query := `UPDATE cache_entries SET hit_count = hit_count + 1 WHERE id = ?`
+	_, err := r.db.DB.ExecContext(ctx, query, id)
 	return err
 }
 
-func (r *PostgreSQLRepository) CleanupExpiredCache(ctx context.Context) error {
-	query := `DELETE FROM cache_entries WHERE expires_at <= NOW()`
-	_, err := r.db.Pool.Exec(ctx, query)
+func (r *SQLiteRepository) CleanupExpiredCache(ctx context.Context) error {
+	query := `DELETE FROM cache_entries WHERE expires_at <= datetime('now')`
+	_, err := r.db.DB.ExecContext(ctx, query)
 	return err
 }

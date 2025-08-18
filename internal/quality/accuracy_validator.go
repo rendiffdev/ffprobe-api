@@ -439,5 +439,5 @@ type QualityTestCase struct {
 	DistortedFile string                 `json:"distorted_file"`
 	ExpectedScore float64                `json:"expected_score"`
 	Tolerance     float64                `json:"tolerance"`
-	Configuration map[string]interface{} `json:"configuration,omitempty"`
+	Configuration QualityConfig          `json:"configuration,omitempty"`
 }

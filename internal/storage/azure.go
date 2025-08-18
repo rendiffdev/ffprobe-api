@@ -2,9 +2,9 @@ package storage
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
@@ -62,10 +62,11 @@ func (a *AzureProvider) Delete(ctx context.Context, key string) error {
 }
 
 func (a *AzureProvider) Exists(ctx context.Context, key string) (bool, error) {
-	_, err := a.client.NewBlobClient(a.container, key).GetProperties(ctx, nil)
+	blobClient := a.client.ServiceClient().NewContainerClient(a.container).NewBlobClient(key)
+	_, err := blobClient.GetProperties(ctx, nil)
 	if err != nil {
-		var storageError *azblob.StorageError
-		if errors.As(err, &storageError) && storageError.ErrorCode == azblob.StorageErrorCodeBlobNotFound {
+		// Check if blob not found
+		if strings.Contains(err.Error(), "BlobNotFound") || strings.Contains(err.Error(), "404") {
 			return false, nil
 		}
 		return false, fmt.Errorf("failed to check if blob exists in Azure: %w", err)

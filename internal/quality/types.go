@@ -11,10 +11,12 @@ import (
 type QualityMetricType string
 
 const (
-	MetricVMAF QualityMetricType = "vmaf"
-	MetricPSNR QualityMetricType = "psnr"
-	MetricSSIM QualityMetricType = "ssim"
-	MetricMSE  QualityMetricType = "mse"
+	MetricVMAF    QualityMetricType = "vmaf"
+	MetricPSNR    QualityMetricType = "psnr"
+	MetricSSIM    QualityMetricType = "ssim"
+	MetricMSE     QualityMetricType = "mse"
+	MetricMSSSIM  QualityMetricType = "ms_ssim"  // Multi-Scale SSIM
+	MetricLPIPS   QualityMetricType = "lpips"    // Learned Perceptual Image Patch Similarity
 )
 
 // QualityAnalysis represents a complete quality analysis
@@ -63,6 +65,9 @@ const (
 	QualityStatusFailed     QualityAnalysisStatus = "failed"
 	QualityStatusCancelled  QualityAnalysisStatus = "cancelled"
 )
+
+// QualityStatus is an alias for QualityAnalysisStatus for backward compatibility
+type QualityStatus = QualityAnalysisStatus
 
 // QualityFrameMetric represents per-frame quality metrics
 type QualityFrameMetric struct {
@@ -122,9 +127,10 @@ type QualityComparisonRequest struct {
 
 // QualityConfig contains configuration for all quality metrics
 type QualityConfig struct {
-	VMAF *VMAFConfiguration `json:"vmaf,omitempty"`
-	PSNR *PSNRConfiguration `json:"psnr,omitempty"`
-	SSIM *SSIMConfiguration `json:"ssim,omitempty"`
+	VMAF    *VMAFConfiguration `json:"vmaf,omitempty"`
+	PSNR    *PSNRConfiguration `json:"psnr,omitempty"`
+	SSIM    *SSIMConfiguration `json:"ssim,omitempty"`
+	Timeout *int               `json:"timeout,omitempty"` // Analysis timeout in seconds
 }
 
 // QualityResult represents the result of a quality analysis

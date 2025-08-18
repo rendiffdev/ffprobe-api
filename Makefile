@@ -35,13 +35,13 @@ install: ## One-command installation with setup wizard
 
 quick: ## Quick start (no auth, development mode)
 	@echo "⚡ Quick start deployment..."
-	@docker compose --profile quick up -d
+	@docker compose -f docker-image/compose.yaml --profile quick up -d
 	@$(MAKE) wait-ready
 	@echo "✅ Quick start complete! Access: http://localhost:8080"
 
 minimal: ## Minimal deployment (4 core services only)
 	@echo "⚡ Minimal deployment (API + DB + Redis + AI)..."
-	@docker compose --profile minimal up -d
+	@docker compose -f docker-image/compose.yaml --profile minimal up -d
 	@$(MAKE) wait-ready
 	@echo "✅ Minimal deployment complete! Access: http://localhost:8080"
 	@echo "   Services: API, PostgreSQL, Redis, Ollama only"
@@ -49,7 +49,7 @@ minimal: ## Minimal deployment (4 core services only)
 prod: ## Production deployment with monitoring
 	@echo "🏭 Production deployment..."
 	@if [ ! -f .env ]; then echo "❌ .env file required for production. Run 'make install' first."; exit 1; fi
-	@docker compose -f compose.yaml -f compose.production.yaml --profile production up -d
+	@docker compose -f docker-image/compose.yaml -f docker-image/compose.production.yaml --profile production up -d
 	@$(MAKE) wait-ready
 	@echo "✅ Production deployment complete!"
 	@echo "   API: http://localhost:8080"
@@ -57,50 +57,50 @@ prod: ## Production deployment with monitoring
 
 dev: ## Development setup with hot reload
 	@echo "🔧 Development setup..."
-	@docker compose -f compose.yaml -f compose.development.yaml --profile development up -d
+	@docker compose -f docker-image/compose.yaml -f docker-image/compose.development.yaml --profile development up -d
 	@$(MAKE) wait-ready
 	@echo "✅ Development environment ready!"
 
 # === MANAGEMENT ===
 
 start: ## Start all services
-	@docker compose up -d
+	@docker compose -f docker-image/compose.yaml up -d
 
 stop: ## Stop all services
-	@docker compose stop
+	@docker compose -f docker-image/compose.yaml stop
 
 restart: ## Restart all services
-	@docker compose restart
+	@docker compose -f docker-image/compose.yaml restart
 
 down: ## Stop and remove all containers
-	@docker compose down
+	@docker compose -f docker-image/compose.yaml down
 
 clean: ## Remove all containers, volumes, and images
 	@echo "🧹 Cleaning up..."
-	@docker compose down -v --rmi all
+	@docker compose -f docker-image/compose.yaml down -v --rmi all
 	@docker system prune -f
 	@echo "✅ Cleanup complete"
 
 # === MONITORING ===
 
 status: ## Show service status
-	@docker compose ps
+	@docker compose -f docker-image/compose.yaml ps
 
 health: ## Check health of all services
 	@echo "🏥 Health Check:"
 	@echo "API:        $(shell curl -s http://localhost:8080/health | grep -o '"status":"[^"]*"' || echo '❌ Down')"
-	@echo "Database:   $(shell docker compose exec -T postgres pg_isready -q && echo '✅ Ready' || echo '❌ Down')"
-	@echo "Redis:      $(shell docker compose exec -T redis redis-cli ping 2>/dev/null || echo '❌ Down')"
+	@echo "Database:   $(shell test -f ./data/sqlite/ffprobe.db && echo '✅ Ready (SQLite)' || echo '❌ Down')"
+	@echo "Valkey:     $(shell docker compose exec -T valkey valkey-cli ping 2>/dev/null || echo '❌ Down')"
 	@echo "Ollama:     $(shell curl -s http://localhost:11434/api/version >/dev/null && echo '✅ Ready' || echo '❌ Down')"
 
 logs: ## Show logs from all services
-	@docker compose logs -f
+	@docker compose -f docker-image/compose.yaml logs -f
 
 logs-api: ## Show API logs only
-	@docker compose logs -f api
+	@docker compose -f docker-image/compose.yaml logs -f api
 
 logs-ollama: ## Show Ollama (AI) logs only
-	@docker compose logs -f ollama
+	@docker compose -f docker-image/compose.yaml logs -f ollama
 
 # === TESTING ===
 
@@ -114,8 +114,8 @@ test: ## Run health checks and basic tests
 
 test-ffmpeg: ## Test FFmpeg functionality
 	@echo "🎬 Testing FFmpeg..."
-	@docker compose exec api ffmpeg -version | head -1
-	@docker compose exec api ffprobe -version | head -1
+	@docker compose -f docker-image/compose.yaml exec api ffmpeg -version | head -1
+	@docker compose -f docker-image/compose.yaml exec api ffprobe -version | head -1
 	@echo "✅ FFmpeg tests passed"
 
 test-ai: ## Test AI model functionality
@@ -131,37 +131,38 @@ benchmark: ## Run performance benchmarks
 update: ## Update to latest versions
 	@echo "🔄 Updating FFprobe API..."
 	@git pull origin main || echo "⚠️  Manual git pull required"
-	@docker compose pull
-	@docker compose up -d --build
+	@docker compose -f docker-image/compose.yaml pull
+	@docker compose -f docker-image/compose.yaml up -d --build
 	@echo "✅ Update complete"
 
 backup: ## Create backup of data and configuration
 	@echo "💾 Creating backup..."
 	@mkdir -p backups/$(shell date +%Y%m%d_%H%M%S)
-	@docker compose exec postgres pg_dump -U $$POSTGRES_USER $$POSTGRES_DB > backups/$(shell date +%Y%m%d_%H%M%S)/database.sql 2>/dev/null || echo "⚠️  Database backup failed"
-	@cp -r uploads backups/$(shell date +%Y%m%d_%H%M%S)/ 2>/dev/null || echo "⚠️  No uploads to backup"
+	@cp -r data/sqlite backups/$(shell date +%Y%m%d_%H%M%S)/ 2>/dev/null || echo "⚠️  SQLite database backup failed"
+	@cp -r data/uploads backups/$(shell date +%Y%m%d_%H%M%S)/ 2>/dev/null || echo "⚠️  No uploads to backup"
+	@cp -r data/valkey backups/$(shell date +%Y%m%d_%H%M%S)/ 2>/dev/null || echo "⚠️  Valkey backup failed"
 	@cp .env backups/$(shell date +%Y%m%d_%H%M%S)/ 2>/dev/null || echo "ℹ️  No .env to backup"
 	@echo "✅ Backup created in backups/$(shell date +%Y%m%d_%H%M%S)"
 
 migrate: ## Run database migrations
 	@echo "🔄 Running migrations..."
-	@docker compose exec api ./ffprobe-api migrate up
+	@docker compose -f docker-image/compose.yaml exec api ./ffprobe-api migrate up
 	@echo "✅ Migrations complete"
 
 # === DEVELOPMENT ===
 
 build: ## Build the API image
 	@echo "🔨 Building API image..."
-	@docker compose build api
+	@docker compose -f docker-image/compose.yaml build api
 
 shell: ## Open shell in API container
-	@docker compose exec api /bin/bash
+	@docker compose -f docker-image/compose.yaml exec api /bin/bash
 
-db-shell: ## Open PostgreSQL shell
-	@docker compose exec postgres psql -U $$POSTGRES_USER -d $$POSTGRES_DB
+db-shell: ## Open SQLite shell
+	@docker compose -f docker-image/compose.yaml exec api sqlite3 /app/data/ffprobe.db
 
-redis-shell: ## Open Redis shell
-	@docker compose exec redis redis-cli -a $$REDIS_PASSWORD
+valkey-shell: ## Open Valkey shell
+	@docker compose -f docker-image/compose.yaml exec valkey valkey-cli -a $$VALKEY_PASSWORD
 
 # === UTILITIES ===
 
@@ -171,10 +172,10 @@ env: ## Generate .env file with secure defaults
 
 config: ## Show current configuration
 	@echo "⚙️  Current Configuration:"
-	@docker compose config
+	@docker compose -f docker-image/compose.yaml config
 
 ps: ## Show running containers
-	@docker compose ps -a
+	@docker compose -f docker-image/compose.yaml ps -a
 
 top: ## Show container resource usage
 	@docker stats --no-stream $(shell docker compose ps -q)
@@ -199,7 +200,7 @@ wait-ready: ## Wait for services to be ready (internal)
 
 check-docker: ## Check if Docker is available (internal)
 	@docker --version >/dev/null 2>&1 || { echo "❌ Docker not found. Please install Docker first."; exit 1; }
-	@docker compose version >/dev/null 2>&1 || { echo "❌ Docker Compose not found. Please install Docker Compose."; exit 1; }
+	@docker compose -f docker-image/compose.yaml version >/dev/null 2>&1 || { echo "❌ Docker Compose not found. Please install Docker Compose."; exit 1; }
 
 # === QUICK COMMANDS ===
 
@@ -323,9 +324,9 @@ setup-ollama:
 # Update Docker Compose files to new syntax
 docker-update:
 	@echo "🐳 Updating Docker Compose syntax..."
-	docker compose config > /dev/null && echo "✅ Base config valid"
-	docker compose -f compose.yaml -f compose.development.yaml config > /dev/null && echo "✅ Dev config valid"
-	docker compose -f compose.yaml -f compose.production.yaml config > /dev/null && echo "✅ Prod config valid"
+	docker compose -f docker-image/compose.yaml config > /dev/null && echo "✅ Base config valid"
+	docker compose -f docker-image/compose.yaml -f docker-image/compose.development.yaml config > /dev/null && echo "✅ Dev config valid"
+	docker compose -f docker-image/compose.yaml -f docker-image/compose.production.yaml config > /dev/null && echo "✅ Prod config valid"
 
 # Complete setup workflow
 setup-complete: install validate docker-update

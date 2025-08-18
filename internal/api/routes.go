@@ -53,8 +53,7 @@ type Router struct {
 // NewRouter creates a new router with all handlers
 func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Router {
 	// Create cache client (optional for rate limiting and caching)
-	var cacheClient *cache.ValkeyClient
-	var redisClient interface{} // For compatibility with existing services
+	var cacheClient cache.Client
 	
 	if cfg.EnableRateLimit || cfg.ValkeyHost != "" {
 		var err error
@@ -62,7 +61,6 @@ func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Rout
 		if err != nil {
 			logger.Warn().Err(err).Msg("Failed to connect to Valkey, continuing without cache")
 		} else {
-			redisClient = cacheClient.GetClient()
 			logger.Info().Msg("Valkey cache enabled")
 		}
 	}
@@ -132,7 +130,7 @@ func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Rout
 		TokenExpiry:  time.Duration(cfg.TokenExpiry) * time.Hour,
 		RefreshExpiry: time.Duration(cfg.RefreshExpiry) * time.Hour,
 	}
-	authMiddleware := middleware.NewAuthMiddleware(authConfig, db.DB, redisClient, logger)
+	authMiddleware := middleware.NewAuthMiddleware(authConfig, db.DB, cacheClient, logger)
 
 	rateLimitConfig := middleware.RateLimitConfig{
 		RequestsPerMinute: cfg.RateLimitPerMinute,
@@ -169,7 +167,7 @@ func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Rout
 		MaxActiveKeys:      5,
 		EnableAutoRotation: true,
 	}
-	rotationService := services.NewSecretRotationService(db.DB, redisClient, logger, rotationConfig)
+	rotationService := services.NewSecretRotationService(db.DB, cacheClient, logger, rotationConfig)
 	
 	// Create tenant rate limiter
 	tenantRateLimitConfig := middleware.TenantRateLimitConfig{
@@ -181,7 +179,7 @@ func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Rout
 		BurstMultiplier:    1.5,
 		IncludeHeaders:     true,
 	}
-	tenantRateLimiter := middleware.NewTenantRateLimiter(redisClient, logger, tenantRateLimitConfig)
+	tenantRateLimiter := middleware.NewTenantRateLimiter(cacheClient, logger, tenantRateLimitConfig)
 	
 	// Create GraphQL handler (DISABLED - incomplete implementation)
 	// TODO: Complete GraphQL schema implementation before enabling

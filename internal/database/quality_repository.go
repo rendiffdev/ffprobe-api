@@ -473,7 +473,8 @@ func (r *qualityRepository) GetQualityThresholds(ctx context.Context, metricType
 	if err != nil {
 		if err == sql.ErrNoRows {
 			// Return default thresholds if none found
-			return &quality.DefaultQualityThresholds(), nil
+			thresholds := quality.DefaultQualityThresholds()
+			return &thresholds, nil
 		}
 		return nil, err
 	}

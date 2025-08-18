@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"strconv"
@@ -15,6 +14,21 @@ import (
 
 	"github.com/rs/zerolog"
 )
+
+// executeFFprobeCommand executes an ffprobe command and returns the output
+func executeFFprobeCommand(ctx context.Context, cmd []string) (string, error) {
+	if len(cmd) == 0 {
+		return "", fmt.Errorf("empty command")
+	}
+	
+	command := exec.CommandContext(ctx, cmd[0], cmd[1:]...)
+	output, err := command.CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("command failed: %w, output: %s", err, string(output))
+	}
+	
+	return string(output), nil
+}
 
 // FFprobe represents the ffprobe service
 type FFprobe struct {
@@ -26,13 +40,13 @@ type FFprobe struct {
 	enableContentAnalysis bool
 }
 
-// NewFFprobe creates a new FFprobe instance
+// NewFFprobe creates a new FFprobe instance with binary validation
 func NewFFprobe(binaryPath string, logger zerolog.Logger) *FFprobe {
 	if binaryPath == "" {
 		binaryPath = "ffprobe"
 	}
 
-	return &FFprobe{
+	ffprobe := &FFprobe{
 		binaryPath:            binaryPath,
 		logger:                logger,
 		defaultTimeout:        5 * time.Minute, // Default 5 minute timeout
@@ -40,6 +54,41 @@ func NewFFprobe(binaryPath string, logger zerolog.Logger) *FFprobe {
 		enhancedAnalyzer:      NewEnhancedAnalyzer(binaryPath, logger),
 		enableContentAnalysis: false, // Disabled by default for performance
 	}
+
+	return ffprobe
+}
+
+// ValidateBinaryAtStartup validates FFprobe binary is available and executable
+// This should be called during application initialization
+func (f *FFprobe) ValidateBinaryAtStartup(ctx context.Context) error {
+	// First, try to resolve the binary path
+	if f.binaryPath != "ffprobe" {
+		// Check if absolute path exists
+		if _, err := os.Stat(f.binaryPath); err != nil {
+			if os.IsNotExist(err) {
+				return fmt.Errorf("ffprobe binary not found at path: %s", f.binaryPath)
+			}
+			return fmt.Errorf("cannot access ffprobe binary at path %s: %w", f.binaryPath, err)
+		}
+	} else {
+		// Check if ffprobe is in PATH
+		if _, err := exec.LookPath("ffprobe"); err != nil {
+			return fmt.Errorf("ffprobe binary not found in PATH. Please install FFmpeg or set FFPROBE_PATH environment variable: %w", err)
+		}
+	}
+
+	// Test binary execution and get version
+	version, err := f.GetVersion(ctx)
+	if err != nil {
+		return fmt.Errorf("ffprobe binary found but not executable or returned error: %w", err)
+	}
+
+	f.logger.Info().
+		Str("binary_path", f.binaryPath).
+		Str("version", version).
+		Msg("FFprobe binary validated successfully")
+
+	return nil
 }
 
 // SetDefaultTimeout sets the default timeout for ffprobe operations
@@ -64,6 +113,13 @@ func (f *FFprobe) EnableContentAnalysis() {
 func (f *FFprobe) DisableContentAnalysis() {
 	f.enableContentAnalysis = false
 	f.enhancedAnalyzer = NewEnhancedAnalyzer(f.binaryPath, f.logger)
+}
+
+// SetLLMAnalyzer sets the LLM analyzer for AI-powered quality analysis
+func (f *FFprobe) SetLLMAnalyzer(llmAnalyzer *LLMEnhancedAnalyzer) {
+	if f.enhancedAnalyzer != nil {
+		f.enhancedAnalyzer.SetLLMAnalyzer(llmAnalyzer)
+	}
 }
 
 // Probe executes ffprobe with the given options
@@ -196,6 +252,14 @@ func (f *FFprobe) Probe(ctx context.Context, options *FFprobeOptions) (*FFprobeR
 				Err(err).
 				Msg("Advanced QC analysis failed")
 			// Don't fail on advanced QC errors, just log them
+		}
+		
+		// Perform LLM-enhanced analysis if available
+		if err := f.enhancedAnalyzer.AnalyzeResultWithLLM(ctx, result, options.Input); err != nil {
+			f.logger.Warn().
+				Err(err).
+				Msg("LLM enhanced analysis failed")
+			// Don't fail on LLM analysis errors, just log them
 		}
 	}
 

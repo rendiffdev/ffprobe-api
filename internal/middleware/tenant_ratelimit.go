@@ -8,13 +8,13 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
+	"github.com/rendiffdev/ffprobe-api/internal/cache"
 	"github.com/rs/zerolog"
 )
 
 // TenantRateLimiter provides per-user and per-tenant rate limiting
 type TenantRateLimiter struct {
-	redis  *redis.Client
+	cache  cache.Client
 	logger zerolog.Logger
 	config TenantRateLimitConfig
 }
@@ -54,12 +54,9 @@ type RateLimitInfo struct {
 }
 
 // NewTenantRateLimiter creates a new tenant-aware rate limiter
-func NewTenantRateLimiter(redisClient interface{}, logger zerolog.Logger, config TenantRateLimitConfig) *TenantRateLimiter {
-	var redis *redis.Client
-	if redisClient != nil {
-		if rc, ok := redisClient.(*redis.Client); ok {
-			redis = rc
-		}
+func NewTenantRateLimiter(cacheClient cache.Client, logger zerolog.Logger, config TenantRateLimitConfig) *TenantRateLimiter {
+	if cacheClient == nil {
+		cacheClient = &cache.NoOpClient{}
 	}
 	// Set defaults if not configured
 	if config.DefaultRPM == 0 {
@@ -76,7 +73,7 @@ func NewTenantRateLimiter(redisClient interface{}, logger zerolog.Logger, config
 	}
 
 	return &TenantRateLimiter{
-		redis:  redis,
+		cache:  cacheClient,
 		logger: logger,
 		config: config,
 	}
@@ -217,7 +214,7 @@ type APIKeyLimits struct {
 // getAPIKeyLimits retrieves limits from API key cache
 func (rl *TenantRateLimiter) getAPIKeyLimits(ctx context.Context, apiKeyID string) *APIKeyLimits {
 	cacheKey := fmt.Sprintf("apikey:%s:limits", apiKeyID)
-	result := rl.redis.HGetAll(ctx, cacheKey).Val()
+	result, _ := rl.cache.HGetAll(ctx, cacheKey)
 	
 	if len(result) == 0 {
 		return nil
@@ -245,7 +242,7 @@ func (rl *TenantRateLimiter) getAPIKeyLimits(ctx context.Context, apiKeyID strin
 // getUserLimits retrieves user-specific rate limits
 func (rl *TenantRateLimiter) getUserLimits(ctx context.Context, userID string) *APIKeyLimits {
 	cacheKey := fmt.Sprintf("user:%s:limits", userID)
-	result := rl.redis.HGetAll(ctx, cacheKey).Val()
+	result, _ := rl.cache.HGetAll(ctx, cacheKey)
 	
 	if len(result) == 0 {
 		return nil
@@ -273,7 +270,7 @@ func (rl *TenantRateLimiter) getUserLimits(ctx context.Context, userID string) *
 // getTenantLimits retrieves tenant-specific rate limits
 func (rl *TenantRateLimiter) getTenantLimits(ctx context.Context, tenantID string) *APIKeyLimits {
 	cacheKey := fmt.Sprintf("tenant:%s:limits", tenantID)
-	result := rl.redis.HGetAll(ctx, cacheKey).Val()
+	result, _ := rl.cache.HGetAll(ctx, cacheKey)
 	
 	if len(result) == 0 {
 		return nil
@@ -307,29 +304,20 @@ func (rl *TenantRateLimiter) checkRateLimit(ctx context.Context, userID, tenantI
 	hourKey := fmt.Sprintf("ratelimit:%s:%s:hour:%d", tenantID, userID, now.Unix()/3600)
 	dayKey := fmt.Sprintf("ratelimit:%s:%s:day:%s", tenantID, userID, now.Format("20060102"))
 
-	// Use pipeline for atomic operations
-	pipe := rl.redis.Pipeline()
-	
-	// Increment counters
-	minuteIncr := pipe.Incr(ctx, minuteKey)
-	hourIncr := pipe.Incr(ctx, hourKey)
-	dayIncr := pipe.Incr(ctx, dayKey)
+	// Increment counters individually
+	minuteIncr, _ := rl.cache.Incr(ctx, minuteKey)
+	hourIncr, _ := rl.cache.Incr(ctx, hourKey)
+	dayIncr, _ := rl.cache.Incr(ctx, dayKey)
 	
 	// Set expiration
-	pipe.Expire(ctx, minuteKey, time.Minute)
-	pipe.Expire(ctx, hourKey, time.Hour)
-	pipe.Expire(ctx, dayKey, 24*time.Hour)
-	
-	// Execute pipeline
-	_, err := pipe.Exec(ctx)
-	if err != nil {
-		return false, nil, err
-	}
+	rl.cache.Expire(ctx, minuteKey, time.Minute)
+	rl.cache.Expire(ctx, hourKey, time.Hour)
+	rl.cache.Expire(ctx, dayKey, 24*time.Hour)
 
 	// Get current counts
-	limits.CurrentRPM = int(minuteIncr.Val())
-	limits.CurrentRPH = int(hourIncr.Val())
-	limits.CurrentRPD = int(dayIncr.Val())
+	limits.CurrentRPM = int(minuteIncr)
+	limits.CurrentRPH = int(hourIncr)
+	limits.CurrentRPD = int(dayIncr)
 	
 	// Calculate reset times
 	limits.ResetMinute = now.Truncate(time.Minute).Add(time.Minute)
@@ -381,18 +369,18 @@ func (rl *TenantRateLimiter) getDefaultLimits() *RateLimitInfo {
 func (rl *TenantRateLimiter) SetUserLimits(ctx context.Context, userID string, rpm, rph, rpd int) error {
 	cacheKey := fmt.Sprintf("user:%s:limits", userID)
 	
-	err := rl.redis.HSet(ctx, cacheKey, map[string]interface{}{
+	err := rl.cache.HSet(ctx, cacheKey, map[string]interface{}{
 		"rpm": rpm,
 		"rph": rph,
 		"rpd": rpd,
-	}).Err()
+	})
 	
 	if err != nil {
 		return fmt.Errorf("failed to set user limits: %w", err)
 	}
 	
 	// Set expiration to 30 days
-	rl.redis.Expire(ctx, cacheKey, 30*24*time.Hour)
+	rl.cache.Expire(ctx, cacheKey, 30*24*time.Hour)
 	
 	rl.logger.Info().
 		Str("user_id", userID).
@@ -408,18 +396,18 @@ func (rl *TenantRateLimiter) SetUserLimits(ctx context.Context, userID string, r
 func (rl *TenantRateLimiter) SetTenantLimits(ctx context.Context, tenantID string, rpm, rph, rpd int) error {
 	cacheKey := fmt.Sprintf("tenant:%s:limits", tenantID)
 	
-	err := rl.redis.HSet(ctx, cacheKey, map[string]interface{}{
+	err := rl.cache.HSet(ctx, cacheKey, map[string]interface{}{
 		"rpm": rpm,
 		"rph": rph,
 		"rpd": rpd,
-	}).Err()
+	})
 	
 	if err != nil {
 		return fmt.Errorf("failed to set tenant limits: %w", err)
 	}
 	
 	// Set expiration to 30 days
-	rl.redis.Expire(ctx, cacheKey, 30*24*time.Hour)
+	rl.cache.Expire(ctx, cacheKey, 30*24*time.Hour)
 	
 	rl.logger.Info().
 		Str("tenant_id", tenantID).
@@ -440,9 +428,13 @@ func (rl *TenantRateLimiter) GetCurrentUsage(ctx context.Context, userID, tenant
 	dayKey := fmt.Sprintf("ratelimit:%s:%s:day:%s", tenantID, userID, now.Format("20060102"))
 	
 	// Get current counts
-	minuteCount, _ := rl.redis.Get(ctx, minuteKey).Int()
-	hourCount, _ := rl.redis.Get(ctx, hourKey).Int()
-	dayCount, _ := rl.redis.Get(ctx, dayKey).Int()
+	minuteStr, _ := rl.cache.Get(ctx, minuteKey)
+	hourStr, _ := rl.cache.Get(ctx, hourKey)
+	dayStr, _ := rl.cache.Get(ctx, dayKey)
+	
+	minuteCount, _ := strconv.Atoi(minuteStr)
+	hourCount, _ := strconv.Atoi(hourStr)  
+	dayCount, _ := strconv.Atoi(dayStr)
 	
 	// Get limits
 	limits, _ := rl.getRateLimits(ctx, userID, tenantID, "")

@@ -35,8 +35,8 @@ func ValidateQualityRequest(request *QualityComparisonRequest) error {
 	}
 
 	// Validate configuration
-	if request.Configuration != nil {
-		if err := validateQualityConfiguration(request.Configuration); err != nil {
+	if request.Configuration != (QualityConfig{}) {
+		if err := validateQualityConfiguration(&request.Configuration); err != nil {
 			return fmt.Errorf("invalid configuration: %w", err)
 		}
 	}
@@ -117,7 +117,7 @@ func validateMetricType(metric QualityMetricType) error {
 }
 
 // validateQualityConfiguration validates quality analysis configuration
-func validateQualityConfiguration(config *QualityConfiguration) error {
+func validateQualityConfiguration(config *QualityConfig) error {
 	if config.VMAF != nil {
 		if err := validateVMAFConfiguration(config.VMAF); err != nil {
 			return fmt.Errorf("invalid VMAF configuration: %w", err)
@@ -136,7 +136,7 @@ func validateQualityConfiguration(config *QualityConfiguration) error {
 		}
 	}
 
-	if config.Timeout > 0 && config.Timeout > 2*time.Hour {
+	if config.Timeout != nil && *config.Timeout > 0 && time.Duration(*config.Timeout)*time.Second > 2*time.Hour {
 		return fmt.Errorf("timeout cannot exceed 2 hours")
 	}
 

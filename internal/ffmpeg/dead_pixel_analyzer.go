@@ -5,9 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"regexp"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -193,7 +190,7 @@ type QualityImpact struct {
 	VisualImpact        string              `json:"visual_impact"`           // "negligible", "minor", "moderate", "severe"
 	ViewingDistanceImpact *ViewingDistanceImpact `json:"viewing_distance_impact,omitempty"`
 	ContentTypeImpact   *ContentTypeImpact  `json:"content_type_impact,omitempty"`
-	UseCase Impact      *UseCaseImpact      `json:"use_case_impact,omitempty"`
+	UseCaseImpact       *UseCaseImpact      `json:"use_case_impact,omitempty"`
 	RepairFeasibility   string              `json:"repair_feasibility"`      // "easy", "moderate", "difficult", "impossible"
 	PriorityLevel       string              `json:"priority_level"`          // "low", "medium", "high", "critical"
 	ImpactDescription   string              `json:"impact_description"`

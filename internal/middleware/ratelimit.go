@@ -40,6 +40,7 @@ type WindowCounter struct {
 type RateLimitMiddleware struct {
 	config   RateLimitConfig
 	counters *RateCounter
+	mu       sync.RWMutex
 	logger   zerolog.Logger
 }
 
@@ -213,8 +214,8 @@ func (rl *RateLimitMiddleware) incrementCounters(identifier string, now time.Tim
 	rl.incrementCounter(rl.counters.Day, identifier, now, 24*time.Hour)
 }
 
-// incrementCounter increments a specific window counter
-func (rl *RateLimitMiddleware) incrementCounter(windowMap map[string]*WindowCounter, identifier string, now time.Time, duration time.Duration) {
+// incrementCounter increments a specific window counter and returns the new count
+func (rl *RateLimitMiddleware) incrementCounter(windowMap map[string]*WindowCounter, identifier string, now time.Time, duration time.Duration) int {
 	counter, exists := windowMap[identifier]
 	
 	if !exists {
@@ -222,7 +223,7 @@ func (rl *RateLimitMiddleware) incrementCounter(windowMap map[string]*WindowCoun
 			Count:     1,
 			ResetTime: now.Add(duration),
 		}
-		return
+		return 1
 	}
 
 	counter.mutex.Lock()
@@ -232,8 +233,10 @@ func (rl *RateLimitMiddleware) incrementCounter(windowMap map[string]*WindowCoun
 	if now.After(counter.ResetTime) {
 		counter.Count = 1
 		counter.ResetTime = now.Add(duration)
+		return 1
 	} else {
 		counter.Count++
+		return counter.Count
 	}
 }
 
@@ -451,7 +454,7 @@ func (rl *RateLimitMiddleware) checkRateLimitWithLimits(identifier string, limit
 
 	// Check per-minute limit
 	minuteKey := fmt.Sprintf("%s:minute:%d", key, now.Unix()/60)
-	minuteCount := rl.incrementCounter(minuteKey, 60)
+	minuteCount := rl.incrementCounter(rl.counters.Minute, minuteKey, now, time.Minute)
 	if minuteCount > limits.RequestsPerMinute {
 		return false
 	}
@@ -459,7 +462,7 @@ func (rl *RateLimitMiddleware) checkRateLimitWithLimits(identifier string, limit
 	// Check per-hour limit
 	if limits.RequestsPerHour > 0 {
 		hourKey := fmt.Sprintf("%s:hour:%d", key, now.Unix()/3600)
-		hourCount := rl.incrementCounter(hourKey, 3600)
+		hourCount := rl.incrementCounter(rl.counters.Hour, hourKey, now, time.Hour)
 		if hourCount > limits.RequestsPerHour {
 			return false
 		}
@@ -468,7 +471,7 @@ func (rl *RateLimitMiddleware) checkRateLimitWithLimits(identifier string, limit
 	// Check per-day limit
 	if limits.RequestsPerDay > 0 {
 		dayKey := fmt.Sprintf("%s:day:%d", key, now.Unix()/86400)
-		dayCount := rl.incrementCounter(dayKey, 86400)
+		dayCount := rl.incrementCounter(rl.counters.Day, dayKey, now, 24*time.Hour)
 		if dayCount > limits.RequestsPerDay {
 			return false
 		}
@@ -483,14 +486,14 @@ func (rl *RateLimitMiddleware) getRemainingRequestsWithLimits(identifier string,
 	minuteKey := fmt.Sprintf("%s:minute:%d", identifier, now.Unix()/60)
 	
 	rl.mu.RLock()
-	count, exists := rl.counters[minuteKey]
+	count, exists := rl.counters.Minute[minuteKey]
 	rl.mu.RUnlock()
 	
 	if !exists {
 		return limits.RequestsPerMinute
 	}
 	
-	remaining := limits.RequestsPerMinute - count
+	remaining := limits.RequestsPerMinute - count.Count
 	if remaining < 0 {
 		return 0
 	}

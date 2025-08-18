@@ -3,12 +3,45 @@ package repositories
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
+
+// JSONB represents a PostgreSQL JSONB column type
+type JSONB map[string]interface{}
+
+// Value implements the driver Valuer interface
+func (j JSONB) Value() (driver.Value, error) {
+	if j == nil {
+		return nil, nil
+	}
+	return json.Marshal(j)
+}
+
+// Scan implements the sql Scanner interface
+func (j *JSONB) Scan(value interface{}) error {
+	if value == nil {
+		*j = nil
+		return nil
+	}
+	
+	var bytes []byte
+	switch v := value.(type) {
+	case []byte:
+		bytes = v
+	case string:
+		bytes = []byte(v)
+	default:
+		return fmt.Errorf("cannot scan %T into JSONB", value)
+	}
+	
+	return json.Unmarshal(bytes, j)
+}
 
 // VMAFModel represents a custom VMAF model in the database
 type VMAFModel struct {

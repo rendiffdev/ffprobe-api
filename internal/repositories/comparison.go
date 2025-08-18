@@ -21,18 +21,18 @@ type ComparisonRepository interface {
 	GetComparisonHistory(ctx context.Context, originalID, modifiedID uuid.UUID) ([]*models.VideoComparison, error)
 }
 
-// PostgreSQLComparisonRepository implements ComparisonRepository using PostgreSQL
-type PostgreSQLComparisonRepository struct {
+// SQLiteComparisonRepository implements ComparisonRepository using SQLite
+type SQLiteComparisonRepository struct {
 	db *sqlx.DB
 }
 
-// NewPostgreSQLComparisonRepository creates a new PostgreSQL comparison repository
-func NewPostgreSQLComparisonRepository(db *sqlx.DB) ComparisonRepository {
-	return &PostgreSQLComparisonRepository{db: db}
+// NewSQLiteComparisonRepository creates a new SQLite comparison repository
+func NewSQLiteComparisonRepository(db *sqlx.DB) ComparisonRepository {
+	return &SQLiteComparisonRepository{db: db}
 }
 
 // Create creates a new comparison record
-func (r *PostgreSQLComparisonRepository) Create(ctx context.Context, comparison *models.VideoComparison) error {
+func (r *SQLiteComparisonRepository) Create(ctx context.Context, comparison *models.VideoComparison) error {
 	query := `
 		INSERT INTO video_comparisons (
 			id, user_id, original_analysis_id, modified_analysis_id, 
@@ -53,7 +53,7 @@ func (r *PostgreSQLComparisonRepository) Create(ctx context.Context, comparison 
 }
 
 // GetByID retrieves a comparison by its ID
-func (r *PostgreSQLComparisonRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.VideoComparison, error) {
+func (r *SQLiteComparisonRepository) GetByID(ctx context.Context, id uuid.UUID) (*models.VideoComparison, error) {
 	query := `
 		SELECT id, user_id, original_analysis_id, modified_analysis_id,
 			   comparison_type, status, comparison_data, llm_assessment,
@@ -74,7 +74,7 @@ func (r *PostgreSQLComparisonRepository) GetByID(ctx context.Context, id uuid.UU
 }
 
 // Update updates an existing comparison
-func (r *PostgreSQLComparisonRepository) Update(ctx context.Context, comparison *models.VideoComparison) error {
+func (r *SQLiteComparisonRepository) Update(ctx context.Context, comparison *models.VideoComparison) error {
 	query := `
 		UPDATE video_comparisons SET
 			comparison_type = :comparison_type,
@@ -104,7 +104,7 @@ func (r *PostgreSQLComparisonRepository) Update(ctx context.Context, comparison 
 }
 
 // Delete deletes a comparison by ID
-func (r *PostgreSQLComparisonRepository) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *SQLiteComparisonRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	query := `DELETE FROM video_comparisons WHERE id = $1`
 
 	result, err := r.db.ExecContext(ctx, query, id)
@@ -125,7 +125,7 @@ func (r *PostgreSQLComparisonRepository) Delete(ctx context.Context, id uuid.UUI
 }
 
 // ListByUser lists comparisons for a specific user
-func (r *PostgreSQLComparisonRepository) ListByUser(ctx context.Context, userID *uuid.UUID, limit, offset int) ([]*models.VideoComparison, error) {
+func (r *SQLiteComparisonRepository) ListByUser(ctx context.Context, userID *uuid.UUID, limit, offset int) ([]*models.VideoComparison, error) {
 	var query string
 	var args []interface{}
 
@@ -161,7 +161,7 @@ func (r *PostgreSQLComparisonRepository) ListByUser(ctx context.Context, userID 
 }
 
 // ListByAnalysis lists all comparisons involving a specific analysis
-func (r *PostgreSQLComparisonRepository) ListByAnalysis(ctx context.Context, analysisID uuid.UUID) ([]*models.VideoComparison, error) {
+func (r *SQLiteComparisonRepository) ListByAnalysis(ctx context.Context, analysisID uuid.UUID) ([]*models.VideoComparison, error) {
 	query := `
 		SELECT id, user_id, original_analysis_id, modified_analysis_id,
 			   comparison_type, status, comparison_data, llm_assessment,
@@ -180,7 +180,7 @@ func (r *PostgreSQLComparisonRepository) ListByAnalysis(ctx context.Context, ana
 }
 
 // GetComparisonHistory gets the comparison history between two specific analyses
-func (r *PostgreSQLComparisonRepository) GetComparisonHistory(ctx context.Context, originalID, modifiedID uuid.UUID) ([]*models.VideoComparison, error) {
+func (r *SQLiteComparisonRepository) GetComparisonHistory(ctx context.Context, originalID, modifiedID uuid.UUID) ([]*models.VideoComparison, error) {
 	query := `
 		SELECT id, user_id, original_analysis_id, modified_analysis_id,
 			   comparison_type, status, comparison_data, llm_assessment,

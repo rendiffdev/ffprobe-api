@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/redis/go-redis/v9"
+	"github.com/rendiffdev/ffprobe-api/internal/cache"
 	"github.com/rs/zerolog"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -18,7 +18,7 @@ import (
 // SecretRotationService handles API key and JWT secret rotation
 type SecretRotationService struct {
 	db     *sqlx.DB
-	redis  *redis.Client
+	cache  cache.Client
 	logger zerolog.Logger
 	config SecretRotationConfig
 }
@@ -67,12 +67,9 @@ type JWTSecret struct {
 }
 
 // NewSecretRotationService creates a new secret rotation service
-func NewSecretRotationService(db *sqlx.DB, redisClient interface{}, logger zerolog.Logger, config SecretRotationConfig) *SecretRotationService {
-	var redis *redis.Client
-	if redisClient != nil {
-		if rc, ok := redisClient.(*redis.Client); ok {
-			redis = rc
-		}
+func NewSecretRotationService(db *sqlx.DB, cacheClient cache.Client, logger zerolog.Logger, config SecretRotationConfig) *SecretRotationService {
+	if cacheClient == nil {
+		cacheClient = &cache.NoOpClient{}
 	}
 	if config.RotationInterval == 0 {
 		config.RotationInterval = 90 * 24 * time.Hour // 90 days default
@@ -164,13 +161,13 @@ func (s *SecretRotationService) GenerateAPIKey(ctx context.Context, userID, tena
 
 	// Cache key metadata in Redis for fast lookup
 	cacheKey := fmt.Sprintf("apikey:%s:meta", keyPrefix)
-	s.redis.HSet(ctx, cacheKey, map[string]interface{}{
+	s.cache.HSet(ctx, cacheKey, map[string]interface{}{
 		"user_id":   userID,
 		"tenant_id": tenantID,
 		"key_id":    apiKey.ID,
 		"status":    "active",
 	})
-	s.redis.Expire(ctx, cacheKey, 24*time.Hour)
+	s.cache.Expire(ctx, cacheKey, 24*time.Hour)
 
 	s.logger.Info().
 		Str("user_id", userID).
@@ -208,7 +205,7 @@ func (s *SecretRotationService) RotateAPIKey(ctx context.Context, keyID string) 
 
 	// Invalidate old key cache
 	oldCacheKey := fmt.Sprintf("apikey:%s:meta", oldKey.KeyPrefix)
-	s.redis.Del(ctx, oldCacheKey)
+	s.cache.Del(ctx, oldCacheKey)
 
 	s.logger.Info().
 		Str("old_key_id", keyID).
@@ -280,8 +277,8 @@ func (s *SecretRotationService) RotateJWTSecret(ctx context.Context) (*JWTSecret
 	}
 
 	// Cache new secret for fast access
-	s.redis.Set(ctx, "jwt:secret:active", newSecret, s.config.RotationInterval)
-	s.redis.Set(ctx, "jwt:version:active", jwtSecret.Version, s.config.RotationInterval)
+	s.cache.Set(ctx, "jwt:secret:active", newSecret, s.config.RotationInterval)
+	s.cache.Set(ctx, "jwt:version:active", jwtSecret.Version, s.config.RotationInterval)
 
 	// Commit transaction
 	if err = tx.Commit(); err != nil {
@@ -306,7 +303,7 @@ func (s *SecretRotationService) ValidateAPIKey(ctx context.Context, apiKey strin
 
 	// Check cache first
 	cacheKey := fmt.Sprintf("apikey:%s:meta", prefix)
-	cached := s.redis.HGetAll(ctx, cacheKey).Val()
+	cached := s.cache.HGetAll(ctx, cacheKey).Val()
 	
 	var keyRecord APIKey
 	if len(cached) > 0 && cached["status"] == "active" {
@@ -433,12 +430,12 @@ func (s *SecretRotationService) SetUserRateLimits(ctx context.Context, keyID str
 	var key APIKey
 	if err = s.db.GetContext(ctx, &key, "SELECT * FROM api_keys WHERE id = $1", keyID); err == nil {
 		cacheKey := fmt.Sprintf("apikey:%s:limits", key.KeyPrefix)
-		s.redis.HSet(ctx, cacheKey, map[string]interface{}{
+		s.cache.HSet(ctx, cacheKey, map[string]interface{}{
 			"rpm": rpm,
 			"rph": rph,
 			"rpd": rpd,
 		})
-		s.redis.Expire(ctx, cacheKey, 24*time.Hour)
+		s.cache.Expire(ctx, cacheKey, 24*time.Hour)
 	}
 
 	return nil

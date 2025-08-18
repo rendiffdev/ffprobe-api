@@ -28,8 +28,8 @@ func ValidateHLSRequest(request *HLSAnalysisRequest) error {
 		return fmt.Errorf("max segments cannot exceed 1000")
 	}
 
-	// Validate timeout
-	if request.Timeout > 0 && request.Timeout > 10*time.Minute {
+	// Validate timeout (timeout is in seconds, convert to duration for comparison)
+	if request.Timeout > 0 && time.Duration(request.Timeout)*time.Second > 10*time.Minute {
 		return fmt.Errorf("timeout cannot exceed 10 minutes")
 	}
 
@@ -205,23 +205,26 @@ func validateVariant(variant *HLSVariant) error {
 	}
 
 	// Validate codecs if provided
-	if variant.Codecs != "" {
-		if err := validateCodecs(variant.Codecs); err != nil {
-			return fmt.Errorf("invalid codecs: %w", err)
+	if len(variant.Codecs) > 0 {
+		for _, codec := range variant.Codecs {
+			if err := validateCodecs(codec); err != nil {
+				return fmt.Errorf("invalid codec %s: %w", codec, err)
+			}
 		}
 	}
 
 	// Validate resolution if provided
-	if variant.Resolution != "" {
-		if err := validateResolution(variant.Resolution); err != nil {
+	if variant.Resolution != nil {
+		resolutionStr := fmt.Sprintf("%dx%d", variant.Resolution.Width, variant.Resolution.Height)
+		if err := validateResolution(resolutionStr); err != nil {
 			return fmt.Errorf("invalid resolution: %w", err)
 		}
 	}
 
 	// Validate frame rate if provided
-	if variant.FrameRate > 0 {
-		if variant.FrameRate > 120 {
-			return fmt.Errorf("frame rate too high: %f fps (max 120)", variant.FrameRate)
+	if variant.FrameRate != nil && *variant.FrameRate > 0 {
+		if *variant.FrameRate > 120 {
+			return fmt.Errorf("frame rate too high: %f fps (max 120)", *variant.FrameRate)
 		}
 	}
 
@@ -249,7 +252,7 @@ func validateSegment(segment *HLSSegment) error {
 	}
 
 	// Validate sequence number
-	if segment.SequenceNumber < 0 {
+	if segment.Sequence < 0 {
 		return fmt.Errorf("sequence number cannot be negative")
 	}
 
@@ -397,3 +400,4 @@ func parseInt(s string) int {
 	}
 	return val
 }
+

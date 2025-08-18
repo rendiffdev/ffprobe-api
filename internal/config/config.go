@@ -17,15 +17,9 @@ type Config struct {
 	LogLevel string `json:"log_level"`
 
 	// Database configuration
-	DatabaseType     string `json:"database_type"`     // sqlite or postgres
+	DatabaseType     string `json:"database_type"`     // sqlite only
 	DatabaseURL      string `json:"database_url"`
 	DatabasePath     string `json:"database_path"`     // for SQLite
-	DatabaseHost     string `json:"database_host"`     // for PostgreSQL
-	DatabasePort     int    `json:"database_port"`     // for PostgreSQL
-	DatabaseName     string `json:"database_name"`     // for PostgreSQL
-	DatabaseUser     string `json:"database_user"`     // for PostgreSQL
-	DatabasePassword string `json:"database_password"` // for PostgreSQL
-	DatabaseSSLMode  string `json:"database_ssl_mode"` // for PostgreSQL
 
 	// Valkey configuration (Redis-compatible)
 	ValkeyHost     string `json:"valkey_host"`
@@ -66,11 +60,17 @@ type Config struct {
 
 	// LLM configuration (optional)
 	LLMModelPath       string `json:"llm_model_path"`
+	LLMTimeout         int    `json:"llm_timeout"` // seconds, default 120
 	OpenRouterAPIKey   string `json:"openrouter_api_key"`
 	EnableLocalLLM     bool   `json:"enable_local_llm"`
 	OllamaURL          string `json:"ollama_url"`
 	OllamaModel        string `json:"ollama_model"`
 	OllamaFallbackModel string `json:"ollama_fallback_model"`
+
+	// Circuit breaker configuration
+	EnableCircuitBreaker   bool `json:"enable_circuit_breaker"`   // Enable circuit breaker protection
+	CircuitBreakerTimeout  int  `json:"circuit_breaker_timeout"`  // Timeout in seconds before half-open
+	CircuitBreakerInterval int  `json:"circuit_breaker_interval"` // Interval in seconds to reset counters
 
 	// Cloud storage configuration (optional)
 	StorageProvider        string `json:"storage_provider"`
@@ -99,12 +99,6 @@ func Load() (*Config, error) {
 		LogLevel:         getEnv("LOG_LEVEL", "info"),
 		DatabaseType:     getEnv("DB_TYPE", "sqlite"),
 		DatabasePath:     getEnv("DB_PATH", "./data/ffprobe.db"),
-		DatabaseHost:     getEnv("POSTGRES_HOST", "localhost"),
-		DatabasePort:     getEnvAsInt("POSTGRES_PORT", 5432),
-		DatabaseName:     getEnv("POSTGRES_DB", "ffprobe_api"),
-		DatabaseUser:     getEnv("POSTGRES_USER", "postgres"),
-		DatabasePassword: getEnv("POSTGRES_PASSWORD", ""),
-		DatabaseSSLMode:  getEnv("POSTGRES_SSL_MODE", "disable"),
 		ValkeyHost:       getEnv("VALKEY_HOST", "localhost"),
 		ValkeyPort:       getEnvAsInt("VALKEY_PORT", 6379),
 		ValkeyPassword:   getEnv("VALKEY_PASSWORD", ""),
@@ -132,6 +126,9 @@ func Load() (*Config, error) {
 		OllamaURL:          getEnv("OLLAMA_URL", "http://localhost:11434"),
 		OllamaModel:        getEnv("OLLAMA_MODEL", "gemma3:270m"),
 		OllamaFallbackModel: getEnv("OLLAMA_FALLBACK_MODEL", "phi3:mini"),
+		EnableCircuitBreaker: getEnvAsBool("ENABLE_CIRCUIT_BREAKER", true),
+		CircuitBreakerTimeout: getEnvAsInt("CIRCUIT_BREAKER_TIMEOUT", 30),
+		CircuitBreakerInterval: getEnvAsInt("CIRCUIT_BREAKER_INTERVAL", 60),
 		StorageProvider:    getEnv("STORAGE_PROVIDER", "local"),
 		StorageBucket:      getEnv("STORAGE_BUCKET", "./storage"),
 		StorageRegion:      getEnv("STORAGE_REGION", "us-east-1"),
@@ -214,22 +211,11 @@ func getEnvAsStringSlice(key string, fallback []string) []string {
 
 // buildDatabaseURL constructs a database connection URL
 func buildDatabaseURL(cfg *Config) string {
-	switch cfg.DatabaseType {
-	case "sqlite":
-		return fmt.Sprintf("sqlite3://%s", cfg.DatabasePath)
-	case "postgres":
-		return fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s",
-			cfg.DatabaseUser,
-			cfg.DatabasePassword,
-			cfg.DatabaseHost,
-			cfg.DatabasePort,
-			cfg.DatabaseName,
-			cfg.DatabaseSSLMode,
-		)
-	default:
-		// Default to SQLite
-		return fmt.Sprintf("sqlite3://%s", cfg.DatabasePath)
+	if cfg.DatabaseType != "sqlite" {
+		// Force SQLite
+		cfg.DatabaseType = "sqlite"
 	}
+	return fmt.Sprintf("sqlite3://%s", cfg.DatabasePath)
 }
 
 // buildBaseURL constructs the base URL for the API
@@ -258,21 +244,13 @@ func validateConfig(cfg *Config) error {
 		errors = append(errors, "JWT_SECRET must be at least 32 characters long")
 	}
 
-	// Validate database configuration based on type
-	switch cfg.DatabaseType {
-	case "sqlite":
-		if cfg.DatabasePath == "" {
-			errors = append(errors, "DB_PATH is required when using SQLite")
-		}
-	case "postgres":
-		if cfg.DatabasePassword == "" {
-			errors = append(errors, "POSTGRES_PASSWORD is required when using PostgreSQL")
-		}
-		if cfg.DatabaseHost == "" {
-			errors = append(errors, "POSTGRES_HOST is required when using PostgreSQL")
-		}
-	default:
-		errors = append(errors, "DB_TYPE must be either 'sqlite' or 'postgres'")
+	// Validate database configuration - only SQLite supported
+	if cfg.DatabaseType != "sqlite" {
+		errors = append(errors, "DB_TYPE must be 'sqlite' (PostgreSQL no longer supported)")
+	}
+	
+	if cfg.DatabasePath == "" {
+		errors = append(errors, "DB_PATH is required when using SQLite")
 	}
 
 	// Validate ports
@@ -292,9 +270,6 @@ func validateConfig(cfg *Config) error {
 		}
 	}
 
-	if cfg.DatabaseType == "postgres" && (cfg.DatabasePort <= 0 || cfg.DatabasePort > 65535) {
-		errors = append(errors, "POSTGRES_PORT must be between 1 and 65535 when using PostgreSQL")
-	}
 
 	// Validate file paths and directories
 	if cfg.UploadDir == "" {

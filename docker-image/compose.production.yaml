@@ -166,11 +166,10 @@ services:
         reservations:
           cpus: '2'
           memory: 4G
-      # GPU support for production
-      devices:
-        - driver: nvidia
-          count: 1
-          capabilities: [gpu]
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     volumes:
       - type: volume
         source: ollama_prod_data

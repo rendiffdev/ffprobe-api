@@ -552,10 +552,14 @@ func (lla *LLMEnhancedAnalyzer) generateAdvancedQCInsights(result *FFprobeResult
 
 	// Analyze transport stream results
 	if result.EnhancedAnalysis.TransportStreamAnalysis != nil {
-		if result.EnhancedAnalysis.TransportStreamAnalysis.IsMPEGTransportStream {
-			insights.TransportStreamInsights = fmt.Sprintf("MPEG Transport Stream with %d PIDs", 
-				result.EnhancedAnalysis.TransportStreamAnalysis.TotalPIDs)
-			if len(result.EnhancedAnalysis.TransportStreamAnalysis.Errors) > 0 {
+		if result.EnhancedAnalysis.TransportStreamAnalysis.IsTransportStream {
+			totalPIDs := 0
+			if result.EnhancedAnalysis.TransportStreamAnalysis.PIDStatistics != nil {
+				totalPIDs = result.EnhancedAnalysis.TransportStreamAnalysis.PIDStatistics.TotalPIDs
+			}
+			insights.TransportStreamInsights = fmt.Sprintf("MPEG Transport Stream with %d PIDs", totalPIDs)
+			if result.EnhancedAnalysis.TransportStreamAnalysis.TransportValidation != nil && 
+			   len(result.EnhancedAnalysis.TransportStreamAnalysis.TransportValidation.Errors) > 0 {
 				insights.CriticalFindings = append(insights.CriticalFindings, "Transport stream errors detected")
 				insights.OverallQCScore -= 10.0
 			}
@@ -569,7 +573,7 @@ func (lla *LLMEnhancedAnalyzer) generateAdvancedQCInsights(result *FFprobeResult
 		insights.EndiannessInsights = fmt.Sprintf("Container endianness: %s", 
 			result.EnhancedAnalysis.EndiannessAnalysis.ContainerEndianness)
 		if result.EnhancedAnalysis.EndiannessAnalysis.PlatformCompatibility != nil {
-			if !result.EnhancedAnalysis.EndiannessAnalysis.PlatformCompatibility.CrossPlatformCompatible {
+			if len(result.EnhancedAnalysis.EndiannessAnalysis.PlatformCompatibility.Issues) > 0 {
 				insights.CriticalFindings = append(insights.CriticalFindings, "Platform compatibility issues detected")
 				insights.OverallQCScore -= 8.0
 			}
@@ -580,7 +584,7 @@ func (lla *LLMEnhancedAnalyzer) generateAdvancedQCInsights(result *FFprobeResult
 	if result.EnhancedAnalysis.AudioWrappingAnalysis != nil {
 		professionalFormats := 0
 		for _, stream := range result.EnhancedAnalysis.AudioWrappingAnalysis.AudioStreams {
-			if stream.IsProfessionalFormat {
+			if stream.ProfessionalWrapping != nil {
 				professionalFormats++
 			}
 		}
@@ -679,7 +683,9 @@ func (lla *LLMEnhancedAnalyzer) generateRiskAssessment(result *FFprobeResult) *R
 
 	// Assess technical risks
 	technicalRiskScore := 0
-	if result.EnhancedAnalysis.TransportStreamAnalysis != nil && len(result.EnhancedAnalysis.TransportStreamAnalysis.Errors) > 0 {
+	if result.EnhancedAnalysis.TransportStreamAnalysis != nil && 
+		result.EnhancedAnalysis.TransportStreamAnalysis.TransportValidation != nil &&
+		len(result.EnhancedAnalysis.TransportStreamAnalysis.TransportValidation.Errors) > 0 {
 		technicalRiskScore += 2
 		assessment.RiskFactors = append(assessment.RiskFactors, "Transport stream errors")
 	}

@@ -1,7 +1,6 @@
 package ffmpeg
 
 import (
-	"encoding/json"
 	"time"
 )
 
@@ -44,6 +43,9 @@ type FFprobeOptions struct {
 	// Processing limits
 	Timeout        time.Duration     `json:"timeout,omitempty"`        // Custom timeout
 	MaxOutputSize  int64             `json:"max_output_size,omitempty"` // Custom limit
+	
+	// Custom arguments
+	Args           []string          `json:"args,omitempty"`           // Custom FFprobe arguments
 }
 
 // OutputFormat represents ffprobe output formats

@@ -9,7 +9,6 @@ import (
 	"math"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/rs/zerolog"
 )
@@ -810,7 +809,7 @@ func (ea *EndiannessAnalyzer) performStatisticalAnalysis(data []byte) *Statistic
 	// Analyze endianness patterns
 	littleScore := 0.0
 	bigScore := 0.0
-	neutralScore := 0.0
+	_ = 0.0 // neutralScore unused for now
 
 	// Look for endianness-indicating patterns
 	for i := 0; i < len(data)-3; i += 2 {

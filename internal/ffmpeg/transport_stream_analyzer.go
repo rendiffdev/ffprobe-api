@@ -463,7 +463,7 @@ func (tsa *TransportStreamAnalyzer) analyzePAT(ctx context.Context, filePath str
 		filePath,
 	}
 
-	output, err := tsa.executeCommand(ctx, cmd)
+	_, err := tsa.executeCommand(ctx, cmd)
 	if err != nil {
 		return fmt.Errorf("failed to analyze PAT: %w", err)
 	}

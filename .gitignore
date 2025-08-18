@@ -101,6 +101,7 @@ $RECYCLE.BIN/
 # Docker override files
 docker-compose.override.yml
 compose.override.yml
+compose.override.yaml
 
 # Docker volumes and data
 data/
@@ -275,9 +276,16 @@ venv/
 
 # Keep Docker configs
 !docker/
+!docker-image/
 !Dockerfile*
 !compose*.yml
+!compose*.yaml
 
 # Keep scripts
 !scripts/
 !scripts/*.sh
+
+# Keep essential data directory structure but not contents
+!data/
+data/*
+!data/.gitkeep

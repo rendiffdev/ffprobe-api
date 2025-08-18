@@ -18,7 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/jmoiron/sqlx"
-	"github.com/redis/go-redis/v9"
+	"github.com/rendiffdev/ffprobe-api/internal/cache"
 	"github.com/rs/zerolog"
 	gql "github.com/rendiffdev/ffprobe-api/internal/graphql"
 	"github.com/rendiffdev/ffprobe-api/internal/services"
@@ -238,7 +238,7 @@ func (a AuthDirective) Validate(ctx context.Context, obj interface{}, next graph
 
 // Rate limiting directive
 type RateLimitDirective struct {
-	redis  *redis.Client
+	cache  cache.Client
 	logger zerolog.Logger
 }
 
@@ -258,15 +258,15 @@ func (r RateLimitDirective) Validate(ctx context.Context, obj interface{}, next 
 	key := fmt.Sprintf("graphql_rate_limit:%s:%s", userID, operation)
 	
 	// Check current count
-	count, err := r.redis.Incr(ctx, key).Result()
+	count, err := r.cache.Incr(ctx, key)
 	if err != nil {
 		r.logger.Error().Err(err).Msg("Failed to increment rate limit counter")
-		return next(ctx) // Continue on Redis error
+		return next(ctx) // Continue on cache error
 	}
 
 	// Set expiration on first request
 	if count == 1 {
-		r.redis.Expire(ctx, key, window)
+		r.cache.Expire(ctx, key, window)
 	}
 
 	if count > int64(maxRequests) {

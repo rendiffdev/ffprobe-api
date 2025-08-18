@@ -1,10 +1,8 @@
 package middleware
 
 import (
-	"crypto/rand"
 	"crypto/subtle"
 	"database/sql"
-	"encoding/hex"
 	"fmt"
 	"net/http"
 	"strings"
@@ -16,7 +14,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/rs/zerolog"
 	"golang.org/x/crypto/bcrypt"
-	"github.com/redis/go-redis/v9"
+	"github.com/rendiffdev/ffprobe-api/internal/cache"
 	"context"
 	"github.com/rendiffdev/ffprobe-api/internal/errors"
 )
@@ -33,17 +31,14 @@ type AuthConfig struct {
 type AuthMiddleware struct {
 	config AuthConfig
 	db     *sqlx.DB
-	redis  *redis.Client
+	cache  cache.Client
 	logger zerolog.Logger
 }
 
 // NewAuthMiddleware creates a new authentication middleware
-func NewAuthMiddleware(config AuthConfig, db *sqlx.DB, redisClient interface{}, logger zerolog.Logger) *AuthMiddleware {
-	var rClient *redis.Client
-	if redisClient != nil {
-		if rc, ok := redisClient.(*redis.Client); ok {
-			rClient = rc
-		}
+func NewAuthMiddleware(config AuthConfig, db *sqlx.DB, cacheClient cache.Client, logger zerolog.Logger) *AuthMiddleware {
+	if cacheClient == nil {
+		cacheClient = &cache.NoOpClient{}
 	}
 	if config.TokenExpiry == 0 {
 		config.TokenExpiry = 24 * time.Hour // Default 24 hours
@@ -55,7 +50,7 @@ func NewAuthMiddleware(config AuthConfig, db *sqlx.DB, redisClient interface{}, 
 	return &AuthMiddleware{
 		config: config,
 		db:     db,
-		redis:  rClient,
+		cache:  cacheClient,
 		logger: logger,
 	}
 }
@@ -597,8 +592,8 @@ func (m *AuthMiddleware) UpdateUserPassword(userID uuid.UUID, hashedPassword str
 
 // RevokeToken adds a token to the blacklist
 func (m *AuthMiddleware) RevokeToken(tokenString string) error {
-	if m.redis == nil {
-		m.logger.Error().Msg("Redis client not available for token revocation")
+	if m.cache == nil {
+		m.logger.Error().Msg("Cache client not available for token revocation")
 		return fmt.Errorf("token revocation service unavailable")
 	}
 
@@ -631,7 +626,7 @@ func (m *AuthMiddleware) RevokeToken(tokenString string) error {
 	// Add token to blacklist with TTL
 	ctx := context.Background()
 	blacklistKey := "blacklist:token:" + claims.ID
-	err = m.redis.Set(ctx, blacklistKey, "revoked", ttl).Err()
+	err = m.cache.Set(ctx, blacklistKey, "revoked", ttl)
 	if err != nil {
 		m.logger.Error().Err(err).Str("token_id", claims.ID).Msg("Failed to blacklist token")
 		return err
@@ -648,8 +643,8 @@ func (m *AuthMiddleware) RevokeToken(tokenString string) error {
 
 // isTokenBlacklisted checks if a token is in the blacklist
 func (m *AuthMiddleware) isTokenBlacklisted(tokenString string) bool {
-	if m.redis == nil {
-		return false // If Redis is not available, don't block tokens
+	if m.cache == nil {
+		return false // If cache is not available, don't block tokens
 	}
 
 	// Parse token to get the JTI (token ID)
@@ -672,7 +667,7 @@ func (m *AuthMiddleware) isTokenBlacklisted(tokenString string) bool {
 	// Check if token is blacklisted
 	ctx := context.Background()
 	blacklistKey := "blacklist:token:" + claims.ID
-	exists := m.redis.Exists(ctx, blacklistKey).Val()
+	exists := m.cache.Exists(ctx, blacklistKey)
 
 	return exists > 0
 }

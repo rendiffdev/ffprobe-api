@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -295,7 +294,7 @@ type MXFValidationResults struct {
 type HeaderValidation struct {
 	HeaderComplete      bool                `json:"header_complete"`
 	MetadataValid       bool                `json:"metadata_valid"`
-	UUIDs Valid          bool                `json:"uuids_valid"`
+	UUIDsValid          bool                `json:"uuids_valid"`
 	ReferencesValid     bool                `json:"references_valid"`
 	Issues              []string            `json:"issues,omitempty"`
 }

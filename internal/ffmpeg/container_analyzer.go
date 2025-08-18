@@ -112,7 +112,7 @@ func (ca *ContainerAnalyzer) getContainerFamily(formatName string) string {
 		"mp3":                "MP3",
 		"aac":                "AAC",
 		"flac":               "FLAC",
-		"ogg":                "Ogg Audio",
+		"oga":                "Ogg Audio",
 		"m4a":                "M4A",
 		"wma":                "WMA",
 	}

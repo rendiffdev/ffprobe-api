@@ -43,7 +43,7 @@ func NewEnhancedAnalyzer(ffprobePath string, logger zerolog.Logger) *EnhancedAna
 		timecodeAnalyzer:          NewTimecodeAnalyzer(ffprobePath, logger),
 		afdAnalyzer:               NewAFDAnalyzer(ffprobePath, logger),
 		transportStreamAnalyzer:   NewTransportStreamAnalyzer(ffprobePath, logger),
-		endiannessAnalyzer:        NewEndiannessAnalyzer(ffprobePath, logger),
+		endiannessAnalyzer:        NewEndiannessAnalyzer(logger),
 		audioWrappingAnalyzer:     NewAudioWrappingAnalyzer(ffprobePath, logger),
 		imfAnalyzer:               NewIMFAnalyzer(ffprobePath, logger),
 		mxfAnalyzer:               NewMXFAnalyzer(ffprobePath, logger),
@@ -66,7 +66,7 @@ func NewEnhancedAnalyzerWithContentAnalysis(ffmpegPath string, ffprobePath strin
 		timecodeAnalyzer:          NewTimecodeAnalyzer(ffprobePath, logger),
 		afdAnalyzer:               NewAFDAnalyzer(ffprobePath, logger),
 		transportStreamAnalyzer:   NewTransportStreamAnalyzer(ffprobePath, logger),
-		endiannessAnalyzer:        NewEndiannessAnalyzer(ffprobePath, logger),
+		endiannessAnalyzer:        NewEndiannessAnalyzer(logger),
 		audioWrappingAnalyzer:     NewAudioWrappingAnalyzer(ffprobePath, logger),
 		imfAnalyzer:               NewIMFAnalyzer(ffprobePath, logger),
 		mxfAnalyzer:               NewMXFAnalyzer(ffprobePath, logger),
@@ -151,81 +151,99 @@ func (ea *EnhancedAnalyzer) AnalyzeResultWithAdvancedQC(ctx context.Context, res
 	if ea.timecodeAnalyzer != nil && len(result.Streams) > 0 {
 		timecodeAnalysis, err := ea.timecodeAnalyzer.AnalyzeTimecode(ctx, filePath, result.Streams)
 		if err != nil {
-			return fmt.Errorf("timecode analysis failed: %w", err)
+			// Log error but don't fail entire analysis - some files may not have timecode
+			fmt.Printf("Warning: timecode analysis failed: %v\n", err)
+		} else {
+			result.EnhancedAnalysis.TimecodeAnalysis = timecodeAnalysis
 		}
-		result.EnhancedAnalysis.TimecodeAnalysis = timecodeAnalysis
 	}
 
 	// Run AFD analysis
 	if ea.afdAnalyzer != nil && len(result.Streams) > 0 {
 		afdAnalysis, err := ea.afdAnalyzer.AnalyzeAFD(ctx, filePath, result.Streams)
 		if err != nil {
-			return fmt.Errorf("AFD analysis failed: %w", err)
+			// Log error but don't fail entire analysis - some files may not have AFD
+			fmt.Printf("Warning: AFD analysis failed: %v\n", err)
+		} else {
+			result.EnhancedAnalysis.AFDAnalysis = afdAnalysis
 		}
-		result.EnhancedAnalysis.AFDAnalysis = afdAnalysis
 	}
 
 	// Run transport stream analysis
 	if ea.transportStreamAnalyzer != nil {
-		transportAnalysis, err := ea.transportStreamAnalyzer.AnalyzeTransportStream(ctx, filePath)
+		transportAnalysis, err := ea.transportStreamAnalyzer.AnalyzeTransportStream(ctx, filePath, result.Streams, result.Format)
 		if err != nil {
-			return fmt.Errorf("transport stream analysis failed: %w", err)
+			// Log error but don't fail entire analysis - only applies to transport streams
+			fmt.Printf("Warning: transport stream analysis failed: %v\n", err)
+		} else {
+			result.EnhancedAnalysis.TransportStreamAnalysis = transportAnalysis
 		}
-		result.EnhancedAnalysis.TransportStreamAnalysis = transportAnalysis
 	}
 
 	// Run endianness analysis
 	if ea.endiannessAnalyzer != nil {
-		endiannessAnalysis, err := ea.endiannessAnalyzer.AnalyzeEndianness(ctx, filePath)
+		endiannessAnalysis, err := ea.endiannessAnalyzer.AnalyzeEndianness(ctx, filePath, result.Streams, result.Format)
 		if err != nil {
-			return fmt.Errorf("endianness analysis failed: %w", err)
+			// Log error but don't fail entire analysis - endianness may not be detectable for all formats
+			fmt.Printf("Warning: endianness analysis failed: %v\n", err)
+		} else {
+			result.EnhancedAnalysis.EndiannessAnalysis = endiannessAnalysis
 		}
-		result.EnhancedAnalysis.EndiannessAnalysis = endiannessAnalysis
 	}
 
 	// Run audio wrapping analysis
 	if ea.audioWrappingAnalyzer != nil && len(result.Streams) > 0 {
-		audioWrappingAnalysis, err := ea.audioWrappingAnalyzer.AnalyzeAudioWrapping(ctx, filePath, result.Streams)
+		audioWrappingAnalysis, err := ea.audioWrappingAnalyzer.AnalyzeAudioWrapping(ctx, filePath, result.Streams, result.Format)
 		if err != nil {
-			return fmt.Errorf("audio wrapping analysis failed: %w", err)
+			// Log error but don't fail entire analysis - not all formats have professional audio wrapping
+			fmt.Printf("Warning: audio wrapping analysis failed: %v\n", err)
+		} else {
+			result.EnhancedAnalysis.AudioWrappingAnalysis = audioWrappingAnalysis
 		}
-		result.EnhancedAnalysis.AudioWrappingAnalysis = audioWrappingAnalysis
 	}
 
 	// Run IMF analysis if this appears to be an IMF package
 	if ea.imfAnalyzer != nil {
 		imfAnalysis, err := ea.imfAnalyzer.AnalyzeIMF(ctx, filePath)
 		if err != nil {
-			return fmt.Errorf("IMF analysis failed: %w", err)
+			// Log error but don't fail entire analysis - only applies to IMF packages
+			fmt.Printf("Warning: IMF analysis failed: %v\n", err)
+		} else {
+			result.EnhancedAnalysis.IMFAnalysis = imfAnalysis
 		}
-		result.EnhancedAnalysis.IMFAnalysis = imfAnalysis
 	}
 
 	// Run MXF analysis if this is an MXF file
 	if ea.mxfAnalyzer != nil {
 		mxfAnalysis, err := ea.mxfAnalyzer.AnalyzeMXF(ctx, filePath)
 		if err != nil {
-			return fmt.Errorf("MXF analysis failed: %w", err)
+			// Log error but don't fail entire analysis - only applies to MXF files
+			fmt.Printf("Warning: MXF analysis failed: %v\n", err)
+		} else {
+			result.EnhancedAnalysis.MXFAnalysis = mxfAnalysis
 		}
-		result.EnhancedAnalysis.MXFAnalysis = mxfAnalysis
 	}
 
 	// Run dead pixel analysis
 	if ea.deadPixelAnalyzer != nil {
 		deadPixelAnalysis, err := ea.deadPixelAnalyzer.AnalyzeDeadPixels(ctx, filePath)
 		if err != nil {
-			return fmt.Errorf("dead pixel analysis failed: %w", err)
+			// Log error but don't fail entire analysis - analysis may fail on some video types
+			fmt.Printf("Warning: dead pixel analysis failed: %v\n", err)
+		} else {
+			result.EnhancedAnalysis.DeadPixelAnalysis = deadPixelAnalysis
 		}
-		result.EnhancedAnalysis.DeadPixelAnalysis = deadPixelAnalysis
 	}
 
 	// Run photosensitive epilepsy risk analysis
 	if ea.pseAnalyzer != nil {
 		pseAnalysis, err := ea.pseAnalyzer.AnalyzePSERisk(ctx, filePath)
 		if err != nil {
-			return fmt.Errorf("PSE analysis failed: %w", err)
+			// Log error but don't fail entire analysis - analysis may fail on some video types
+			fmt.Printf("Warning: PSE analysis failed: %v\n", err)
+		} else {
+			result.EnhancedAnalysis.PSEAnalysis = pseAnalysis
 		}
-		result.EnhancedAnalysis.PSEAnalysis = pseAnalysis
 	}
 
 	return nil

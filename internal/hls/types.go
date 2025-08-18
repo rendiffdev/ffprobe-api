@@ -1,7 +1,6 @@
 package hls
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,6 +12,7 @@ type HLSAnalysis struct {
 	AnalysisID        uuid.UUID              `json:"analysis_id" db:"analysis_id"`
 	ManifestURL       string                 `json:"manifest_url" db:"manifest_url"`
 	ManifestType      HLSManifestType        `json:"manifest_type" db:"manifest_type"`
+	Manifest          *HLSManifest           `json:"manifest,omitempty"`
 	MasterPlaylist    *HLSMasterPlaylist     `json:"master_playlist,omitempty" db:"master_playlist"`
 	MediaPlaylist     *HLSMediaPlaylist      `json:"media_playlist,omitempty" db:"media_playlist"`
 	Variants          []*HLSVariant          `json:"variants,omitempty"`
@@ -39,12 +39,33 @@ const (
 	HLSStatusCancelled  HLSAnalysisStatus = "cancelled"
 )
 
+// HLSStatus is an alias for HLSAnalysisStatus for backward compatibility
+type HLSStatus = HLSAnalysisStatus
+
 // HLSManifestType represents the type of HLS manifest
 type HLSManifestType string
 
 const (
 	ManifestTypeMaster HLSManifestType = "master"
 	ManifestTypeMedia  HLSManifestType = "media"
+)
+
+// Type aliases for backward compatibility
+type HLSManifest struct {
+	Type                HLSManifestType `json:"type"`
+	Version             int             `json:"version"`
+	TargetDuration      float64         `json:"target_duration,omitempty"`
+	MediaSequence       int             `json:"media_sequence,omitempty"`
+	DiscontinuitySequence int           `json:"discontinuity_sequence,omitempty"`
+	Variants            []*HLSVariant   `json:"variants,omitempty"`
+	Segments            []*HLSSegment   `json:"segments,omitempty"`
+	MasterPlaylist      *HLSMasterPlaylist `json:"master_playlist,omitempty"`
+	MediaPlaylist       *HLSMediaPlaylist  `json:"media_playlist,omitempty"`
+}
+
+const (
+	HLSTypeMaster = ManifestTypeMaster
+	HLSTypeMedia  = ManifestTypeMedia
 )
 
 // HLSMasterPlaylist represents a master playlist (m3u8)

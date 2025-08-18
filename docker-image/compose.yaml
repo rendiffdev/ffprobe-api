@@ -9,7 +9,7 @@ services:
   # Main API service with latest FFmpeg from BtbN
   api:
     build:
-      context: .
+      context: ..
       dockerfile: docker-image/Dockerfile
       args:
         - BUILDKIT_INLINE_CACHE=1
@@ -369,10 +369,4 @@ x-healthcheck-defaults: &healthcheck-defaults
   start_interval: 5s
 
 # Include additional compose files based on environment
-include:
-  - path: compose.override.yaml
-    required: false
-  - path: compose.${GO_ENV:-development}.yaml
-    required: false
-  - path: compose.local.yaml
-    required: false
+# Note: Use -f flags when running docker compose to include additional files

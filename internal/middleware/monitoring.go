@@ -336,11 +336,11 @@ func HealthMetrics() map[string]interface{} {
 	return map[string]interface{}{
 		"active_connections":    getMetricValue(activeConnections),
 		"websocket_connections": getMetricValue(websocketConnections),
-		"total_requests":        getCounterValue(httpRequestsTotal),
-		"total_analyses":        getCounterValue(ffprobeAnalysesTotal),
-		"total_uploads":         getCounterValue(uploadedFilesTotal),
-		"rate_limit_exceeded":   getCounterValue(rateLimitExceeded),
-		"auth_failures":         getCounterValue(authFailures),
+		"total_requests":        getCounterValue(*httpRequestsTotal),
+		"total_analyses":        getCounterValue(*ffprobeAnalysesTotal),
+		"total_uploads":         getCounterValue(*uploadedFilesTotal),
+		"rate_limit_exceeded":   getCounterValue(*rateLimitExceeded),
+		"auth_failures":         getCounterValue(*authFailures),
 	}
 }
 

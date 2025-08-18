@@ -196,28 +196,24 @@ func (ha *HDRAnalyzer) parseSideDataMetadata(sideData string, analysis *HDRAnaly
 	lines := strings.Split(sideData, "\n")
 	
 	var currentSideData string
-	var inMasteringDisplay, inContentLight, inHDR10Plus, inDolbyVision bool
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		
 		// Detect side data types
 		if strings.Contains(line, "side_data_type=Mastering display metadata") {
-			inMasteringDisplay = true
 			currentSideData = "mastering"
 			analysis.MasteringDisplay = &MasteringDisplayMetadata{HasMasteringDisplay: true}
 			continue
 		}
 		
 		if strings.Contains(line, "side_data_type=Content light level metadata") {
-			inContentLight = true
 			currentSideData = "content_light"
 			analysis.ContentLightLevel = &ContentLightLevelData{HasContentLightLevel: true}
 			continue
 		}
 		
 		if strings.Contains(line, "side_data_type=HDR10+") {
-			inHDR10Plus = true
 			currentSideData = "hdr10plus"
 			analysis.HDR10Plus = &HDR10PlusMetadata{Present: true}
 			if analysis.HDRFormat == "HDR10" {
@@ -227,7 +223,6 @@ func (ha *HDRAnalyzer) parseSideDataMetadata(sideData string, analysis *HDRAnaly
 		}
 		
 		if strings.Contains(line, "side_data_type=DOVI") || strings.Contains(line, "Dolby Vision") {
-			inDolbyVision = true
 			currentSideData = "dolby_vision"
 			analysis.DolbyVision = &DolbyVisionMetadata{}
 			analysis.HDRFormat = "Dolby Vision"
@@ -236,10 +231,7 @@ func (ha *HDRAnalyzer) parseSideDataMetadata(sideData string, analysis *HDRAnaly
 
 		// Reset flags when leaving side data block
 		if line == "" || strings.HasPrefix(line, "[") {
-			inMasteringDisplay = false
-			inContentLight = false
-			inHDR10Plus = false
-			inDolbyVision = false
+			currentSideData = ""
 			continue
 		}
 

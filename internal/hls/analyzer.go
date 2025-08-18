@@ -3,11 +3,8 @@ package hls
 import (
 	"context"
 	"fmt"
-	"io"
-	"math"
 	"net/http"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"

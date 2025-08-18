@@ -12,23 +12,85 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rendiffdev/ffprobe-api/internal/config"
 	"github.com/rendiffdev/ffprobe-api/internal/models"
+	"github.com/rendiffdev/ffprobe-api/internal/circuitbreaker"
 )
 
 // LLMService handles LLM operations for GenAI features
 type LLMService struct {
-	config    *config.Config
-	logger    zerolog.Logger
-	httpClient *http.Client
+	config           *config.Config
+	logger           zerolog.Logger
+	httpClient       *http.Client
+	ollamaCircuitBreaker *circuitbreaker.CircuitBreaker
+	openrouterCircuitBreaker *circuitbreaker.CircuitBreaker
 }
 
-// NewLLMService creates a new LLM service
+// NewLLMService creates a new LLM service with production-ready timeouts and circuit breakers
 func NewLLMService(cfg *config.Config, logger zerolog.Logger) *LLMService {
-	return &LLMService{
-		config:    cfg,
-		logger:    logger,
-		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
+	// CRITICAL FIX: Increased timeout for production LLM workloads
+	// LLM calls typically take 30-120 seconds for complex analysis
+	timeout := 120 * time.Second
+	if cfg.LLMTimeout > 0 {
+		timeout = time.Duration(cfg.LLMTimeout) * time.Second
+	}
+
+	logger.Info().
+		Dur("timeout", timeout).
+		Msg("Initializing LLM service with production timeout and circuit breakers")
+
+	// Create circuit breaker for Ollama service
+	ollamaTimeout := time.Duration(cfg.CircuitBreakerTimeout) * time.Second
+	ollamaInterval := time.Duration(cfg.CircuitBreakerInterval) * time.Second
+	
+	ollamaCircuitBreaker := circuitbreaker.NewCircuitBreaker(circuitbreaker.Settings{
+		Name:        "ollama-llm",
+		MaxRequests: 3,  // Allow 3 requests in half-open state
+		Interval:    ollamaInterval, // Configurable interval
+		Timeout:     ollamaTimeout,  // Configurable timeout
+		ReadyToTrip: func(counts circuitbreaker.Counts) bool {
+			// Trip after 3 consecutive failures or 50% failure rate with at least 5 requests
+			return counts.ConsecutiveFailures >= 3 ||
+				(counts.Requests >= 5 && float64(counts.TotalFailures)/float64(counts.Requests) >= 0.5)
 		},
+		OnStateChange: func(name string, from circuitbreaker.State, to circuitbreaker.State) {
+			logger.Warn().
+				Str("service", name).
+				Str("from_state", from.String()).
+				Str("to_state", to.String()).
+				Msg("Circuit breaker state changed")
+		},
+	})
+
+	// Create circuit breaker for OpenRouter service
+	openrouterTimeout := time.Duration(cfg.CircuitBreakerTimeout * 2) * time.Second // Double timeout for external API
+	openrouterInterval := time.Duration(cfg.CircuitBreakerInterval * 2) * time.Second // Double interval for external API
+	
+	openrouterCircuitBreaker := circuitbreaker.NewCircuitBreaker(circuitbreaker.Settings{
+		Name:        "openrouter-llm",
+		MaxRequests: 2,  // More conservative for external API
+		Interval:    openrouterInterval, // Configurable longer interval for external service
+		Timeout:     openrouterTimeout,  // Configurable longer timeout before retry
+		ReadyToTrip: func(counts circuitbreaker.Counts) bool {
+			// Trip after 2 consecutive failures for external API
+			return counts.ConsecutiveFailures >= 2 ||
+				(counts.Requests >= 3 && float64(counts.TotalFailures)/float64(counts.Requests) >= 0.6)
+		},
+		OnStateChange: func(name string, from circuitbreaker.State, to circuitbreaker.State) {
+			logger.Warn().
+				Str("service", name).
+				Str("from_state", from.String()).
+				Str("to_state", to.String()).
+				Msg("Circuit breaker state changed")
+		},
+	})
+
+	return &LLMService{
+		config:                   cfg,
+		logger:                   logger,
+		httpClient: &http.Client{
+			Timeout: timeout,
+		},
+		ollamaCircuitBreaker:     ollamaCircuitBreaker,
+		openrouterCircuitBreaker: openrouterCircuitBreaker,
 	}
 }
 
@@ -68,7 +130,7 @@ func (s *LLMService) AnswerQuestion(ctx context.Context, analysis *models.Analys
 	return response, nil
 }
 
-// generateWithLocalLLM attempts to use local LLM via Ollama with fallback
+// generateWithLocalLLM attempts to use local LLM via Ollama with circuit breaker protection
 func (s *LLMService) generateWithLocalLLM(ctx context.Context, prompt string) (string, error) {
 	// Check if local LLM is enabled
 	if !s.config.EnableLocalLLM {
@@ -83,45 +145,68 @@ func (s *LLMService) generateWithLocalLLM(ctx context.Context, prompt string) (s
 		return "", fmt.Errorf("Ollama model not configured")
 	}
 
-	// Try primary model first (Gemma 3 270M - optimized for speed)
-	response, err := s.generateWithOllamaModel(ctx, s.config.OllamaModel, prompt, map[string]interface{}{
-		"temperature":    0.7,
-		"top_p":          0.9,
-		"top_k":          40,
-		"repeat_penalty": 1.1,
-		"num_predict":    1500,    // Good for structured reports
-		"num_ctx":        8192,    // Gemma3 supports 8K context
-		"num_batch":      16,      // Larger batch for faster processing
-		"num_thread":     4,       // CPU threads to use
-	})
-	
-	if err == nil {
-		s.logger.Info().Str("model", s.config.OllamaModel).Msg("Successfully generated with primary model")
-		return response, nil
-	}
-
-	// If primary model fails, try fallback model (Phi-3 Mini - better reasoning)
-	s.logger.Warn().Err(err).Str("model", s.config.OllamaModel).Msg("Primary model failed, trying fallback")
-	
-	if s.config.OllamaFallbackModel != "" {
-		response, err = s.generateWithOllamaModel(ctx, s.config.OllamaFallbackModel, prompt, map[string]interface{}{
+	// Use circuit breaker to protect against cascading failures
+	result, err := s.ollamaCircuitBreaker.Execute(func() (interface{}, error) {
+		// Try primary model first (Gemma 3 270M - optimized for speed)
+		response, err := s.generateWithOllamaModel(ctx, s.config.OllamaModel, prompt, map[string]interface{}{
 			"temperature":    0.7,
 			"top_p":          0.9,
 			"top_k":          40,
 			"repeat_penalty": 1.1,
-			"num_predict":    2000,    // More tokens for complex analysis
-			"num_ctx":        4096,    // Phi3 mini context window
-			"num_batch":      8,       // Standard batch size
+			"num_predict":    1500,    // Good for structured reports
+			"num_ctx":        8192,    // Gemma3 supports 8K context
+			"num_batch":      16,      // Larger batch for faster processing
 			"num_thread":     4,       // CPU threads to use
 		})
 		
 		if err == nil {
-			s.logger.Info().Str("model", s.config.OllamaFallbackModel).Msg("Successfully generated with fallback model")
+			s.logger.Info().
+				Str("model", s.config.OllamaModel).
+				Str("circuit_breaker_state", s.ollamaCircuitBreaker.State().String()).
+				Msg("Successfully generated with primary model")
 			return response, nil
 		}
+
+		// If primary model fails, try fallback model (Phi-3 Mini - better reasoning)
+		s.logger.Warn().
+			Err(err).
+			Str("model", s.config.OllamaModel).
+			Msg("Primary model failed, trying fallback")
+		
+		if s.config.OllamaFallbackModel != "" {
+			response, err = s.generateWithOllamaModel(ctx, s.config.OllamaFallbackModel, prompt, map[string]interface{}{
+				"temperature":    0.7,
+				"top_p":          0.9,
+				"top_k":          40,
+				"repeat_penalty": 1.1,
+				"num_predict":    2000,    // More tokens for complex analysis
+				"num_ctx":        4096,    // Phi3 mini context window
+				"num_batch":      8,       // Standard batch size
+				"num_thread":     4,       // CPU threads to use
+			})
+			
+			if err == nil {
+				s.logger.Info().
+					Str("model", s.config.OllamaFallbackModel).
+					Str("circuit_breaker_state", s.ollamaCircuitBreaker.State().String()).
+					Msg("Successfully generated with fallback model")
+				return response, nil
+			}
+		}
+		
+		return "", fmt.Errorf("both primary and fallback models failed: %w", err)
+	})
+
+	if err != nil {
+		s.logger.Error().
+			Err(err).
+			Str("circuit_breaker_state", s.ollamaCircuitBreaker.State().String()).
+			Interface("circuit_breaker_counts", s.ollamaCircuitBreaker.Counts()).
+			Msg("Ollama LLM request failed through circuit breaker")
+		return "", err
 	}
-	
-	return "", fmt.Errorf("both primary and fallback models failed: %w", err)
+
+	return result.(string), nil
 }
 
 // generateWithOllamaModel generates response using specific Ollama model
@@ -191,77 +276,95 @@ func (s *LLMService) generateWithOllamaModel(ctx context.Context, model string, 
 	return strings.TrimSpace(response.Response), nil
 }
 
-// generateWithOpenRouter uses OpenRouter API as fallback
+// generateWithOpenRouter uses OpenRouter API as fallback with circuit breaker protection
 func (s *LLMService) generateWithOpenRouter(ctx context.Context, prompt string) (string, error) {
 	if s.config.OpenRouterAPIKey == "" {
 		return "", fmt.Errorf("OpenRouter API key not configured")
 	}
 	
-	// Prepare request
-	requestBody := map[string]interface{}{
-		"model": "anthropic/claude-3-haiku",
-		"messages": []map[string]string{
-			{
-				"role":    "user",
-				"content": prompt,
+	// Use circuit breaker to protect against external API failures
+	result, err := s.openrouterCircuitBreaker.Execute(func() (interface{}, error) {
+		// Prepare request
+		requestBody := map[string]interface{}{
+			"model": "anthropic/claude-3-haiku",
+			"messages": []map[string]string{
+				{
+					"role":    "user",
+					"content": prompt,
+				},
 			},
-		},
-		"max_tokens": 1000,
-		"temperature": 0.7,
-	}
-	
-	jsonBody, err := json.Marshal(requestBody)
+			"max_tokens": 1000,
+			"temperature": 0.7,
+		}
+		
+		jsonBody, err := json.Marshal(requestBody)
+		if err != nil {
+			return "", fmt.Errorf("failed to marshal request: %w", err)
+		}
+		
+		// Create request
+		req, err := http.NewRequestWithContext(ctx, "POST", "https://openrouter.ai/api/v1/chat/completions", bytes.NewBuffer(jsonBody))
+		if err != nil {
+			return "", fmt.Errorf("failed to create request: %w", err)
+		}
+		
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", "Bearer "+s.config.OpenRouterAPIKey)
+		req.Header.Set("HTTP-Referer", "https://ffprobe-api.local")
+		req.Header.Set("X-Title", "FFprobe API")
+		
+		// Send request
+		resp, err := s.httpClient.Do(req)
+		if err != nil {
+			return "", fmt.Errorf("failed to send request: %w", err)
+		}
+		defer resp.Body.Close()
+		
+		if resp.StatusCode != http.StatusOK {
+			return "", fmt.Errorf("OpenRouter API returned status %d", resp.StatusCode)
+		}
+		
+		// Parse response
+		var response struct {
+			Choices []struct {
+				Message struct {
+					Content string `json:"content"`
+				} `json:"message"`
+			} `json:"choices"`
+			Error struct {
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		
+		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			return "", fmt.Errorf("failed to decode response: %w", err)
+		}
+		
+		if response.Error.Message != "" {
+			return "", fmt.Errorf("OpenRouter API error: %s", response.Error.Message)
+		}
+		
+		if len(response.Choices) == 0 {
+			return "", fmt.Errorf("no response from OpenRouter API")
+		}
+		
+		return strings.TrimSpace(response.Choices[0].Message.Content), nil
+	})
+
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal request: %w", err)
+		s.logger.Error().
+			Err(err).
+			Str("circuit_breaker_state", s.openrouterCircuitBreaker.State().String()).
+			Interface("circuit_breaker_counts", s.openrouterCircuitBreaker.Counts()).
+			Msg("OpenRouter LLM request failed through circuit breaker")
+		return "", err
 	}
-	
-	// Create request
-	req, err := http.NewRequestWithContext(ctx, "POST", "https://openrouter.ai/api/v1/chat/completions", bytes.NewBuffer(jsonBody))
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
-	}
-	
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+s.config.OpenRouterAPIKey)
-	req.Header.Set("HTTP-Referer", "https://ffprobe-api.local")
-	req.Header.Set("X-Title", "FFprobe API")
-	
-	// Send request
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-	
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("OpenRouter API returned status %d", resp.StatusCode)
-	}
-	
-	// Parse response
-	var response struct {
-		Choices []struct {
-			Message struct {
-				Content string `json:"content"`
-			} `json:"message"`
-		} `json:"choices"`
-		Error struct {
-			Message string `json:"message"`
-		} `json:"error"`
-	}
-	
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return "", fmt.Errorf("failed to decode response: %w", err)
-	}
-	
-	if response.Error.Message != "" {
-		return "", fmt.Errorf("OpenRouter API error: %s", response.Error.Message)
-	}
-	
-	if len(response.Choices) == 0 {
-		return "", fmt.Errorf("no response from OpenRouter API")
-	}
-	
-	return strings.TrimSpace(response.Choices[0].Message.Content), nil
+
+	s.logger.Info().
+		Str("circuit_breaker_state", s.openrouterCircuitBreaker.State().String()).
+		Msg("Successfully generated with OpenRouter")
+
+	return result.(string), nil
 }
 
 // buildAnalysisPrompt creates a prompt for general media analysis
@@ -528,6 +631,22 @@ func (s *LLMService) CheckOllamaHealth(ctx context.Context) (*OllamaHealthStatus
 
 	status.Healthy = len(status.Models) > 0
 	return status, nil
+}
+
+// GetCircuitBreakerStatus returns the status of all circuit breakers
+func (s *LLMService) GetCircuitBreakerStatus() map[string]interface{} {
+	return map[string]interface{}{
+		"ollama": map[string]interface{}{
+			"name":   s.ollamaCircuitBreaker.Name(),
+			"state":  s.ollamaCircuitBreaker.State().String(),
+			"counts": s.ollamaCircuitBreaker.Counts(),
+		},
+		"openrouter": map[string]interface{}{
+			"name":   s.openrouterCircuitBreaker.Name(),
+			"state":  s.openrouterCircuitBreaker.State().String(),
+			"counts": s.openrouterCircuitBreaker.Counts(),
+		},
+	}
 }
 
 // PullModel downloads a model to Ollama

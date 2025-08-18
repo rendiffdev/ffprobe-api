@@ -14,6 +14,7 @@ import (
 	"github.com/rendiffdev/ffprobe-api/internal/api"
 	"github.com/rendiffdev/ffprobe-api/internal/config"
 	"github.com/rendiffdev/ffprobe-api/internal/database"
+	"github.com/rendiffdev/ffprobe-api/internal/ffmpeg"
 	"github.com/rendiffdev/ffprobe-api/pkg/logger"
 )
 
@@ -34,6 +35,20 @@ func main() {
 		logger.Fatal().Err(err).Msg("Failed to initialize database")
 	}
 	defer db.Close()
+
+	// CRITICAL: Validate FFmpeg/FFprobe binary at startup
+	logger.Info().Msg("Validating FFmpeg/FFprobe binaries...")
+	ffprobeInstance := ffmpeg.NewFFprobe(cfg.FFprobePath, logger)
+	
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	
+	if err := ffprobeInstance.ValidateBinaryAtStartup(ctx); err != nil {
+		logger.Fatal().
+			Err(err).
+			Str("ffprobe_path", cfg.FFprobePath).
+			Msg("FFprobe binary validation failed - cannot start application")
+	}
 
 	// Create router with all handlers and middleware
 	apiRouter := api.NewRouter(cfg, db, logger)

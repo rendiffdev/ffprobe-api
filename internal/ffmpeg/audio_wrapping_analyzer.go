@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -447,7 +446,7 @@ func (awa *AudioWrappingAnalyzer) analyzePacketization(ctx context.Context, file
 			// Estimate packet overhead
 			if avgSize > 0 {
 				// Very rough estimate - actual payload vs total packet size
-				estimatedPayload := avgSize * 0.9 // Assume 10% overhead
+				estimatedPayload := float64(avgSize) * 0.9 // Assume 10% overhead
 				packetInfo.PacketOverhead = (float64(avgSize) - estimatedPayload) / float64(avgSize) * 100.0
 			}
 		}

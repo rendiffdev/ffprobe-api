@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/redis/go-redis/v9"
+	"github.com/rendiffdev/ffprobe-api/internal/cache"
 	"github.com/rs/zerolog"
 	"github.com/rendiffdev/ffprobe-api/internal/services"
 )
@@ -14,7 +14,7 @@ import (
 // Resolver is the root resolver struct
 type Resolver struct {
 	db                  *sqlx.DB
-	redis               *redis.Client
+	cache               cache.Client
 	logger              zerolog.Logger
 	analysisService     *services.AnalysisService
 	comparisonService   *services.ComparisonService
@@ -27,7 +27,7 @@ type Resolver struct {
 // NewResolver creates a new GraphQL resolver
 func NewResolver(
 	db *sqlx.DB,
-	redisClient interface{},
+	cacheClient cache.Client,
 	logger zerolog.Logger,
 	analysisService *services.AnalysisService,
 	comparisonService *services.ComparisonService,
@@ -36,15 +36,12 @@ func NewResolver(
 	userService *services.UserService,
 	storageService *services.StorageService,
 ) *Resolver {
-	var redis *redis.Client
-	if redisClient != nil {
-		if rc, ok := redisClient.(*redis.Client); ok {
-			redis = rc
-		}
+	if cacheClient == nil {
+		cacheClient = &cache.NoOpClient{}
 	}
 	return &Resolver{
 		db:                db,
-		redis:             redis,
+		cache:             cacheClient,
 		logger:            logger,
 		analysisService:   analysisService,
 		comparisonService: comparisonService,

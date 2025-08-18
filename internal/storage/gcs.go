@@ -81,7 +81,6 @@ func (g *GCSProvider) GetURL(ctx context.Context, key string) (string, error) {
 }
 
 func (g *GCSProvider) GetSignedURL(ctx context.Context, key string, expiration int64) (string, error) {
-	obj := g.client.Bucket(g.bucket).Object(key)
 	
 	opts := &storage.SignedURLOptions{
 		Scheme:  storage.SigningSchemeV4,
@@ -89,7 +88,7 @@ func (g *GCSProvider) GetSignedURL(ctx context.Context, key string, expiration i
 		Expires: time.Now().Add(time.Duration(expiration) * time.Second),
 	}
 
-	url, err := obj.SignedURL(opts)
+	url, err := g.client.Bucket(g.bucket).SignedURL(key, opts)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate signed URL: %w", err)
 	}
