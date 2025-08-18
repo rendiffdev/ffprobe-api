@@ -291,6 +291,38 @@ func (s *AnalysisService) updateAnalysisLLMReport(ctx context.Context, analysisI
 	return s.repo.UpdateAnalysisLLMReport(ctx, analysisID, report)
 }
 
+// GenerateLLMReport generates and saves an LLM report for an existing analysis
+func (s *AnalysisService) GenerateLLMReport(ctx context.Context, analysisID uuid.UUID) error {
+	// Get the analysis
+	analysis, err := s.repo.GetAnalysis(ctx, analysisID)
+	if err != nil {
+		return fmt.Errorf("failed to get analysis: %w", err)
+	}
+
+	// Generate LLM report if service is available
+	if s.llmService != nil {
+		s.logger.Info().Str("analysis_id", analysisID.String()).Msg("Generating GenAI analysis report")
+		
+		llmCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
+		defer cancel()
+		
+		report, err := s.llmService.GenerateAnalysis(llmCtx, analysis)
+		if err != nil {
+			return fmt.Errorf("LLM analysis failed: %w", err)
+		}
+		
+		// Save the LLM report
+		if err := s.updateAnalysisLLMReport(ctx, analysisID, report); err != nil {
+			return fmt.Errorf("failed to save LLM report: %w", err)
+		}
+		
+		s.logger.Info().Str("analysis_id", analysisID.String()).Msg("GenAI analysis report generated successfully")
+		return nil
+	}
+	
+	return fmt.Errorf("LLM service not available")
+}
+
 // ProcessFile is a convenience method that creates and processes an analysis
 func (s *AnalysisService) ProcessFile(ctx context.Context, filePath string, options *ffmpeg.FFprobeOptions) (*models.Analysis, error) {
 	// Create analysis request

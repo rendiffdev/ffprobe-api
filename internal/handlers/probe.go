@@ -45,6 +45,7 @@ type ProbeFileRequest struct {
 	GenerateReports bool                   `json:"generate_reports,omitempty"`
 	ReportFormats   []string              `json:"report_formats,omitempty"`
 	ContentAnalysis bool                   `json:"content_analysis,omitempty"` // Enable advanced content analysis
+	IncludeLLM      bool                   `json:"include_llm,omitempty"`      // Enable AI-powered GenAI analysis (USP feature)
 }
 
 // ProbeURLRequest represents a request to probe a URL
@@ -56,6 +57,7 @@ type ProbeURLRequest struct {
 	GenerateReports bool                   `json:"generate_reports,omitempty"`
 	ReportFormats   []string              `json:"report_formats,omitempty"`
 	ContentAnalysis bool                   `json:"content_analysis,omitempty"` // Enable advanced content analysis
+	IncludeLLM      bool                   `json:"include_llm,omitempty"`      // Enable AI-powered GenAI analysis (USP feature)
 }
 
 // ProbeResponse represents the response from a probe operation
@@ -66,6 +68,8 @@ type ProbeResponse struct {
 	Analysis   *models.Analysis              `json:"analysis,omitempty"`
 	Message    string                        `json:"message,omitempty"`
 	Reports    *services.ReportResponse      `json:"reports,omitempty"`
+	LLMReport  *string                       `json:"llm_report,omitempty"`    // AI-powered GenAI insights
+	LLMEnabled bool                          `json:"llm_enabled"`            // Whether GenAI analysis was requested
 }
 
 // HealthResponse represents health check response
@@ -130,13 +134,20 @@ func (h *ProbeHandler) ProbeFile(c *gin.Context) {
 			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 			defer cancel()
 
+			// Process with GenAI analysis as core differentiator
 			if req.ContentAnalysis {
-				if err := h.analysisService.ProcessAnalysisWithContent(ctx, analysis.ID, req.Options, true); err != nil {
+				if err := h.analysisService.ProcessAnalysisWithContent(ctx, analysis.ID, req.Options, req.IncludeLLM); err != nil {
 					h.logger.Error().Err(err).Str("analysis_id", analysis.ID.String()).Msg("Async analysis with content analysis failed")
 				}
 			} else {
 				if err := h.analysisService.ProcessAnalysis(ctx, analysis.ID, req.Options); err != nil {
 					h.logger.Error().Err(err).Str("analysis_id", analysis.ID.String()).Msg("Async analysis failed")
+				}
+				// Add LLM analysis if requested (core USP feature)
+				if req.IncludeLLM {
+					if err := h.analysisService.GenerateLLMReport(ctx, analysis.ID); err != nil {
+						h.logger.Warn().Err(err).Str("analysis_id", analysis.ID.String()).Msg("LLM analysis failed")
+					}
 				}
 			}
 		}()
@@ -149,9 +160,9 @@ func (h *ProbeHandler) ProbeFile(c *gin.Context) {
 		return
 	}
 
-	// Synchronous processing
+	// Synchronous processing with GenAI analysis as core differentiator
 	if req.ContentAnalysis {
-		if err := h.analysisService.ProcessAnalysisWithContent(c.Request.Context(), analysis.ID, req.Options, true); err != nil {
+		if err := h.analysisService.ProcessAnalysisWithContent(c.Request.Context(), analysis.ID, req.Options, req.IncludeLLM); err != nil {
 			h.logger.Error().Err(err).Str("analysis_id", analysis.ID.String()).Msg("Analysis with content analysis failed")
 			errors.InternalError(c, "Analysis failed", err.Error())
 			return
@@ -161,6 +172,13 @@ func (h *ProbeHandler) ProbeFile(c *gin.Context) {
 			h.logger.Error().Err(err).Str("analysis_id", analysis.ID.String()).Msg("Analysis failed")
 			errors.InternalError(c, "Analysis failed", err.Error())
 			return
+		}
+		// Add LLM analysis if requested (core USP feature)
+		if req.IncludeLLM {
+			if err := h.analysisService.GenerateLLMReport(c.Request.Context(), analysis.ID); err != nil {
+				h.logger.Warn().Err(err).Str("analysis_id", analysis.ID.String()).Msg("LLM analysis failed")
+				// Don't fail the entire request if LLM fails, just log warning
+			}
 		}
 	}
 

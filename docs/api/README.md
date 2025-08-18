@@ -1,6 +1,10 @@
 # FFprobe API Reference
 
-**Complete REST & GraphQL API documentation with professional Quality Control analysis**
+**🧠 AI-Powered Video Analysis API - Beyond Traditional FFprobe**
+
+**The only media analysis API with built-in GenAI intelligence** - transforming raw FFprobe data into actionable professional insights, recommendations, and risk assessments.
+
+**Key GenAI Differentiator:** Every endpoint supports `"include_llm": true` parameter for AI-powered analysis
 
 ## Base URL
 
@@ -144,11 +148,8 @@ curl -X POST http://localhost:8080/api/v1/probe/file \
     "psnr": 42.1,
     "ssim": 0.95
   },
-  "llm_analysis": {
-    "summary": "Professional AI analysis of the video...",
-    "recommendations": ["Optimize bitrate", "Consider higher resolution"],
-    "quality_assessment": "Good overall quality with room for improvement"
-  }
+  "llm_report": "🧠 EXECUTIVE SUMMARY: Professional HD content ready for broadcast delivery. TECHNICAL ANALYSIS: H.264 encoding at optimal 5Mbps bitrate for 1080p resolution. QUALITY ASSESSMENT: Excellent visual quality (VMAF 85.2), no artifacts detected. RECOMMENDATIONS: 1) Consider HEVC encoding for 40% size reduction while maintaining quality. 2) Audio levels optimal for broadcast standards. 3) Suitable for Netflix, YouTube, and OTT platforms. RISK ASSESSMENT: Low technical risk, fully compliant with industry standards. WORKFLOW INTEGRATION: Ready for immediate delivery pipeline.",
+  "llm_enabled": true
 }
 ```
 

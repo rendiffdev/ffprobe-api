@@ -1,18 +1,45 @@
 # FFprobe API
 
-**Professional video analysis API with comprehensive Quality Control (QC) features**
+**AI-Powered Video Analysis API - Beyond Traditional FFprobe**
 
-Complete media analysis solution with 20+ professional QC analysis categories and AI-powered insights.
+🧠 **The only media analysis API with built-in GenAI intelligence** - transforming raw FFprobe data into actionable professional insights, recommendations, and risk assessments.
+
+**Why choose FFprobe API over direct FFmpeg/FFprobe?**
+- 🎯 **GenAI Analysis**: AI-powered interpretation of technical data into professional insights
+- 🔍 **Intelligent Risk Assessment**: AI identifies safety, compliance, and technical risks
+- 📊 **Smart Recommendations**: GenAI suggests specific FFmpeg commands and workflow improvements
+- 🏆 **Professional QC**: 20+ advanced quality control categories beyond basic FFprobe
+- 💡 **Executive Summaries**: AI translates technical data for non-technical stakeholders
 
 [![Production Ready](https://img.shields.io/badge/production-ready-green.svg)](PRODUCTION_READINESS_REPORT.md)
 [![QC Analysis](https://img.shields.io/badge/QC-20%20Categories-blue.svg)](#advanced-quality-control-features)
 [![Docker](https://img.shields.io/badge/docker-latest%20compose-blue.svg)](docs/deployment/modern-docker-compose.md)
 
-## ✨ Features
+## 🧠 Core GenAI Differentiators
+
+### **Why FFprobe API vs Direct FFmpeg/FFprobe?**
+
+| Traditional FFprobe | FFprobe API with GenAI |
+|-------------------|------------------------|
+| Raw technical data | 🎯 **AI-interpreted insights** |
+| Manual analysis required | 🤖 **Automated risk assessment** |
+| No recommendations | 💡 **Smart optimization suggestions** |
+| Technical jargon only | 📝 **Executive-friendly summaries** |
+| Single file analysis | 🔄 **Workflow integration recommendations** |
+
+### **🚀 GenAI-Powered Features**
+
+- **🧠 AI Technical Analysis**: LLM interprets FFprobe data into professional assessment
+- **⚠️ Risk Assessment**: AI identifies PSE risks, compliance issues, technical problems
+- **🎯 Smart Recommendations**: GenAI suggests specific FFmpeg commands for optimization
+- **📊 Quality Insights**: AI evaluates suitability for different delivery platforms
+- **🏢 Executive Summaries**: Technical findings translated for management/clients
+- **🔍 Issue Detection**: AI spots problems human analysts might miss
+
+### **🛠️ Advanced Technical Features**
 
 - **Advanced Quality Control**: 20+ professional QC analysis categories including timecode, AFD, MXF validation, dead pixel detection, PSE analysis
 - **Latest FFmpeg**: Always uses latest stable BtbN builds with all codecs
-- **AI-Enhanced Analysis**: Optional LLM integration for intelligent insights and risk assessment
 - **Professional Reports**: Comprehensive technical analysis with quality metrics and compliance validation
 - **Multiple Formats**: Supports all video/audio formats that FFmpeg supports
 - **REST & GraphQL API**: Complete RESTful and GraphQL interfaces with OpenAPI documentation
@@ -37,14 +64,30 @@ make quick
 
 Your API is now running at **http://localhost:8080**
 
-### Test It
+### 🧠 Test GenAI Analysis (The Core USP)
 ```bash
 # Check health
 curl http://localhost:8080/health
 
-# Analyze a video
+# Traditional analysis (like basic FFprobe)
 curl -X POST -F "file=@video.mp4" http://localhost:8080/api/v1/probe/file
+
+# 🎆 GenAI-powered analysis (THE DIFFERENTIATOR)
+curl -X POST \
+  -F "file=@video.mp4" \
+  -F "include_llm=true" \
+  http://localhost:8080/api/v1/probe/file
+
+# Get AI insights from the analysis
+curl http://localhost:8080/api/v1/analysis/{id} | jq '.llm_report'
 ```
+
+**💫 What you get with GenAI analysis:**
+- Professional quality assessment in plain English
+- Specific FFmpeg optimization commands
+- Risk assessment for PSE/compliance issues  
+- Delivery platform recommendations
+- Executive summary for stakeholders
 
 ## 📋 System Requirements
 
@@ -181,7 +224,31 @@ The FFprobe API provides **comprehensive professional QC analysis** with industr
 GET /health
 ```
 
-#### File Analysis with Advanced QC
+#### 🧠 GenAI-Powered Analysis (Core USP)
+```bash
+# THE DIFFERENTIATOR: AI-powered analysis
+POST /api/v1/probe/file
+Content-Type: application/json
+
+{
+  "file_path": "/path/to/video.mp4",
+  "include_llm": true,          // 🎆 Enable GenAI analysis
+  "content_analysis": true,
+  "generate_reports": true,
+  "report_formats": ["json", "pdf"]
+}
+```
+
+**GenAI Response Includes:**
+```json
+{
+  "analysis_id": "uuid",
+  "llm_report": "🧠 EXECUTIVE SUMMARY: Professional HD content suitable for broadcast. Video shows excellent technical quality with H.264 encoding at 1920x1080. RECOMMENDATIONS: Consider re-encoding to HEVC for 40% smaller files while maintaining quality. RISKS: No safety concerns detected.",
+  "llm_enabled": true
+}
+```
+
+#### Traditional Analysis (Like Basic FFprobe)
 ```bash
 POST /api/v1/probe/file
 Content-Type: application/json
@@ -194,13 +261,14 @@ Content-Type: application/json
 }
 ```
 
-#### URL Analysis
+#### URL Analysis with GenAI
 ```bash
 POST /api/v1/probe/url
 Content-Type: application/json
 
 {
   "url": "https://example.com/video.mp4",
+  "include_llm": true,        // 🧠 Enable AI analysis
   "content_analysis": true,
   "timeout": 300
 }
@@ -265,6 +333,90 @@ query AnalyzeMedia($input: AnalysisInput!) {
     }
   }
 }
+```
+
+## 🧠 GenAI Analysis Examples (Core USP)
+
+### 🎯 Why GenAI Analysis Changes Everything
+
+**Traditional FFprobe Output:**
+```json
+{
+  "codec_name": "h264",
+  "width": 1920,
+  "height": 1080,
+  "bit_rate": "5000000"
+}
+```
+
+**FFprobe API with GenAI Output:**
+```json
+{
+  "llm_report": "EXECUTIVE SUMMARY: Professional HD broadcast content ready for delivery. Technical Analysis: H.264 encoding at optimal bitrate (5Mbps) for 1080p resolution. Quality Assessment: Excellent visual quality with no artifacts detected. Recommendations: 1) Consider HEVC encoding for 40% size reduction while maintaining quality. 2) Add closed captions for accessibility compliance. 3) Suitable for Netflix, YouTube, and broadcast distribution. Risk Assessment: Low technical risk, compliant with industry standards. Workflow Integration: Ready for immediate delivery pipeline integration."
+}
+```
+
+### 🎥 Real-World GenAI Use Cases
+
+#### 🚨 Safety Risk Detection
+```bash
+# Analyze content for PSE risks
+curl -X POST \
+  -F "file=@flashing_video.mp4" \
+  -F "include_llm=true" \
+  http://localhost:8080/api/v1/probe/file
+
+# AI Response:
+"CRITICAL ALERT: High photosensitive epilepsy risk detected. 
+ Flashing patterns exceed safe thresholds (>3Hz). 
+ REQUIRED ACTIONS: Add PSE warning, consider content modification."
+```
+
+#### 🏆 Quality Optimization
+```bash
+# Get optimization recommendations
+curl -X POST \
+  -F "file=@large_video.mp4" \
+  -F "include_llm=true" \
+  http://localhost:8080/api/v1/probe/file
+
+# AI Response:
+"OPTIMIZATION OPPORTUNITIES: File is 2.5GB for 10min duration. 
+ RECOMMENDED: ffmpeg -i input.mp4 -c:v libx265 -crf 23 -c:a copy output.mp4 
+ RESULT: 60% smaller file, same visual quality."
+```
+
+#### 📄 Executive Reporting
+```bash
+# Generate stakeholder-friendly reports
+curl -X POST \
+  -F "file=@corporate_video.mp4" \
+  -F "include_llm=true" \
+  http://localhost:8080/api/v1/probe/file
+
+# AI Response:
+"CLIENT REPORT: Your video meets all technical requirements for 
+ social media distribution. Optimized for YouTube, Instagram, and 
+ TikTok. No technical issues detected. Ready for immediate publication."
+```
+
+### 🛠️ HLS Analysis with GenAI
+```bash
+# Analyze HLS streams with AI insights
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "/path/to/hls/directory/",
+    "analyze_segments": true,
+    "include_llm": true
+  }' \
+  http://localhost:8080/api/v1/probe/hls
+
+# AI analyzes all .ts chunks and provides:
+# - Quality ladder optimization suggestions
+# - ABR streaming recommendations  
+# - Platform compatibility assessment
+# - Bandwidth efficiency insights
 ```
 
 ## 🔧 Management Commands

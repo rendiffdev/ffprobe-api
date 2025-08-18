@@ -42,6 +42,8 @@ type HLSAnalysisRequest struct {
 	IncludeQuality bool `json:"include_quality"`
 	// Custom ffprobe arguments
 	FFprobeArgs []string `json:"ffprobe_args"`
+	// Enable AI-powered GenAI analysis (USP feature)
+	IncludeLLM bool `json:"include_llm,omitempty"`
 }
 
 // HLSAnalysisResponse represents the response from HLS analysis
