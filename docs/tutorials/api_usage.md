@@ -7,11 +7,11 @@ Step-by-step guide to using the FFprobe API effectively.
 Make sure you have the API running. Choose your deployment:
 
 ```bash
-# Simple deployment (recommended for testing)
-docker compose -f compose.simple.yml up -d
+# Quick deployment (recommended for testing)
+docker compose --profile quick up -d
 
 # Production deployment
-docker compose -f compose.yml -f compose.production.yml up -d
+docker compose -f compose.yaml -f compose.production.yaml up -d
 ```
 
 Set up your API key (required for most endpoints):

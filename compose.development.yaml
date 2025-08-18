@@ -1,0 +1,369 @@
+# FFprobe API - Development Environment
+# Modern Docker Compose for development workflow
+# Usage: docker compose --profile development up
+
+name: ffprobe-api-dev
+
+# Development-specific service configurations
+services:
+  # API service with development features
+  api:
+    extends:
+      file: compose.yaml
+      service: api
+    build:
+      target: development
+      cache_from:
+        - ffprobe-api:dev
+        - ffprobe-api:latest
+    image: ffprobe-api:dev
+    container_name: ffprobe-api-dev
+    environment:
+      GO_ENV: development
+      DEV_ENABLE_DEBUG: true
+      DEV_DISABLE_AUTH: true
+      DEV_DISABLE_RATE_LIMIT: true
+      DEV_VERBOSE_LOGGING: true
+      API_PORT: 8080
+      # Development-specific features
+      GIN_MODE: debug
+      HOT_RELOAD: true
+      AUTO_MIGRATE: true
+    ports:
+      - target: 8080
+        published: 8080
+        protocol: tcp
+      - target: 2345
+        published: 2345
+        protocol: tcp
+        # Delve debugger port
+    volumes:
+      # Mount source code for hot reload
+      - type: bind
+        source: .
+        target: /app
+        consistency: cached
+      - type: volume
+        source: go_mod_cache
+        target: /go/pkg/mod
+      - type: volume
+        source: go_build_cache
+        target: /root/.cache/go-build
+      # Development tools
+      - type: bind
+        source: ./scripts
+        target: /scripts
+        read_only: true
+    # Development command with hot reload
+    command: >
+      sh -c "
+        echo 'Starting development server with hot reload...'
+        go mod download
+        go install github.com/cosmtrek/air@latest
+        air -c .air.toml
+      "
+    # Faster healthcheck for development
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 2
+      start_period: 30s
+      start_interval: 2s
+    profiles:
+      - development
+      - dev
+      - full-dev
+    networks:
+      - ffprobe-dev-network
+
+  # Development database with exposed ports
+  postgres:
+    extends:
+      file: compose.yaml
+      service: postgres
+    container_name: ffprobe-postgres-dev
+    environment:
+      POSTGRES_DB: ffprobe_api_dev
+      POSTGRES_USER: ffprobe_dev
+      POSTGRES_PASSWORD: dev123
+      # Development optimizations
+      POSTGRES_LOG_STATEMENT: all
+      POSTGRES_LOG_MIN_DURATION_STATEMENT: 0
+      POSTGRES_SHARED_BUFFERS: 128MB
+    ports:
+      - target: 5432
+        published: 5432
+        protocol: tcp
+    volumes:
+      - type: volume
+        source: postgres_dev_data
+        target: /var/lib/postgresql/data
+      - type: bind
+        source: ./migrations
+        target: /docker-entrypoint-initdb.d
+        read_only: true
+      - type: bind
+        source: ./scripts/db
+        target: /scripts
+        read_only: true
+    profiles:
+      - development
+      - dev
+      - database-dev
+      - full-dev
+    networks:
+      - ffprobe-dev-network
+
+  # Development Redis with exposed ports
+  redis:
+    extends:
+      file: compose.yaml
+      service: redis
+    container_name: ffprobe-redis-dev
+    command: >
+      redis-server
+      --requirepass dev123
+      --appendonly yes
+      --save ""
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --loglevel verbose
+    ports:
+      - target: 6379
+        published: 6379
+        protocol: tcp
+    volumes:
+      - type: volume
+        source: redis_dev_data
+        target: /data
+    profiles:
+      - development
+      - dev
+      - cache-dev
+      - full-dev
+    networks:
+      - ffprobe-dev-network
+
+  # Development Ollama with single model for speed
+  ollama:
+    extends:
+      file: compose.yaml
+      service: ollama
+    container_name: ffprobe-ollama-dev
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+      OLLAMA_MODELS: ${DEV_OLLAMA_MODEL:-gemma3:270m}
+      OLLAMA_KEEP_ALIVE: 1m
+      OLLAMA_NUM_PARALLEL: 1
+    ports:
+      - target: 11434
+        published: 11434
+        protocol: tcp
+    volumes:
+      - type: volume
+        source: ollama_dev_data
+        target: /root/.ollama
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 3G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    command: >
+      sh -c "
+        echo 'Starting development Ollama with single model...'
+        ollama serve &
+        OLLAMA_PID=$$!
+        
+        sleep 10
+        
+        echo 'Downloading development model: ${DEV_OLLAMA_MODEL:-gemma3:270m}'
+        ollama pull ${DEV_OLLAMA_MODEL:-gemma3:270m} || echo 'Model download failed'
+        
+        echo 'Development model ready!'
+        ollama list
+        
+        wait $$OLLAMA_PID
+      "
+    profiles:
+      - development
+      - dev
+      - ai-dev
+      - full-dev
+    networks:
+      - ffprobe-dev-network
+
+  # Development tools and utilities
+  # Database administration tool
+  adminer:
+    image: adminer:latest
+    container_name: ffprobe-adminer
+    hostname: adminer
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: lucas
+    ports:
+      - target: 8080
+        published: 8081
+        protocol: tcp
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "-r", "if (file_get_contents('http://localhost:8080') === false) exit(1);"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    labels:
+      - "com.ffprobe-api.service=database-admin"
+      - "traefik.enable=true"
+      - "traefik.http.routers.adminer.rule=Host(`adminer.localhost`)"
+    profiles:
+      - development
+      - dev
+      - tools
+      - admin
+      - full-dev
+    networks:
+      - ffprobe-dev-network
+
+  # Redis administration tool
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: ffprobe-redis-commander
+    hostname: redis-commander
+    environment:
+      REDIS_HOSTS: local:redis:6379:0:dev123
+      HTTP_USER: admin
+      HTTP_PASSWORD: dev123
+    ports:
+      - target: 8081
+        published: 8082
+        protocol: tcp
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8081"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    labels:
+      - "com.ffprobe-api.service=redis-admin"
+      - "traefik.enable=true"
+      - "traefik.http.routers.redis-commander.rule=Host(`redis.localhost`)"
+    profiles:
+      - development
+      - dev
+      - tools
+      - admin
+      - full-dev
+    networks:
+      - ffprobe-dev-network
+
+  # File browser for uploads and reports
+  filebrowser:
+    image: filebrowser/filebrowser:latest
+    container_name: ffprobe-filebrowser
+    hostname: filebrowser
+    environment:
+      FB_DATABASE: /database/filebrowser.db
+      FB_ROOT: /srv
+      FB_PASSWORD: dev123
+      FB_USERNAME: admin
+    ports:
+      - target: 80
+        published: 8083
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: ${DATA_PATH:-./data}
+        target: /srv
+      - type: volume
+        source: filebrowser_data
+        target: /database
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    labels:
+      - "com.ffprobe-api.service=file-browser"
+      - "traefik.enable=true"
+      - "traefik.http.routers.filebrowser.rule=Host(`files.localhost`)"
+    profiles:
+      - development
+      - dev
+      - tools
+      - full-dev
+    networks:
+      - ffprobe-dev-network
+
+# Development-specific volumes
+volumes:
+  postgres_dev_data:
+    driver: local
+    labels:
+      - "com.ffprobe-api.volume=dev-database"
+      - "com.ffprobe-api.environment=development"
+  redis_dev_data:
+    driver: local
+    labels:
+      - "com.ffprobe-api.volume=dev-cache"
+      - "com.ffprobe-api.environment=development"
+  ollama_dev_data:
+    driver: local
+    labels:
+      - "com.ffprobe-api.volume=dev-ai-models"
+      - "com.ffprobe-api.environment=development"
+  go_mod_cache:
+    driver: local
+    labels:
+      - "com.ffprobe-api.volume=go-mod-cache"
+      - "com.ffprobe-api.cleanup=weekly"
+  go_build_cache:
+    driver: local
+    labels:
+      - "com.ffprobe-api.volume=go-build-cache"
+      - "com.ffprobe-api.cleanup=daily"
+  filebrowser_data:
+    driver: local
+    labels:
+      - "com.ffprobe-api.volume=filebrowser-config"
+
+# Development network with custom DNS
+networks:
+  ffprobe-dev-network:
+    driver: bridge
+    enable_ipv6: false
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.21.0.0/16
+          gateway: 172.21.0.1
+    driver_opts:
+      com.docker.network.bridge.name: ffprobe-dev-br0
+      com.docker.network.driver.mtu: 1500
+    labels:
+      - "com.ffprobe-api.network=development"
+      - "com.ffprobe-api.environment=development"
+
+# Development-specific configurations
+x-development-variables: &dev-variables
+  NODE_ENV: development
+  GO_ENV: development
+  DEBUG: true
+  LOG_LEVEL: debug
+
+x-development-logging: &dev-logging
+  driver: json-file
+  options:
+    max-size: "50m"
+    max-file: "5"
+    labels: "service,version,environment=development"

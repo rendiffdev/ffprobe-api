@@ -63,11 +63,12 @@ type Config struct {
 	ReportsDir    string `json:"reports_dir"`
 
 	// LLM configuration (optional)
-	LLMModelPath     string `json:"llm_model_path"`
-	OpenRouterAPIKey string `json:"openrouter_api_key"`
-	EnableLocalLLM   bool   `json:"enable_local_llm"`
-	OllamaURL        string `json:"ollama_url"`
-	OllamaModel      string `json:"ollama_model"`
+	LLMModelPath       string `json:"llm_model_path"`
+	OpenRouterAPIKey   string `json:"openrouter_api_key"`
+	EnableLocalLLM     bool   `json:"enable_local_llm"`
+	OllamaURL          string `json:"ollama_url"`
+	OllamaModel        string `json:"ollama_model"`
+	OllamaFallbackModel string `json:"ollama_fallback_model"`
 
 	// Cloud storage configuration (optional)
 	StorageProvider        string `json:"storage_provider"`
@@ -125,7 +126,8 @@ func Load() (*Config, error) {
 		OpenRouterAPIKey:   getEnv("OPENROUTER_API_KEY", ""),
 		EnableLocalLLM:     getEnvAsBool("ENABLE_LOCAL_LLM", true),
 		OllamaURL:          getEnv("OLLAMA_URL", "http://localhost:11434"),
-		OllamaModel:        getEnv("OLLAMA_MODEL", "mistral:7b"),
+		OllamaModel:        getEnv("OLLAMA_MODEL", "gemma3:270m"),
+		OllamaFallbackModel: getEnv("OLLAMA_FALLBACK_MODEL", "phi3:mini"),
 		StorageProvider:    getEnv("STORAGE_PROVIDER", "local"),
 		StorageBucket:      getEnv("STORAGE_BUCKET", "./storage"),
 		StorageRegion:      getEnv("STORAGE_REGION", "us-east-1"),

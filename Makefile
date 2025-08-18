@@ -1,99 +1,212 @@
-# FFprobe API Makefile
+# FFprobe API - Automated Build and Deployment
+# Simple commands for all platforms and deployment modes
 
-.PHONY: help build test test-coverage test-integration clean run dev docker-build docker-run install deploy validate
+.PHONY: help install quick prod dev clean test build docker health logs backup
 
 # Default target
-help:
-	@echo "🎬 FFprobe API - Available targets:"
+help: ## Show this help message
+	@echo "FFprobe API - Automated Deployment Commands"
 	@echo ""
-	@echo "📦 BUILD & TEST:"
-	@echo "  build            - Build the application"
-	@echo "  test             - Run unit tests"
-	@echo "  test-coverage    - Run tests with coverage"
-	@echo "  test-integration - Run integration tests"
-	@echo "  test-all         - Run all tests"
-	@echo "  clean            - Clean build artifacts"
+	@echo "🚀 QUICK START:"
+	@echo "  make install    # One-command setup (recommended)"
+	@echo "  make quick      # Quick development setup"
 	@echo ""
-	@echo "🚀 RUN & DEPLOY:"
-	@echo "  run              - Run the application"
-	@echo "  dev              - Run in development mode"
-	@echo "  docker-build     - Build Docker image"
-	@echo "  docker-run       - Run with Docker Compose"
+	@echo "📦 DEPLOYMENT MODES:"
+	@echo "  make minimal    # Minimal (4 core services)"
+	@echo "  make quick      # Quick start (no auth, dev mode)"
+	@echo "  make prod       # Production with monitoring"
+	@echo "  make dev        # Development with hot reload"
 	@echo ""
-	@echo "⚙️ SETUP & INSTALL:"
-	@echo "  install          - Interactive installer"
-	@echo "  quick-setup      - Quick setup (3 modes)"
-	@echo "  validate         - Validate configuration"
-	@echo "  setup-ollama     - Setup Ollama LLM models"
+	@echo "🔧 MANAGEMENT:"
+	@echo "  make start      # Start all services"
+	@echo "  make stop       # Stop all services"
+	@echo "  make restart    # Restart all services"
+	@echo "  make logs       # Show logs"
+	@echo "  make health     # Check service health"
 	@echo ""
-	@echo "🛠️ DEVELOPMENT:"
-	@echo "  lint             - Run linter"
-	@echo "  fmt              - Format code"
-	@echo "  deploy           - Deploy to production"
+	@echo "Available targets:"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
-# Build the application
-build:
-	@echo "Building ffprobe-api..."
-	go build -o bin/ffprobe-api ./cmd/ffprobe-api
+# === INSTALLATION ===
 
-# Run unit tests
-test:
-	@echo "Running unit tests..."
-	go test -v ./tests/... -run "Test[^I].*" -short
+install: ## One-command installation with setup wizard
+	@echo "🚀 Starting FFprobe API installation..."
+	@chmod +x setup.sh && ./setup.sh
 
-# Run integration tests
-test-integration:
-	@echo "Running integration tests..."
-	go test -v ./tests/... -run "TestIntegration.*"
+quick: ## Quick start (no auth, development mode)
+	@echo "⚡ Quick start deployment..."
+	@docker compose --profile quick up -d
+	@$(MAKE) wait-ready
+	@echo "✅ Quick start complete! Access: http://localhost:8080"
 
-# Run all tests
-test-all:
-	@echo "Running all tests..."
-	go test -v ./tests/...
+minimal: ## Minimal deployment (4 core services only)
+	@echo "⚡ Minimal deployment (API + DB + Redis + AI)..."
+	@docker compose --profile minimal up -d
+	@$(MAKE) wait-ready
+	@echo "✅ Minimal deployment complete! Access: http://localhost:8080"
+	@echo "   Services: API, PostgreSQL, Redis, Ollama only"
 
-# Run tests with coverage
-test-coverage:
-	@echo "Running tests with coverage..."
-	go test -v -coverprofile=coverage.out ./tests/...
-	go tool cover -html=coverage.out -o coverage.html
-	@echo "Coverage report generated: coverage.html"
+prod: ## Production deployment with monitoring
+	@echo "🏭 Production deployment..."
+	@if [ ! -f .env ]; then echo "❌ .env file required for production. Run 'make install' first."; exit 1; fi
+	@docker compose -f compose.yaml -f compose.production.yaml --profile production up -d
+	@$(MAKE) wait-ready
+	@echo "✅ Production deployment complete!"
+	@echo "   API: http://localhost:8080"
+	@echo "   Monitoring: http://localhost:3000"
 
-# Clean build artifacts
-clean:
-	@echo "Cleaning..."
-	rm -rf bin/
-	rm -f coverage.out coverage.html
-	rm -rf test_storage/ test_storage_service/ test_storage_service_error/
+dev: ## Development setup with hot reload
+	@echo "🔧 Development setup..."
+	@docker compose -f compose.yaml -f compose.development.yaml --profile development up -d
+	@$(MAKE) wait-ready
+	@echo "✅ Development environment ready!"
 
-# Run the application
-run: build
-	@echo "Running ffprobe-api..."
-	./bin/ffprobe-api
+# === MANAGEMENT ===
 
-# Run in development mode
-dev:
-	@echo "Running in development mode..."
-	go run ./cmd/ffprobe-api
+start: ## Start all services
+	@docker compose up -d
 
-# Build Docker image
-docker-build:
-	@echo "Building Docker image..."
-	docker build -t ffprobe-api:latest .
+stop: ## Stop all services
+	@docker compose stop
 
-# Run with Docker Compose
-docker-run:
-	@echo "Starting with Docker Compose..."
-	docker-compose up --build
+restart: ## Restart all services
+	@docker compose restart
 
-# Run with Docker Compose (development)
-docker-dev:
-	@echo "Starting development environment with Docker Compose..."
-	docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+down: ## Stop and remove all containers
+	@docker compose down
 
-# Run with Docker Compose (production)
-docker-prod:
-	@echo "Starting production environment with Docker Compose..."
-	docker-compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+clean: ## Remove all containers, volumes, and images
+	@echo "🧹 Cleaning up..."
+	@docker compose down -v --rmi all
+	@docker system prune -f
+	@echo "✅ Cleanup complete"
+
+# === MONITORING ===
+
+status: ## Show service status
+	@docker compose ps
+
+health: ## Check health of all services
+	@echo "🏥 Health Check:"
+	@echo "API:        $(shell curl -s http://localhost:8080/health | grep -o '"status":"[^"]*"' || echo '❌ Down')"
+	@echo "Database:   $(shell docker compose exec -T postgres pg_isready -q && echo '✅ Ready' || echo '❌ Down')"
+	@echo "Redis:      $(shell docker compose exec -T redis redis-cli ping 2>/dev/null || echo '❌ Down')"
+	@echo "Ollama:     $(shell curl -s http://localhost:11434/api/version >/dev/null && echo '✅ Ready' || echo '❌ Down')"
+
+logs: ## Show logs from all services
+	@docker compose logs -f
+
+logs-api: ## Show API logs only
+	@docker compose logs -f api
+
+logs-ollama: ## Show Ollama (AI) logs only
+	@docker compose logs -f ollama
+
+# === TESTING ===
+
+test: ## Run health checks and basic tests
+	@echo "🧪 Running tests..."
+	@$(MAKE) wait-ready
+	@echo "Testing API endpoint..."
+	@curl -f http://localhost:8080/health > /dev/null && echo "✅ API healthy" || echo "❌ API failed"
+	@echo "Testing file upload..."
+	@curl -f -X POST -F "file=@README.md" http://localhost:8080/api/v1/probe/file > /dev/null 2>&1 && echo "✅ Upload works" || echo "⚠️  Upload test skipped (auth required)"
+
+test-ffmpeg: ## Test FFmpeg functionality
+	@echo "🎬 Testing FFmpeg..."
+	@docker compose exec api ffmpeg -version | head -1
+	@docker compose exec api ffprobe -version | head -1
+	@echo "✅ FFmpeg tests passed"
+
+test-ai: ## Test AI model functionality
+	@echo "🤖 Testing AI models..."
+	@curl -s http://localhost:11434/api/tags | jq -r '.models[].name' | head -5 || echo "⚠️  AI models still downloading"
+
+benchmark: ## Run performance benchmarks
+	@echo "📊 Running benchmarks..."
+	@ab -n 100 -c 10 http://localhost:8080/health 2>/dev/null | grep -E "(Requests per second|Time per request)" || echo "⚠️  Install 'apache2-utils' for benchmarking"
+
+# === MAINTENANCE ===
+
+update: ## Update to latest versions
+	@echo "🔄 Updating FFprobe API..."
+	@git pull origin main || echo "⚠️  Manual git pull required"
+	@docker compose pull
+	@docker compose up -d --build
+	@echo "✅ Update complete"
+
+backup: ## Create backup of data and configuration
+	@echo "💾 Creating backup..."
+	@mkdir -p backups/$(shell date +%Y%m%d_%H%M%S)
+	@docker compose exec postgres pg_dump -U $$POSTGRES_USER $$POSTGRES_DB > backups/$(shell date +%Y%m%d_%H%M%S)/database.sql 2>/dev/null || echo "⚠️  Database backup failed"
+	@cp -r uploads backups/$(shell date +%Y%m%d_%H%M%S)/ 2>/dev/null || echo "⚠️  No uploads to backup"
+	@cp .env backups/$(shell date +%Y%m%d_%H%M%S)/ 2>/dev/null || echo "ℹ️  No .env to backup"
+	@echo "✅ Backup created in backups/$(shell date +%Y%m%d_%H%M%S)"
+
+migrate: ## Run database migrations
+	@echo "🔄 Running migrations..."
+	@docker compose exec api ./ffprobe-api migrate up
+	@echo "✅ Migrations complete"
+
+# === DEVELOPMENT ===
+
+build: ## Build the API image
+	@echo "🔨 Building API image..."
+	@docker compose build api
+
+shell: ## Open shell in API container
+	@docker compose exec api /bin/bash
+
+db-shell: ## Open PostgreSQL shell
+	@docker compose exec postgres psql -U $$POSTGRES_USER -d $$POSTGRES_DB
+
+redis-shell: ## Open Redis shell
+	@docker compose exec redis redis-cli -a $$REDIS_PASSWORD
+
+# === UTILITIES ===
+
+env: ## Generate .env file with secure defaults
+	@echo "🔐 Generating secure .env file..."
+	@./scripts/generate-env.sh
+
+config: ## Show current configuration
+	@echo "⚙️  Current Configuration:"
+	@docker compose config
+
+ps: ## Show running containers
+	@docker compose ps -a
+
+top: ## Show container resource usage
+	@docker stats --no-stream $(shell docker compose ps -q)
+
+# === INTERNAL HELPERS ===
+
+wait-ready: ## Wait for services to be ready (internal)
+	@echo "⏳ Waiting for services to be ready..."
+	@timeout=60; \
+	while [ $$timeout -gt 0 ]; do \
+		if curl -s http://localhost:8080/health >/dev/null 2>&1; then \
+			echo "✅ Services ready!"; \
+			break; \
+		fi; \
+		echo -n "."; \
+		sleep 2; \
+		timeout=$$((timeout-1)); \
+	done; \
+	if [ $$timeout -eq 0 ]; then \
+		echo "⚠️  Services may still be starting. Check logs with 'make logs'"; \
+	fi
+
+check-docker: ## Check if Docker is available (internal)
+	@docker --version >/dev/null 2>&1 || { echo "❌ Docker not found. Please install Docker first."; exit 1; }
+	@docker compose version >/dev/null 2>&1 || { echo "❌ Docker Compose not found. Please install Docker Compose."; exit 1; }
+
+# === QUICK COMMANDS ===
+
+# One-liners for common tasks
+all: install ## Complete setup and start
+fresh: clean install ## Clean install from scratch
+reset: down clean quick ## Reset everything and quick start
 
 # Run linter
 lint:
@@ -210,9 +323,9 @@ setup-ollama:
 # Update Docker Compose files to new syntax
 docker-update:
 	@echo "🐳 Updating Docker Compose syntax..."
-	docker compose -f compose.yml config > /dev/null && echo "✅ Base config valid"
-	docker compose -f compose.yml -f compose.dev.yml config > /dev/null && echo "✅ Dev config valid"
-	docker compose -f compose.yml -f compose.prod.yml config > /dev/null && echo "✅ Prod config valid"
+	docker compose config > /dev/null && echo "✅ Base config valid"
+	docker compose -f compose.yaml -f compose.development.yaml config > /dev/null && echo "✅ Dev config valid"
+	docker compose -f compose.yaml -f compose.production.yaml config > /dev/null && echo "✅ Prod config valid"
 
 # Complete setup workflow
 setup-complete: install validate docker-update

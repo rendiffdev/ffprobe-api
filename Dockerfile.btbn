@@ -1,0 +1,151 @@
+# Multi-stage build using BtbN's pre-built FFmpeg binaries
+# This provides the latest stable FFmpeg with all codecs and features enabled
+
+# Stage 1: Download and verify BtbN FFmpeg build
+FROM alpine:3.20 AS ffmpeg-downloader
+
+# Install required tools
+RUN apk add --no-cache \
+    curl \
+    tar \
+    xz \
+    jq \
+    ca-certificates
+
+WORKDIR /tmp
+
+# Download the latest stable FFmpeg build from BtbN
+# Using the API to get the latest release automatically
+RUN curl -s https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/latest | \
+    jq -r '.assets[] | select(.name | contains("linux64-gpl.tar.xz") and contains("master")) | .browser_download_url' | \
+    head -1 | xargs curl -L -o ffmpeg.tar.xz && \
+    tar -xJf ffmpeg.tar.xz && \
+    mv ffmpeg-*/bin/ffmpeg /usr/local/bin/ && \
+    mv ffmpeg-*/bin/ffprobe /usr/local/bin/ && \
+    chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe
+
+# Verify FFmpeg installation and get version info
+RUN /usr/local/bin/ffmpeg -version && \
+    /usr/local/bin/ffprobe -version
+
+# Download VMAF models for quality analysis
+RUN mkdir -p /usr/local/share/vmaf && \
+    cd /usr/local/share/vmaf && \
+    curl -sLO https://github.com/Netflix/vmaf/raw/master/model/vmaf_v0.6.1.json && \
+    curl -sLO https://github.com/Netflix/vmaf/raw/master/model/vmaf_v0.6.1neg.json && \
+    curl -sLO https://github.com/Netflix/vmaf/raw/master/model/vmaf_4k_v0.6.1.json && \
+    curl -sLO https://github.com/Netflix/vmaf/raw/master/model/vmaf_b_v0.6.3.json
+
+# Stage 2: Build Go application
+FROM golang:1.22-alpine AS go-builder
+
+# Install build dependencies
+RUN apk add --no-cache \
+    git \
+    build-base \
+    ca-certificates
+
+WORKDIR /app
+
+# Copy go mod files
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build the Go application with all optimizations
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -ldflags="-w -s" \
+    -o ffprobe-api cmd/ffprobe-api/main.go
+
+# Stage 3: Final production image
+FROM alpine:3.20
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    bash \
+    curl \
+    jq \
+    # Libraries that FFmpeg might need at runtime
+    libstdc++ \
+    libgcc \
+    libgomp \
+    # For video processing
+    mesa-gl \
+    mesa-glapi \
+    # For audio processing
+    alsa-lib \
+    # For subtitle processing
+    fontconfig \
+    ttf-liberation \
+    # For network protocols
+    librtmp \
+    # For image processing
+    libjpeg-turbo \
+    libpng \
+    libwebp \
+    # System utilities for updates
+    tar \
+    xz
+
+# Create non-root user
+RUN adduser -D -u 1000 ffprobe
+
+# Create necessary directories
+RUN mkdir -p /app/bin /app/data /app/uploads /app/temp /app/cache /app/reports /app/backup && \
+    chown -R ffprobe:ffprobe /app
+
+WORKDIR /app
+
+# Copy FFmpeg binaries from downloader stage
+COPY --from=ffmpeg-downloader /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
+COPY --from=ffmpeg-downloader /usr/local/bin/ffprobe /usr/local/bin/ffprobe
+COPY --from=ffmpeg-downloader /usr/local/share/vmaf /usr/local/share/vmaf
+
+# Copy Go application from builder
+COPY --from=go-builder /app/ffprobe-api /app/ffprobe-api
+
+# Copy configuration files and scripts
+COPY --chown=ffprobe:ffprobe docker-entrypoint.sh /app/
+COPY --chown=ffprobe:ffprobe migrations /app/migrations
+
+# Make scripts executable
+RUN chmod +x /app/docker-entrypoint.sh /app/ffprobe-api
+
+# Create version info file
+RUN echo "FFmpeg Version:" > /app/version.txt && \
+    /usr/local/bin/ffmpeg -version | head -1 >> /app/version.txt && \
+    echo "Build Date: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> /app/version.txt && \
+    echo "BtbN Build: Latest Stable" >> /app/version.txt
+
+# Environment variables
+ENV FFMPEG_PATH=/usr/local/bin/ffmpeg \
+    FFPROBE_PATH=/usr/local/bin/ffprobe \
+    VMAF_MODEL_PATH=/usr/local/share/vmaf \
+    API_PORT=8080 \
+    UPLOAD_DIR=/app/uploads \
+    TEMP_DIR=/app/temp \
+    CACHE_DIR=/app/cache \
+    REPORTS_DIR=/app/reports \
+    DATA_DIR=/app/data \
+    # FFmpeg update configuration
+    FFMPEG_AUTO_UPDATE=false \
+    FFMPEG_UPDATE_CHECK_INTERVAL=86400 \
+    FFMPEG_ALLOW_MAJOR_UPDATES=false
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Switch to non-root user
+USER ffprobe
+
+# Expose port
+EXPOSE 8080
+
+# Entry point
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
+CMD ["/app/ffprobe-api"]

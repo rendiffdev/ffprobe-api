@@ -18,6 +18,7 @@ type ContentAnalyzer struct {
 	ffmpegPath string
 	logger     zerolog.Logger
 	tempDir    string
+	hdrAnalyzer *HDRAnalyzer
 }
 
 // NewContentAnalyzer creates a new content analyzer
@@ -30,6 +31,7 @@ func NewContentAnalyzer(ffmpegPath string, logger zerolog.Logger) *ContentAnalyz
 		ffmpegPath: ffmpegPath,
 		logger:     logger,
 		tempDir:    "/tmp/content_analysis",
+		hdrAnalyzer: NewHDRAnalyzer("ffprobe", logger),
 	}
 }
 
@@ -113,9 +115,18 @@ func (ca *ContentAnalyzer) AnalyzeContent(ctx context.Context, filePath string) 
 		}
 	}()
 
+	// Launch HDR analysis
+	go func() {
+		if result, err := ca.hdrAnalyzer.AnalyzeHDR(ctx, filePath); err != nil {
+			errorChan <- fmt.Errorf("HDR analysis failed: %w", err)
+		} else {
+			resultChan <- func() { analysis.HDRAnalysis = result }
+		}
+	}()
+
 	// Collect results with timeout
 	completed := 0
-	target := 8
+	target := 9
 	timeout := time.After(60 * time.Second) // 60 second timeout for all analyses
 
 	for completed < target {

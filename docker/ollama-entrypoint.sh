@@ -34,33 +34,42 @@ wait_for_ollama() {
 if wait_for_ollama; then
     echo "🎯 Ollama is running, checking for models..."
     
-    # Check if the model exists
-    MODEL_NAME="${OLLAMA_MODEL:-phi3:mini}"
-    echo "🔍 Checking for model: $MODEL_NAME"
+    # Primary model (Gemma 3 270M - fast and efficient)
+    MODEL_NAME="${OLLAMA_MODEL:-gemma3:270m}"
+    echo "🔍 Checking for primary model: $MODEL_NAME"
     
     if ! ollama list | grep -q "$MODEL_NAME"; then
-        echo "📥 Model $MODEL_NAME not found. Downloading..."
-        echo "⚠️  This may take several minutes depending on your internet connection..."
+        echo "📥 Primary model $MODEL_NAME not found. Downloading..."
+        echo "⚠️  This is a small model (~200MB) and should download quickly..."
         
-        # Download the model
+        # Download the primary model
         if ollama pull "$MODEL_NAME"; then
-            echo "✅ Model $MODEL_NAME downloaded successfully!"
+            echo "✅ Primary model $MODEL_NAME downloaded successfully!"
         else
-            echo "❌ Failed to download model $MODEL_NAME"
-            echo "🔄 Trying to download a smaller fallback model..."
-            
-            # Try phi3:mini as fallback
-            echo "📥 Trying fallback model: phi3:mini"
-            if ollama pull "phi3:mini"; then
-                echo "✅ Fallback model phi3:mini downloaded successfully!"
-                echo "⚙️  Using phi3:mini as the default model"
-            else
-                echo "❌ Failed to download fallback model phi3:mini"
-                exit 1
-            fi
+            echo "⚠️  Failed to download primary model $MODEL_NAME"
+            echo "⚠️  Will continue with fallback model only"
         fi
     else
-        echo "✅ Model $MODEL_NAME already available!"
+        echo "✅ Primary model $MODEL_NAME already available!"
+    fi
+    
+    # Fallback model (Phi-3 Mini - better reasoning)
+    FALLBACK_MODEL="${OLLAMA_FALLBACK_MODEL:-phi3:mini}"
+    echo "🔍 Checking for fallback model: $FALLBACK_MODEL"
+    
+    if ! ollama list | grep -q "$FALLBACK_MODEL"; then
+        echo "📥 Fallback model $FALLBACK_MODEL not found. Downloading..."
+        echo "⚠️  This model is larger (~2GB) and may take a few minutes..."
+        
+        # Download the fallback model
+        if ollama pull "$FALLBACK_MODEL"; then
+            echo "✅ Fallback model $FALLBACK_MODEL downloaded successfully!"
+        else
+            echo "⚠️  Failed to download fallback model $FALLBACK_MODEL"
+            echo "⚠️  The system will work with available models only"
+        fi
+    else
+        echo "✅ Fallback model $FALLBACK_MODEL already available!"
     fi
     
     echo "📋 Available models:"

@@ -11,18 +11,67 @@ import (
 
 // EnhancedAnalyzer provides additional quality control analysis
 type EnhancedAnalyzer struct {
-	contentAnalyzer *ContentAnalyzer
+	contentAnalyzer       *ContentAnalyzer
+	hdrAnalyzer           *HDRAnalyzer
+	bitDepthAnalyzer      *BitDepthAnalyzer
+	resolutionAnalyzer    *ResolutionAnalyzer
+	frameRateAnalyzer     *FrameRateAnalyzer
+	codecAnalyzer         *CodecAnalyzer
+	containerAnalyzer     *ContainerAnalyzer
+	llmAnalyzer           *LLMEnhancedAnalyzer
+	timecodeAnalyzer        *TimecodeAnalyzer
+	afdAnalyzer             *AFDAnalyzer
+	transportStreamAnalyzer *TransportStreamAnalyzer
+	endiannessAnalyzer      *EndiannessAnalyzer
+	audioWrappingAnalyzer   *AudioWrappingAnalyzer
+	imfAnalyzer             *IMFAnalyzer
+	mxfAnalyzer             *MXFAnalyzer
+	deadPixelAnalyzer       *DeadPixelAnalyzer
+	pseAnalyzer             *PSEAnalyzer
 }
 
 // NewEnhancedAnalyzer creates a new enhanced analyzer
-func NewEnhancedAnalyzer() *EnhancedAnalyzer {
-	return &EnhancedAnalyzer{}
+func NewEnhancedAnalyzer(ffprobePath string, logger zerolog.Logger) *EnhancedAnalyzer {
+	return &EnhancedAnalyzer{
+		hdrAnalyzer:               NewHDRAnalyzer(ffprobePath, logger),
+		bitDepthAnalyzer:          NewBitDepthAnalyzer(),
+		resolutionAnalyzer:        NewResolutionAnalyzer(),
+		frameRateAnalyzer:         NewFrameRateAnalyzer(),
+		codecAnalyzer:             NewCodecAnalyzer(),
+		containerAnalyzer:         NewContainerAnalyzer(),
+		llmAnalyzer:               nil, // Will be set via SetLLMAnalyzer if enabled
+		timecodeAnalyzer:          NewTimecodeAnalyzer(ffprobePath, logger),
+		afdAnalyzer:               NewAFDAnalyzer(ffprobePath, logger),
+		transportStreamAnalyzer:   NewTransportStreamAnalyzer(ffprobePath, logger),
+		endiannessAnalyzer:        NewEndiannessAnalyzer(ffprobePath, logger),
+		audioWrappingAnalyzer:     NewAudioWrappingAnalyzer(ffprobePath, logger),
+		imfAnalyzer:               NewIMFAnalyzer(ffprobePath, logger),
+		mxfAnalyzer:               NewMXFAnalyzer(ffprobePath, logger),
+		deadPixelAnalyzer:         NewDeadPixelAnalyzer(ffprobePath, logger),
+		pseAnalyzer:               NewPSEAnalyzer(ffprobePath, logger),
+	}
 }
 
 // NewEnhancedAnalyzerWithContentAnalysis creates analyzer with content analysis capability
-func NewEnhancedAnalyzerWithContentAnalysis(ffmpegPath string, logger zerolog.Logger) *EnhancedAnalyzer {
+func NewEnhancedAnalyzerWithContentAnalysis(ffmpegPath string, ffprobePath string, logger zerolog.Logger) *EnhancedAnalyzer {
 	return &EnhancedAnalyzer{
-		contentAnalyzer: NewContentAnalyzer(ffmpegPath, logger),
+		contentAnalyzer:           NewContentAnalyzer(ffmpegPath, logger),
+		hdrAnalyzer:               NewHDRAnalyzer(ffprobePath, logger),
+		bitDepthAnalyzer:          NewBitDepthAnalyzer(),
+		resolutionAnalyzer:        NewResolutionAnalyzer(),
+		frameRateAnalyzer:         NewFrameRateAnalyzer(),
+		codecAnalyzer:             NewCodecAnalyzer(),
+		containerAnalyzer:         NewContainerAnalyzer(),
+		llmAnalyzer:               nil, // Will be set via SetLLMAnalyzer if enabled
+		timecodeAnalyzer:          NewTimecodeAnalyzer(ffprobePath, logger),
+		afdAnalyzer:               NewAFDAnalyzer(ffprobePath, logger),
+		transportStreamAnalyzer:   NewTransportStreamAnalyzer(ffprobePath, logger),
+		endiannessAnalyzer:        NewEndiannessAnalyzer(ffprobePath, logger),
+		audioWrappingAnalyzer:     NewAudioWrappingAnalyzer(ffprobePath, logger),
+		imfAnalyzer:               NewIMFAnalyzer(ffprobePath, logger),
+		mxfAnalyzer:               NewMXFAnalyzer(ffprobePath, logger),
+		deadPixelAnalyzer:         NewDeadPixelAnalyzer(ffprobePath, logger),
+		pseAnalyzer:               NewPSEAnalyzer(ffprobePath, logger),
 	}
 }
 
@@ -57,7 +106,190 @@ func (ea *EnhancedAnalyzer) AnalyzeResult(result *FFprobeResult) error {
 		enhanced.FrameStatistics = ea.analyzeFrameStatistics(result.Frames)
 	}
 
+	// Analyze bit depth
+	if ea.bitDepthAnalyzer != nil && len(result.Streams) > 0 {
+		enhanced.BitDepthAnalysis = ea.bitDepthAnalyzer.AnalyzeBitDepth(result.Streams)
+	}
+
+	// Analyze resolution and aspect ratio
+	if ea.resolutionAnalyzer != nil && len(result.Streams) > 0 {
+		enhanced.ResolutionAnalysis = ea.resolutionAnalyzer.AnalyzeResolution(result.Streams)
+	}
+
+	// Analyze frame rate
+	if ea.frameRateAnalyzer != nil && len(result.Streams) > 0 {
+		enhanced.FrameRateAnalysis = ea.frameRateAnalyzer.AnalyzeFrameRate(result.Streams)
+	}
+
+	// Analyze codecs
+	if ea.codecAnalyzer != nil && len(result.Streams) > 0 {
+		enhanced.CodecAnalysis = ea.codecAnalyzer.AnalyzeCodecs(result.Streams)
+	}
+
+	// Analyze container
+	if ea.containerAnalyzer != nil && result.Format != nil {
+		enhanced.ContainerAnalysis = ea.containerAnalyzer.AnalyzeContainer(result.Format)
+	}
+
 	result.EnhancedAnalysis = enhanced
+	return nil
+}
+
+// AnalyzeResultWithAdvancedQC performs comprehensive QC analysis including all advanced features
+func (ea *EnhancedAnalyzer) AnalyzeResultWithAdvancedQC(ctx context.Context, result *FFprobeResult, filePath string) error {
+	// First run standard enhanced analysis
+	if err := ea.AnalyzeResult(result); err != nil {
+		return err
+	}
+
+	// Initialize enhanced analysis if not already done
+	if result.EnhancedAnalysis == nil {
+		result.EnhancedAnalysis = &EnhancedAnalysis{}
+	}
+
+	// Run timecode analysis
+	if ea.timecodeAnalyzer != nil && len(result.Streams) > 0 {
+		timecodeAnalysis, err := ea.timecodeAnalyzer.AnalyzeTimecode(ctx, filePath, result.Streams)
+		if err != nil {
+			return fmt.Errorf("timecode analysis failed: %w", err)
+		}
+		result.EnhancedAnalysis.TimecodeAnalysis = timecodeAnalysis
+	}
+
+	// Run AFD analysis
+	if ea.afdAnalyzer != nil && len(result.Streams) > 0 {
+		afdAnalysis, err := ea.afdAnalyzer.AnalyzeAFD(ctx, filePath, result.Streams)
+		if err != nil {
+			return fmt.Errorf("AFD analysis failed: %w", err)
+		}
+		result.EnhancedAnalysis.AFDAnalysis = afdAnalysis
+	}
+
+	// Run transport stream analysis
+	if ea.transportStreamAnalyzer != nil {
+		transportAnalysis, err := ea.transportStreamAnalyzer.AnalyzeTransportStream(ctx, filePath)
+		if err != nil {
+			return fmt.Errorf("transport stream analysis failed: %w", err)
+		}
+		result.EnhancedAnalysis.TransportStreamAnalysis = transportAnalysis
+	}
+
+	// Run endianness analysis
+	if ea.endiannessAnalyzer != nil {
+		endiannessAnalysis, err := ea.endiannessAnalyzer.AnalyzeEndianness(ctx, filePath)
+		if err != nil {
+			return fmt.Errorf("endianness analysis failed: %w", err)
+		}
+		result.EnhancedAnalysis.EndiannessAnalysis = endiannessAnalysis
+	}
+
+	// Run audio wrapping analysis
+	if ea.audioWrappingAnalyzer != nil && len(result.Streams) > 0 {
+		audioWrappingAnalysis, err := ea.audioWrappingAnalyzer.AnalyzeAudioWrapping(ctx, filePath, result.Streams)
+		if err != nil {
+			return fmt.Errorf("audio wrapping analysis failed: %w", err)
+		}
+		result.EnhancedAnalysis.AudioWrappingAnalysis = audioWrappingAnalysis
+	}
+
+	// Run IMF analysis if this appears to be an IMF package
+	if ea.imfAnalyzer != nil {
+		imfAnalysis, err := ea.imfAnalyzer.AnalyzeIMF(ctx, filePath)
+		if err != nil {
+			return fmt.Errorf("IMF analysis failed: %w", err)
+		}
+		result.EnhancedAnalysis.IMFAnalysis = imfAnalysis
+	}
+
+	// Run MXF analysis if this is an MXF file
+	if ea.mxfAnalyzer != nil {
+		mxfAnalysis, err := ea.mxfAnalyzer.AnalyzeMXF(ctx, filePath)
+		if err != nil {
+			return fmt.Errorf("MXF analysis failed: %w", err)
+		}
+		result.EnhancedAnalysis.MXFAnalysis = mxfAnalysis
+	}
+
+	// Run dead pixel analysis
+	if ea.deadPixelAnalyzer != nil {
+		deadPixelAnalysis, err := ea.deadPixelAnalyzer.AnalyzeDeadPixels(ctx, filePath)
+		if err != nil {
+			return fmt.Errorf("dead pixel analysis failed: %w", err)
+		}
+		result.EnhancedAnalysis.DeadPixelAnalysis = deadPixelAnalysis
+	}
+
+	// Run photosensitive epilepsy risk analysis
+	if ea.pseAnalyzer != nil {
+		pseAnalysis, err := ea.pseAnalyzer.AnalyzePSERisk(ctx, filePath)
+		if err != nil {
+			return fmt.Errorf("PSE analysis failed: %w", err)
+		}
+		result.EnhancedAnalysis.PSEAnalysis = pseAnalysis
+	}
+
+	return nil
+}
+
+// SetLLMAnalyzer sets the LLM analyzer for enhanced reporting
+func (ea *EnhancedAnalyzer) SetLLMAnalyzer(llmAnalyzer *LLMEnhancedAnalyzer) {
+	ea.llmAnalyzer = llmAnalyzer
+}
+
+// AnalyzeResultWithLLM performs enhanced analysis including LLM-powered insights
+func (ea *EnhancedAnalyzer) AnalyzeResultWithLLM(ctx context.Context, result *FFprobeResult, filePath string) error {
+	// First run standard enhanced analysis
+	if err := ea.AnalyzeResult(result); err != nil {
+		return err
+	}
+
+	// Run LLM analysis if analyzer is available
+	if ea.llmAnalyzer != nil && ea.llmAnalyzer.IsEnabled() {
+		llmReport, err := ea.llmAnalyzer.GenerateEnhancedReport(ctx, result)
+		if err != nil {
+			// Log error but don't fail the entire analysis
+			return fmt.Errorf("LLM analysis failed: %w", err)
+		}
+		
+		// Add LLM report to enhanced analysis
+		if result.EnhancedAnalysis == nil {
+			result.EnhancedAnalysis = &EnhancedAnalysis{}
+		}
+		if result.EnhancedAnalysis.ContentAnalysis == nil {
+			result.EnhancedAnalysis.ContentAnalysis = &ContentAnalysis{}
+		}
+		
+		// Extend ContentAnalysis to include LLM report
+		// This would require adding LLMReport field to ContentAnalysis struct
+		// For now, we'll store it in a new field
+		result.EnhancedAnalysis.LLMReport = llmReport
+	}
+
+	return nil
+}
+
+// AnalyzeResultWithHDR performs enhanced analysis including HDR analysis
+func (ea *EnhancedAnalyzer) AnalyzeResultWithHDR(ctx context.Context, result *FFprobeResult, filePath string) error {
+	// First run standard enhanced analysis
+	if err := ea.AnalyzeResult(result); err != nil {
+		return err
+	}
+
+	// Run HDR analysis if analyzer is available and file path is provided
+	if ea.hdrAnalyzer != nil && filePath != "" {
+		hdrAnalysis, err := ea.hdrAnalyzer.AnalyzeHDR(ctx, filePath)
+		if err != nil {
+			return fmt.Errorf("HDR analysis failed: %w", err)
+		}
+		
+		// Initialize ContentAnalysis if it doesn't exist
+		if result.EnhancedAnalysis.ContentAnalysis == nil {
+			result.EnhancedAnalysis.ContentAnalysis = &ContentAnalysis{}
+		}
+		
+		result.EnhancedAnalysis.ContentAnalysis.HDRAnalysis = hdrAnalysis
+	}
+
 	return nil
 }
 

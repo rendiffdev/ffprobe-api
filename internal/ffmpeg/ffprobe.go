@@ -37,7 +37,7 @@ func NewFFprobe(binaryPath string, logger zerolog.Logger) *FFprobe {
 		logger:                logger,
 		defaultTimeout:        5 * time.Minute, // Default 5 minute timeout
 		maxOutputSize:         100 * 1024 * 1024, // Default 100MB output limit
-		enhancedAnalyzer:      NewEnhancedAnalyzer(),
+		enhancedAnalyzer:      NewEnhancedAnalyzer(binaryPath, logger),
 		enableContentAnalysis: false, // Disabled by default for performance
 	}
 }
@@ -57,13 +57,13 @@ func (f *FFprobe) EnableContentAnalysis() {
 	f.enableContentAnalysis = true
 	// Replace with content-enabled analyzer
 	ffmpegPath := strings.Replace(f.binaryPath, "ffprobe", "ffmpeg", 1)
-	f.enhancedAnalyzer = NewEnhancedAnalyzerWithContentAnalysis(ffmpegPath, f.logger)
+	f.enhancedAnalyzer = NewEnhancedAnalyzerWithContentAnalysis(ffmpegPath, f.binaryPath, f.logger)
 }
 
 // DisableContentAnalysis disables content-based analysis for performance
 func (f *FFprobe) DisableContentAnalysis() {
 	f.enableContentAnalysis = false
-	f.enhancedAnalyzer = NewEnhancedAnalyzer()
+	f.enhancedAnalyzer = NewEnhancedAnalyzer(f.binaryPath, f.logger)
 }
 
 // Probe executes ffprobe with the given options
@@ -166,18 +166,36 @@ func (f *FFprobe) Probe(ctx context.Context, options *FFprobeOptions) (*FFprobeR
 
 	// Perform enhanced analysis
 	if f.enableContentAnalysis {
+		// Perform comprehensive content analysis with all advanced QC features
 		if err := f.enhancedAnalyzer.AnalyzeResultWithContent(ctx, result, options.Input); err != nil {
 			f.logger.Warn().
 				Err(err).
 				Msg("Enhanced content analysis failed")
 			// Don't fail on enhanced analysis errors, just log them
 		}
-	} else {
-		if err := f.enhancedAnalyzer.AnalyzeResult(result); err != nil {
+		
+		// Also perform advanced QC analysis for professional features
+		if err := f.enhancedAnalyzer.AnalyzeResultWithAdvancedQC(ctx, result, options.Input); err != nil {
 			f.logger.Warn().
 				Err(err).
-				Msg("Enhanced analysis failed")
+				Msg("Advanced QC analysis failed")
+			// Don't fail on advanced QC errors, just log them
+		}
+	} else {
+		// Perform standard enhanced analysis with HDR detection
+		if err := f.enhancedAnalyzer.AnalyzeResultWithHDR(ctx, result, options.Input); err != nil {
+			f.logger.Warn().
+				Err(err).
+				Msg("Enhanced analysis with HDR failed")
 			// Don't fail on enhanced analysis errors, just log them
+		}
+		
+		// Also perform advanced QC analysis for professional features (always enabled)
+		if err := f.enhancedAnalyzer.AnalyzeResultWithAdvancedQC(ctx, result, options.Input); err != nil {
+			f.logger.Warn().
+				Err(err).
+				Msg("Advanced QC analysis failed")
+			// Don't fail on advanced QC errors, just log them
 		}
 	}
 

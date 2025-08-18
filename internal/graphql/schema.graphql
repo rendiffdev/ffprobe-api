@@ -1,0 +1,584 @@
+# FFprobe API GraphQL Schema
+# Provides flexible querying capabilities for video analysis data
+
+# Date/Time scalar
+scalar DateTime
+
+# JSON scalar for flexible metadata
+scalar JSON
+
+# Video Analysis Types
+type VideoAnalysis {
+  id: ID!
+  filePath: String!
+  fileName: String!
+  fileSize: Int!
+  duration: Float!
+  bitrate: Int!
+  format: VideoFormat!
+  streams: [Stream!]!
+  qualityMetrics: QualityMetrics
+  contentAnalysis: ContentAnalysis
+  hlsInfo: HLSInfo
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  status: AnalysisStatus!
+  processingTime: Float
+  metadata: JSON
+}
+
+type VideoFormat {
+  name: String!
+  longName: String!
+  size: Int!
+  bitrate: Int!
+  duration: Float!
+  startTime: Float
+  tags: JSON
+}
+
+type Stream {
+  index: Int!
+  codecName: String!
+  codecLongName: String!
+  codecType: StreamType!
+  codecTag: String!
+  width: Int
+  height: Int
+  sampleAspectRatio: String
+  displayAspectRatio: String
+  pixFmt: String
+  level: Int
+  colorRange: String
+  colorSpace: String
+  colorTransfer: String
+  colorPrimaries: String
+  chromaLocation: String
+  fieldOrder: String
+  refs: Int
+  profile: String
+  bitrate: Int
+  maxBitrate: Int
+  bufferSize: Int
+  framerate: Float
+  avgFramerate: Float
+  timeBase: String
+  startPts: Int
+  startTime: Float
+  duration: Float
+  bitDepth: Int
+  channels: Int
+  channelLayout: String
+  sampleRate: Int
+  sampleFmt: String
+  tags: JSON
+}
+
+type QualityMetrics {
+  id: ID!
+  videoAnalysisId: ID!
+  vmafScore: Float
+  psnr: Float
+  ssim: Float
+  msssim: Float
+  butteraugli: Float
+  lpips: Float
+  dssim: Float
+  fsim: Float
+  vsi: Float
+  haarpsi: Float
+  mdsi: Float
+  gmsd: Float
+  mse: Float
+  psnrHvs: Float
+  psnrHvsM: Float
+  ciede2000: Float
+  cambi: Float
+  blockiness: Float
+  blur: Float
+  ta: Float
+  si: Float
+  ti: Float
+  niqe: Float
+  brisque: Float
+  piqe: Float
+  ilniqe: Float
+  createdAt: DateTime!
+  metadata: JSON
+}
+
+type ContentAnalysis {
+  id: ID!
+  videoAnalysisId: ID!
+  blackFrames: [BlackFrame!]!
+  freezeFrames: [FreezeFrame!]!
+  silenceSegments: [SilenceSegment!]!
+  audioClipping: [AudioClipping!]!
+  sceneChanges: [SceneChange!]!
+  motionAnalysis: MotionAnalysis
+  colorAnalysis: ColorAnalysis
+  loudnessAnalysis: LoudnessAnalysis
+  createdAt: DateTime!
+  metadata: JSON
+}
+
+type BlackFrame {
+  timestamp: Float!
+  duration: Float!
+  percentage: Float!
+}
+
+type FreezeFrame {
+  startTime: Float!
+  endTime: Float!
+  duration: Float!
+}
+
+type SilenceSegment {
+  startTime: Float!
+  endTime: Float!
+  duration: Float!
+  silenceThreshold: Float!
+}
+
+type AudioClipping {
+  channel: Int!
+  startTime: Float!
+  endTime: Float!
+  duration: Float!
+  peakLevel: Float!
+}
+
+type SceneChange {
+  timestamp: Float!
+  score: Float!
+  frameNumber: Int!
+}
+
+type MotionAnalysis {
+  averageMotion: Float!
+  maxMotion: Float!
+  minMotion: Float!
+  motionVariance: Float!
+  motionDistribution: [Float!]!
+}
+
+type ColorAnalysis {
+  averageBrightness: Float!
+  colorfulness: Float!
+  contrast: Float!
+  saturation: Float!
+  dominantColors: [String!]!
+  colorHistogram: JSON
+}
+
+type LoudnessAnalysis {
+  integratedLoudness: Float!
+  loudnessRange: Float!
+  maxTruePeak: Float!
+  maxMomentaryLoudness: Float!
+  maxShortTermLoudness: Float!
+  ebuR128Compliant: Boolean!
+}
+
+type HLSInfo {
+  id: ID!
+  videoAnalysisId: ID!
+  masterPlaylist: String!
+  variants: [HLSVariant!]!
+  segments: [HLSSegment!]!
+  totalDuration: Float!
+  segmentCount: Int!
+  createdAt: DateTime!
+}
+
+type HLSVariant {
+  bandwidth: Int!
+  resolution: String!
+  codecs: String!
+  uri: String!
+  frameRate: Float
+  audioGroup: String
+  subtitleGroup: String
+}
+
+type HLSSegment {
+  uri: String!
+  duration: Float!
+  sequence: Int!
+  byteRange: String
+  discontinuity: Boolean!
+}
+
+# User and API Key Types
+type User {
+  id: ID!
+  username: String!
+  email: String!
+  roles: [String!]!
+  tenantId: String!
+  isActive: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  lastLoginAt: DateTime
+  apiKeys: [APIKey!]!
+  videoAnalyses: [VideoAnalysis!]!
+  rateLimits: UserRateLimit
+}
+
+type APIKey {
+  id: ID!
+  userId: ID!
+  tenantId: String!
+  keyPrefix: String!
+  name: String!
+  permissions: [String!]!
+  status: APIKeyStatus!
+  createdAt: DateTime!
+  expiresAt: DateTime!
+  lastUsedAt: DateTime
+  lastRotated: DateTime!
+  rotationDue: DateTime!
+  usageCount: Int!
+  rateLimits: APIKeyRateLimit!
+}
+
+type APIKeyRateLimit {
+  perMinute: Int!
+  perHour: Int!
+  perDay: Int!
+}
+
+type UserRateLimit {
+  userId: ID!
+  perMinute: Int!
+  perHour: Int!
+  perDay: Int!
+  burstMultiplier: Float!
+  monthlyQuota: Int
+  currentMonthUsage: Int!
+  isActive: Boolean!
+}
+
+type TenantRateLimit {
+  tenantId: String!
+  perMinute: Int!
+  perHour: Int!
+  perDay: Int!
+  burstMultiplier: Float!
+  monthlyQuota: Int
+  currentMonthUsage: Int!
+  tier: String!
+  isActive: Boolean!
+}
+
+# Comparison Types
+type VideoComparison {
+  id: ID!
+  referenceVideoId: ID!
+  testVideoId: ID!
+  referenceVideo: VideoAnalysis!
+  testVideo: VideoAnalysis!
+  comparisonMetrics: ComparisonMetrics!
+  status: ComparisonStatus!
+  createdAt: DateTime!
+  completedAt: DateTime
+  processingTime: Float
+  metadata: JSON
+}
+
+type ComparisonMetrics {
+  id: ID!
+  comparisonId: ID!
+  vmafScore: Float!
+  psnr: Float!
+  ssim: Float!
+  temporalConsistency: Float
+  spatialConsistency: Float
+  perceptualQuality: Float
+  overallScore: Float!
+  recommendations: [String!]!
+  createdAt: DateTime!
+}
+
+# Report Types
+type AnalysisReport {
+  id: ID!
+  videoAnalysisId: ID!
+  reportType: ReportType!
+  format: ReportFormat!
+  content: String!
+  filePath: String
+  generatedAt: DateTime!
+  llmGenerated: Boolean!
+  llmModel: String
+  metadata: JSON
+}
+
+# Enums
+enum AnalysisStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum StreamType {
+  VIDEO
+  AUDIO
+  SUBTITLE
+  DATA
+}
+
+enum APIKeyStatus {
+  ACTIVE
+  ROTATING
+  EXPIRED
+  REVOKED
+}
+
+enum ComparisonStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum ReportType {
+  BASIC
+  DETAILED
+  QUALITY_ASSESSMENT
+  COMPLIANCE_CHECK
+  COMPARISON_REPORT
+}
+
+enum ReportFormat {
+  JSON
+  HTML
+  PDF
+  CSV
+}
+
+# Input Types
+input VideoAnalysisInput {
+  filePath: String!
+  enableContentAnalysis: Boolean = false
+  enableQualityMetrics: Boolean = false
+  enableHLSAnalysis: Boolean = false
+  customParameters: JSON
+}
+
+input ComparisonInput {
+  referenceVideoId: ID!
+  testVideoId: ID!
+  enableAdvancedMetrics: Boolean = false
+  customParameters: JSON
+}
+
+input ReportGenerationInput {
+  videoAnalysisId: ID!
+  reportType: ReportType!
+  format: ReportFormat!
+  includeGraphs: Boolean = false
+  customTemplate: String
+}
+
+input UserFilter {
+  tenantId: String
+  roles: [String!]
+  isActive: Boolean
+  createdAfter: DateTime
+  createdBefore: DateTime
+}
+
+input VideoAnalysisFilter {
+  userId: ID
+  tenantId: String
+  status: [AnalysisStatus!]
+  createdAfter: DateTime
+  createdBefore: DateTime
+  minDuration: Float
+  maxDuration: Float
+  format: [String!]
+  hasQualityMetrics: Boolean
+  hasContentAnalysis: Boolean
+}
+
+input PaginationInput {
+  page: Int! = 1
+  limit: Int! = 20
+  sortBy: String = "createdAt"
+  sortOrder: SortOrder = DESC
+}
+
+enum SortOrder {
+  ASC
+  DESC
+}
+
+# Response Types
+type PaginatedVideoAnalyses {
+  items: [VideoAnalysis!]!
+  totalCount: Int!
+  page: Int!
+  limit: Int!
+  hasNextPage: Boolean!
+  hasPrevPage: Boolean!
+}
+
+type PaginatedUsers {
+  items: [User!]!
+  totalCount: Int!
+  page: Int!
+  limit: Int!
+  hasNextPage: Boolean!
+  hasPrevPage: Boolean!
+}
+
+type PaginatedComparisons {
+  items: [VideoComparison!]!
+  totalCount: Int!
+  page: Int!
+  limit: Int!
+  hasNextPage: Boolean!
+  hasPrevPage: Boolean!
+}
+
+# Analytics Types
+type AnalyticsOverview {
+  totalAnalyses: Int!
+  analysesThisMonth: Int!
+  averageProcessingTime: Float!
+  totalUsersActive: Int!
+  popularFormats: [FormatUsage!]!
+  qualityDistribution: QualityDistribution!
+  usageByTenant: [TenantUsage!]!
+}
+
+type FormatUsage {
+  format: String!
+  count: Int!
+  percentage: Float!
+}
+
+type QualityDistribution {
+  excellent: Int! # VMAF > 90
+  good: Int!      # VMAF 70-90
+  fair: Int!      # VMAF 50-70
+  poor: Int!      # VMAF < 50
+}
+
+type TenantUsage {
+  tenantId: String!
+  analysisCount: Int!
+  storageUsed: Int!
+  apiCallsThisMonth: Int!
+}
+
+# Query Root Type
+type Query {
+  # Video Analysis Queries
+  videoAnalysis(id: ID!): VideoAnalysis
+  videoAnalyses(
+    filter: VideoAnalysisFilter
+    pagination: PaginationInput
+  ): PaginatedVideoAnalyses!
+  
+  # User and Authentication Queries
+  me: User
+  user(id: ID!): User
+  users(
+    filter: UserFilter
+    pagination: PaginationInput
+  ): PaginatedUsers!
+  
+  # API Key Queries
+  myApiKeys: [APIKey!]!
+  apiKey(id: ID!): APIKey
+  
+  # Rate Limit Queries
+  myRateLimits: UserRateLimit
+  tenantRateLimits(tenantId: String!): TenantRateLimit
+  
+  # Comparison Queries
+  videoComparison(id: ID!): VideoComparison
+  videoComparisons(
+    filter: VideoAnalysisFilter
+    pagination: PaginationInput
+  ): PaginatedComparisons!
+  
+  # Report Queries
+  analysisReport(id: ID!): AnalysisReport
+  analysisReports(videoAnalysisId: ID!): [AnalysisReport!]!
+  
+  # Analytics Queries
+  analyticsOverview(
+    tenantId: String
+    startDate: DateTime
+    endDate: DateTime
+  ): AnalyticsOverview!
+  
+  # Search Queries
+  searchVideoAnalyses(query: String!, limit: Int = 10): [VideoAnalysis!]!
+}
+
+# Mutation Root Type
+type Mutation {
+  # Video Analysis Mutations
+  createVideoAnalysis(input: VideoAnalysisInput!): VideoAnalysis!
+  retryVideoAnalysis(id: ID!): VideoAnalysis!
+  cancelVideoAnalysis(id: ID!): VideoAnalysis!
+  deleteVideoAnalysis(id: ID!): Boolean!
+  
+  # Comparison Mutations
+  createVideoComparison(input: ComparisonInput!): VideoComparison!
+  cancelVideoComparison(id: ID!): VideoComparison!
+  deleteVideoComparison(id: ID!): Boolean!
+  
+  # Report Mutations
+  generateAnalysisReport(input: ReportGenerationInput!): AnalysisReport!
+  deleteAnalysisReport(id: ID!): Boolean!
+  
+  # API Key Mutations
+  createApiKey(name: String!, permissions: [String!]): APIKey!
+  rotateApiKey(id: ID!): APIKey!
+  revokeApiKey(id: ID!): Boolean!
+  updateApiKeyRateLimits(
+    id: ID!
+    perMinute: Int!
+    perHour: Int!
+    perDay: Int!
+  ): APIKey!
+  
+  # Admin Mutations (require admin role)
+  rotateJwtSecret: Boolean!
+  updateUserRateLimits(
+    userId: ID!
+    perMinute: Int!
+    perHour: Int!
+    perDay: Int!
+  ): UserRateLimit!
+  updateTenantRateLimits(
+    tenantId: String!
+    perMinute: Int!
+    perHour: Int!
+    perDay: Int!
+  ): TenantRateLimit!
+  cleanupExpiredCredentials: Boolean!
+}
+
+# Subscription Root Type
+type Subscription {
+  # Analysis progress updates
+  videoAnalysisProgress(id: ID!): VideoAnalysis!
+  
+  # Comparison progress updates
+  videoComparisonProgress(id: ID!): VideoComparison!
+  
+  # Real-time notifications
+  userNotifications: JSON!
+  
+  # System status updates
+  systemStatus: JSON!
+}

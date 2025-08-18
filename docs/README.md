@@ -1,125 +1,105 @@
 # FFprobe API Documentation
 
-> **Complete documentation for FFprobe API - Enterprise Video Analysis Platform**
+**Complete documentation for the AI-powered FFprobe API**
 
-## 📚 Documentation Index
+## 📖 Quick Navigation
 
-### Getting Started
-- **[Quick Start Verification](QUICK_START_VERIFICATION.md)** - Step-by-step setup verification
-- **[Deployment Guide](deployment/README.md)** - Complete deployment instructions
-- **[Configuration](deployment/configuration.md)** - Environment variables and settings
+### 🚀 Getting Started
+- **[Quick Start Guide](../README.md#quick-start)** - Get running in 2 minutes
+- **[API Usage Tutorial](tutorials/api_usage.md)** - Step-by-step API usage
+- **[Local AI Setup](tutorials/local-llm-setup.md)** - AI-powered analysis setup
 
-### API Reference
-- **[API Overview](api/README.md)** - Complete REST API documentation
-- **[Authentication](api/authentication.md)** - API keys and JWT tokens
-- **[Complete API Guide](api/complete-api-guide.md)** - Comprehensive endpoint documentation
-- **[Enhanced API Features](api/enhanced_api.md)** - Advanced API capabilities
+### 🔧 Deployment & Configuration
+- **[Deployment Guide](deployment/README.md)** - Production deployment strategies
+- **[Modern Docker Compose](deployment/modern-docker-compose.md)** - Latest Docker features
+- **[Configuration Reference](deployment/configuration.md)** - Environment variables
+- **[Storage Configuration](deployment/storage-configuration.md)** - Storage backends
 
-### Quality Control
-- **[Quality Checks Reference](QUALITY_CHECKS.md)** - All 49 quality control parameters
-- **[Comparison System](COMPARISON_SYSTEM.md)** - Video comparison and quality validation
-- **[API Authentication](API_AUTHENTICATION.md)** - Security and authentication details
+### 📡 API Reference
+- **[REST API Documentation](api/README.md)** - Complete endpoint reference
+- **[Authentication Guide](api/authentication.md)** - API keys and security
+- **[GraphQL API Guide](api/GRAPHQL_API_GUIDE.md)** - GraphQL endpoints
+- **[Secret Rotation Guide](api/SECRET_ROTATION_GUIDE.md)** - Security management
 
-### Deployment
-- **[Deployment Overview](deployment/README.md)** - Deployment strategies and options
-- **[Configuration Guide](deployment/configuration.md)** - Complete configuration reference
-- **[Storage Configuration](deployment/storage-configuration.md)** - Storage backend setup
-- **[Production Checklist](deployment/production-checklist.md)** - Pre-deployment validation
-- **[Production Readiness](deployment/PRODUCTION_READINESS_CHECKLIST.md)** - Comprehensive production guide
+### 🏗️ Development & Architecture
+- **[System Architecture](development/architecture.md)** - Technical design overview
+- **[Video Comparison System](COMPARISON_SYSTEM.md)** - Quality comparison features
 
-### Development
-- **[Architecture Overview](development/architecture.md)** - System design and components
-- **[Contributing Guidelines](../CONTRIBUTING.md)** - How to contribute
-- **[Repository Structure](../REPOSITORY_STRUCTURE.md)** - Project organization
+### 🔧 Operations & Monitoring
+- **[FFmpeg Management](operations/ffmpeg-management.md)** - FFmpeg updates and configuration
+- **[Monitoring Setup](operations/monitoring.md)** - Prometheus and Grafana
+- **[Security Guide](operations/security.md)** - Security best practices
+- **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
 
-### Operations
-- **[Monitoring Guide](operations/monitoring.md)** - Prometheus and logging setup
-- **[Troubleshooting Guide](operations/troubleshooting.md)** - Common issues and solutions
-- **[Legacy Troubleshooting](TROUBLESHOOTING.md)** - Additional troubleshooting reference
-
-### Tutorials
-- **[API Usage Tutorial](tutorials/api_usage.md)** - Getting started with the API
-- **[Local LLM Setup](tutorials/local-llm-setup.md)** - AI report generation with Ollama
-
-## 🚀 Quick Navigation
-
-### By Use Case
-
-#### I want to...
-- **[Analyze a video file →](api/README.md#post-apiv1probefile)**
-- **[Enable all 49 quality checks →](QUALITY_CHECKS.md)**
-- **[Deploy to production →](deployment/README.md)**
-- **[Set up monitoring →](operations/monitoring.md)**
-- **[Configure authentication →](api/authentication.md)**
-- **[Troubleshoot issues →](operations/troubleshooting.md)**
-
-### By Role
-
-#### Video Engineer
-- [Quality Checks Reference](QUALITY_CHECKS.md)
-- [Comparison System](COMPARISON_SYSTEM.md)
-- [Enhanced API Features](api/enhanced_api.md)
-
-#### DevOps Engineer
-- [Deployment Guide](deployment/README.md)
-- [Monitoring Setup](operations/monitoring.md)
-- [Production Checklist](deployment/production-checklist.md)
-
-#### Developer
-- [API Documentation](api/README.md)
-- [Complete API Guide](api/complete-api-guide.md)
-- [Architecture Overview](development/architecture.md)
-
-## 📖 Documentation Standards
-
-### Document Structure
-Each documentation file follows this structure:
-1. **Title & Description** - Clear purpose statement
-2. **Prerequisites** - Required knowledge or setup
-3. **Content** - Main documentation with examples
-4. **Troubleshooting** - Common issues for that topic
-5. **Next Steps** - Related documentation links
-
-### Code Examples
-All code examples are:
-- **Tested** - Verified to work with current version
-- **Complete** - Runnable without modification
-- **Annotated** - Include helpful comments
-- **Practical** - Based on real use cases
-
-### Version Information
-- **API Version**: v1
-- **FFmpeg Version**: 6.1.1
-- **Docker Base**: Alpine 3.19
-- **Go Version**: 1.23
-- **Documentation Updated**: August 2024
-
-## 🔍 Search Documentation
-
-### By Feature
-- [Quality Checks (49 parameters)](QUALITY_CHECKS.md)
-- [Video Comparison](COMPARISON_SYSTEM.md)
-- [Authentication System](API_AUTHENTICATION.md)
-- [Enhanced API Features](api/enhanced_api.md)
-
-### By Technology
-- [FFprobe/FFmpeg 6.1](QUALITY_CHECKS.md)
-- [PostgreSQL Configuration](deployment/configuration.md#database-configuration)
-- [Redis Caching](deployment/configuration.md#redis-configuration)
-- [Docker Deployment](deployment/README.md#docker-compose-recommended)
-- [Prometheus Monitoring](operations/monitoring.md#prometheus-metrics)
-
-## 📞 Support
-
-### Getting Help
-- **GitHub Issues**: [Report bugs or request features](https://github.com/rendiffdev/ffprobe-api/issues)
-- **Discussions**: [Community discussions](https://github.com/rendiffdev/ffprobe-api/discussions)
-- **Email**: [support@rendiff.dev](mailto:support@rendiff.dev)
-
-### Contributing
-- [Contribution Guidelines](../CONTRIBUTING.md)
-- [Repository Structure](../REPOSITORY_STRUCTURE.md)
+### 📋 Production Readiness
+- **[Production Checklist](deployment/PRODUCTION_READINESS_CHECKLIST.md)** - Pre-deployment validation
 
 ---
 
-*Documentation is continuously updated. For the latest changes, see [GitHub repository](https://github.com/rendiffdev/ffprobe-api).*
+## 🎯 By Use Case
+
+### "I want to..."
+
+#### **Analyze videos**
+- [Upload and analyze a video file →](api/README.md)
+- [Compare video quality improvements →](COMPARISON_SYSTEM.md)
+- [Enable AI-powered insights →](tutorials/local-llm-setup.md)
+
+#### **Deploy to production**
+- [Production deployment guide →](deployment/README.md)
+- [Security configuration →](operations/security.md)
+- [Monitoring setup →](operations/monitoring.md)
+
+#### **Develop and extend**
+- [API development tutorial →](tutorials/api_usage.md)
+- [System architecture →](development/architecture.md)
+- [Contributing guidelines →](../CONTRIBUTING.md)
+
+#### **Troubleshoot issues**
+- [Common problems and solutions →](TROUBLESHOOTING.md)
+- [FFmpeg issues →](operations/ffmpeg-management.md)
+- [Docker Compose issues →](deployment/modern-docker-compose.md)
+
+---
+
+## 🏆 Key Features
+
+### **AI-Powered Analysis**
+- **Dual-Model Setup**: Gemma 3 270M (fast) + Phi-3 Mini (comprehensive)
+- **Professional Reports**: 8-section technical analysis
+- **Quality Assessment**: VMAF, PSNR, SSIM metrics
+- **Smart Recommendations**: FFmpeg optimization suggestions
+
+### **Enterprise Ready**
+- **Latest FFmpeg**: BtbN builds with all codecs
+- **Production Monitoring**: Prometheus + Grafana
+- **Automatic SSL**: Traefik with Let's Encrypt
+- **Scalable Architecture**: Modern Docker Compose profiles
+
+### **Developer Friendly**
+- **REST + GraphQL APIs**: Complete endpoint coverage
+- **Comprehensive Testing**: Unit, integration, and E2E tests
+- **Modern Deployment**: Profile-based Docker Compose
+- **Detailed Documentation**: Complete guides and references
+
+---
+
+## 📊 Resource Requirements
+
+| Deployment | Memory | CPU | Storage | Use Case |
+|------------|--------|-----|---------|----------|
+| **Minimal** | 2-3GB | 2 cores | 5GB | Development, testing |
+| **Quick** | 4-5GB | 2-4 cores | 8GB | Demos, small teams |
+| **Production** | 8-16GB | 8+ cores | 30GB+ | Enterprise deployment |
+
+---
+
+## 🆘 Support
+
+- **Documentation Issues**: Check [troubleshooting guide](TROUBLESHOOTING.md)
+- **Bug Reports**: [GitHub Issues](https://github.com/rendiffdev/ffprobe-api/issues)
+- **Feature Requests**: [GitHub Discussions](https://github.com/rendiffdev/ffprobe-api/discussions)
+
+---
+
+**Built for the video engineering community** 🎬

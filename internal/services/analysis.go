@@ -181,62 +181,11 @@ func (s *AnalysisService) completeAnalysis(ctx context.Context, analysisID uuid.
 	s.logger.Info().
 		Str("analysis_id", analysisID.String()).
 		Str("file_path", analysis.FilePath).
-		Msg("Starting ffprobe analysis")
+		Msg("Completing ffprobe analysis")
 
-	// Validate input file
-	if err := s.ffprobe.ValidateInput(analysis.FilePath); err != nil {
-		s.updateAnalysisError(ctx, analysisID, fmt.Sprintf("Input validation failed: %v", err))
-		return fmt.Errorf("input validation failed: %w", err)
-	}
-
-	// Set default options if not provided
-	if options == nil {
-		options = ffmpeg.NewOptionsBuilder().
-			Input(analysis.FilePath).
-			BasicInfo().
-			Build()
-	} else {
-		options.Input = analysis.FilePath
-	}
-
-	// Execute ffprobe - use worker if available, fallback to local
-	var result *ffmpeg.FFprobeResult
-	var err error
-	
-	if s.workerClient != nil {
-		// Try worker service first
-		workerData, workerErr := s.workerClient.AnalyzeWithWorker(ctx, analysis.FilePath, map[string]interface{}{
-			"show_format":      options.ShowFormat,
-			"show_streams":     options.ShowStreams,
-			"show_chapters":    options.ShowChapters,
-			"show_programs":    options.ShowPrograms,
-			"show_private_data": options.ShowPrivateData,
-			"count_frames":     options.CountFrames,
-			"count_packets":    options.CountPackets,
-		})
-		
-		if workerErr != nil {
-			s.logger.Warn().Err(workerErr).Msg("Worker service failed, falling back to local processing")
-			// Fallback to local processing
-			result, err = s.ffprobe.Probe(ctx, options)
-		} else {
-			// Convert worker data to FFprobeResult format
-			result = &ffmpeg.FFprobeResult{
-				Format:   workerData["format"],
-				Streams:  convertToStreams(workerData["streams"]),
-				Chapters: convertToChapters(workerData["chapters"]),
-				Programs: convertToPrograms(workerData["programs"]),
-				ExecutionTime: time.Second, // Worker response time handled separately
-			}
-		}
-	} else {
-		// Local processing
-		result, err = s.ffprobe.Probe(ctx, options)
-	}
-	
-	if err != nil {
-		s.updateAnalysisError(ctx, analysisID, fmt.Sprintf("FFprobe execution failed: %v", err))
-		return fmt.Errorf("ffprobe execution failed: %w", err)
+	// Result is already provided, no need to execute ffprobe again
+	if result == nil {
+		return fmt.Errorf("analysis result cannot be nil")
 	}
 
 	// Convert result to FFprobeData

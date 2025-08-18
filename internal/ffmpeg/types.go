@@ -260,12 +260,27 @@ type ReadInterval struct {
 
 // EnhancedAnalysis contains additional quality control checks
 type EnhancedAnalysis struct {
-	StreamCounts    *StreamCounts    `json:"stream_counts,omitempty"`
-	VideoAnalysis   *VideoAnalysis   `json:"video_analysis,omitempty"`
-	AudioAnalysis   *AudioAnalysis   `json:"audio_analysis,omitempty"`
-	GOPAnalysis     *GOPAnalysis     `json:"gop_analysis,omitempty"`
-	FrameStatistics *FrameStatistics `json:"frame_statistics,omitempty"`
-	ContentAnalysis *ContentAnalysis `json:"content_analysis,omitempty"`
+	StreamCounts            *StreamCounts            `json:"stream_counts,omitempty"`
+	VideoAnalysis           *VideoAnalysis           `json:"video_analysis,omitempty"`
+	AudioAnalysis           *AudioAnalysis           `json:"audio_analysis,omitempty"`
+	GOPAnalysis             *GOPAnalysis             `json:"gop_analysis,omitempty"`
+	FrameStatistics         *FrameStatistics         `json:"frame_statistics,omitempty"`
+	ContentAnalysis         *ContentAnalysis         `json:"content_analysis,omitempty"`
+	BitDepthAnalysis        *BitDepthAnalysis        `json:"bit_depth_analysis,omitempty"`
+	ResolutionAnalysis      *ResolutionAnalysis      `json:"resolution_analysis,omitempty"`
+	FrameRateAnalysis       *FrameRateAnalysis       `json:"frame_rate_analysis,omitempty"`
+	CodecAnalysis           *CodecAnalysis           `json:"codec_analysis,omitempty"`
+	ContainerAnalysis       *ContainerAnalysis       `json:"container_analysis,omitempty"`
+	LLMReport               *LLMEnhancedReport       `json:"llm_report,omitempty"`
+	TimecodeAnalysis        *TimecodeAnalysis        `json:"timecode_analysis,omitempty"`
+	AFDAnalysis             *AFDAnalysis             `json:"afd_analysis,omitempty"`
+	TransportStreamAnalysis *TransportStreamAnalysis `json:"transport_stream_analysis,omitempty"`
+	EndiannessAnalysis      *EndiannessAnalysis      `json:"endianness_analysis,omitempty"`
+	AudioWrappingAnalysis   *AudioWrappingAnalysis   `json:"audio_wrapping_analysis,omitempty"`
+	IMFAnalysis             *IMFAnalysis             `json:"imf_analysis,omitempty"`
+	MXFAnalysis             *MXFAnalysis             `json:"mxf_analysis,omitempty"`
+	DeadPixelAnalysis       *DeadPixelAnalysis       `json:"dead_pixel_analysis,omitempty"`
+	PSEAnalysis             *PSEAnalysis             `json:"pse_analysis,omitempty"`
 }
 
 // StreamCounts provides detailed stream counting
@@ -323,6 +338,7 @@ type ContentAnalysis struct {
 	InterlaceInfo   *InterlaceAnalysis      `json:"interlace_info,omitempty"`
 	NoiseLevel      *NoiseAnalysis          `json:"noise_level,omitempty"`
 	LoudnessMeter   *LoudnessAnalysis       `json:"loudness_meter,omitempty"`
+	HDRAnalysis     *HDRAnalysis            `json:"hdr_analysis,omitempty"`
 }
 
 // BlackFrameAnalysis detects black or nearly black frames
@@ -382,4 +398,281 @@ type LoudnessAnalysis struct {
 	TruePeak           float64 `json:"true_peak_dbtp"`
 	Compliant          bool    `json:"broadcast_compliant"`
 	Standard           string  `json:"standard"`
+}
+
+// HDRAnalysis provides comprehensive HDR metadata analysis
+type HDRAnalysis struct {
+	IsHDR                bool                      `json:"is_hdr"`
+	HDRFormat            string                    `json:"hdr_format,omitempty"`           // HDR10, HDR10+, Dolby Vision, HLG
+	ColorPrimaries       string                    `json:"color_primaries,omitempty"`      // bt2020, etc.
+	ColorTransfer        string                    `json:"color_transfer,omitempty"`       // smpte2084, arib-std-b67, etc.
+	ColorSpace           string                    `json:"color_space,omitempty"`          // bt2020nc, etc.
+	MasteringDisplay     *MasteringDisplayMetadata `json:"mastering_display,omitempty"`
+	ContentLightLevel    *ContentLightLevelData    `json:"content_light_level,omitempty"`
+	DolbyVision          *DolbyVisionMetadata      `json:"dolby_vision,omitempty"`
+	HDR10Plus            *HDR10PlusMetadata        `json:"hdr10_plus,omitempty"`
+	HLGCompatible        bool                      `json:"hlg_compatible"`
+	Validation           *HDRValidation            `json:"validation,omitempty"`
+}
+
+// MasteringDisplayMetadata contains mastering display color volume information
+type MasteringDisplayMetadata struct {
+	DisplayPrimariesX    [3]float64 `json:"display_primaries_x"`     // Red, Green, Blue X coordinates
+	DisplayPrimariesY    [3]float64 `json:"display_primaries_y"`     // Red, Green, Blue Y coordinates
+	WhitePointX          float64    `json:"white_point_x"`
+	WhitePointY          float64    `json:"white_point_y"`
+	MaxDisplayLuminance  float64    `json:"max_display_luminance"`   // nits
+	MinDisplayLuminance  float64    `json:"min_display_luminance"`   // nits
+	HasMasteringDisplay  bool       `json:"has_mastering_display"`
+}
+
+// ContentLightLevelData contains content light level information
+type ContentLightLevelData struct {
+	MaxCLL               int  `json:"max_cll"`                     // Maximum Content Light Level (nits)
+	MaxFALL              int  `json:"max_fall"`                    // Maximum Frame-Average Light Level (nits)
+	HasContentLightLevel bool `json:"has_content_light_level"`
+}
+
+// DolbyVisionMetadata contains Dolby Vision specific metadata
+type DolbyVisionMetadata struct {
+	Profile              int    `json:"profile"`
+	Level                int    `json:"level"`
+	RPUPresent           bool   `json:"rpu_present"`               // Reference Processing Unit
+	ELPresent            bool   `json:"el_present"`                // Enhancement Layer
+	BLPresent            bool   `json:"bl_present"`                // Base Layer
+	BLSignalCompatibilityID int `json:"bl_signal_compatibility_id"`
+}
+
+// HDR10PlusMetadata contains HDR10+ dynamic metadata information
+type HDR10PlusMetadata struct {
+	Present              bool   `json:"present"`
+	ApplicationVersion   int    `json:"application_version,omitempty"`
+	NumWindows           int    `json:"num_windows,omitempty"`
+	TargetedSystemDisplayActualPeakLuminance float64 `json:"targeted_system_display_actual_peak_luminance,omitempty"`
+}
+
+// HDRValidation contains HDR compliance validation results
+type HDRValidation struct {
+	IsCompliant          bool     `json:"is_compliant"`
+	Standard             string   `json:"standard,omitempty"`       // HDR10, Dolby Vision, HLG
+	Issues               []string `json:"issues,omitempty"`
+	Recommendations      []string `json:"recommendations,omitempty"`
+	GamutCoverage        float64  `json:"gamut_coverage,omitempty"` // Percentage of Rec.2020 gamut covered
+}
+
+// BitDepthAnalysis provides comprehensive bit depth analysis
+type BitDepthAnalysis struct {
+	VideoStreams     map[int]*VideoBitDepth `json:"video_streams,omitempty"`
+	AudioStreams     map[int]*AudioBitDepth `json:"audio_streams,omitempty"`
+	MaxVideoBitDepth int                    `json:"max_video_bit_depth"`
+	MaxAudioBitDepth int                    `json:"max_audio_bit_depth"`
+	IsHDR            bool                   `json:"is_hdr"`           // Based on bit depth characteristics
+	IsHighBitDepth   bool                   `json:"is_high_bit_depth"` // >8-bit video or >16-bit audio
+	Validation       *BitDepthValidation    `json:"validation,omitempty"`
+}
+
+// VideoBitDepth contains video bit depth information
+type VideoBitDepth struct {
+	BitDepth             int    `json:"bit_depth"`
+	Source               string `json:"source"`                         // pixel_format, bits_per_raw_sample, codec_profile, default
+	PixelFormat          string `json:"pixel_format,omitempty"`
+	ProfileIndicatedDepth int   `json:"profile_indicated_depth,omitempty"` // Bit depth indicated by codec profile
+	IsConsistent         bool   `json:"is_consistent"`                    // Whether all indicators agree
+}
+
+// AudioBitDepth contains audio bit depth information
+type AudioBitDepth struct {
+	BitDepth     int    `json:"bit_depth"`
+	Source       string `json:"source"`                 // sample_format, bits_per_sample, bits_per_raw_sample, default
+	SampleFormat string `json:"sample_format,omitempty"`
+	IsConsistent bool   `json:"is_consistent"`         // Whether all indicators agree
+}
+
+// BitDepthValidation contains bit depth validation results
+type BitDepthValidation struct {
+	IsValid         bool     `json:"is_valid"`
+	Issues          []string `json:"issues,omitempty"`
+	Recommendations []string `json:"recommendations,omitempty"`
+}
+
+// ResolutionAnalysis provides comprehensive resolution and aspect ratio analysis
+type ResolutionAnalysis struct {
+	VideoStreams           map[int]*VideoResolution `json:"video_streams,omitempty"`
+	MaxWidth               int                      `json:"max_width"`
+	MaxHeight              int                      `json:"max_height"`
+	PrimaryResolution      string                   `json:"primary_resolution,omitempty"`
+	IsHighDefinition       bool                     `json:"is_high_definition"`
+	IsUltraHighDefinition  bool                     `json:"is_ultra_high_definition"`
+	IsWidescreen           bool                     `json:"is_widescreen"`
+	HasMultipleResolutions bool                     `json:"has_multiple_resolutions"`
+	Validation             *ResolutionValidation    `json:"validation,omitempty"`
+}
+
+// VideoResolution contains detailed resolution information for a video stream
+type VideoResolution struct {
+	Width                int     `json:"width"`
+	Height               int     `json:"height"`
+	PixelCount           int     `json:"pixel_count"`
+	StandardResolution   string  `json:"standard_resolution"`    // "Full HD", "4K UHD", etc.
+	ResolutionClass      string  `json:"resolution_class"`       // "HD", "4K", "8K", etc.
+	SampleAspectRatio    float64 `json:"sample_aspect_ratio"`
+	DisplayAspectRatio   float64 `json:"display_aspect_ratio"`
+	PixelAspectRatio     float64 `json:"pixel_aspect_ratio"`
+	IsAnamorphic         bool    `json:"is_anamorphic"`
+	AspectRatioCategory  string  `json:"aspect_ratio_category"`  // "16:9 (Widescreen)", "4:3 (Standard)", etc.
+	Orientation          string  `json:"orientation"`            // "Landscape", "Portrait", "Square"
+	IsConsistent         bool    `json:"is_consistent"`          // Whether metadata is consistent
+}
+
+// ResolutionValidation contains resolution validation results
+type ResolutionValidation struct {
+	IsValid         bool     `json:"is_valid"`
+	Issues          []string `json:"issues,omitempty"`
+	Recommendations []string `json:"recommendations,omitempty"`
+}
+
+// FrameRateAnalysis provides comprehensive frame rate analysis
+type FrameRateAnalysis struct {
+	VideoStreams             map[int]*VideoFrameRate `json:"video_streams,omitempty"`
+	MaxFrameRate             float64                 `json:"max_frame_rate"`
+	MinFrameRate             float64                 `json:"min_frame_rate"`
+	PrimaryFrameRateStandard string                  `json:"primary_frame_rate_standard,omitempty"`
+	IsVariableFrameRate      bool                    `json:"is_variable_frame_rate"`
+	IsHighFrameRate          bool                    `json:"is_high_frame_rate"`      // >= 60 fps
+	HasMultipleFrameRates    bool                    `json:"has_multiple_frame_rates"`
+	IsInterlaced             bool                    `json:"is_interlaced"`
+	Validation               *FrameRateValidation    `json:"validation,omitempty"`
+}
+
+// VideoFrameRate contains detailed frame rate information for a video stream
+type VideoFrameRate struct {
+	RealFrameRate        float64 `json:"real_frame_rate"`        // r_frame_rate
+	AverageFrameRate     float64 `json:"average_frame_rate"`     // avg_frame_rate
+	EffectiveFrameRate   float64 `json:"effective_frame_rate"`   // The frame rate to use
+	Source               string  `json:"source"`                 // Which field was used for effective rate
+	Standard             string  `json:"standard"`               // "24p", "29.97p", "60p", etc.
+	Category             string  `json:"category"`               // "Cinema", "Standard", "High Frame Rate", etc.
+	IsVariableFrameRate  bool    `json:"is_variable_frame_rate"`
+	IsInterlaced         bool    `json:"is_interlaced"`
+	FrameDuration        float64 `json:"frame_duration_ms"`      // Duration of one frame in milliseconds
+	IsConsistent         bool    `json:"is_consistent"`          // Whether metadata is consistent
+}
+
+// FrameRateValidation contains frame rate validation results
+type FrameRateValidation struct {
+	IsValid         bool     `json:"is_valid"`
+	Issues          []string `json:"issues,omitempty"`
+	Recommendations []string `json:"recommendations,omitempty"`
+}
+
+// CodecAnalysis provides comprehensive codec analysis
+type CodecAnalysis struct {
+	VideoCodecs           map[int]*VideoCodecInfo `json:"video_codecs,omitempty"`
+	AudioCodecs           map[int]*AudioCodecInfo `json:"audio_codecs,omitempty"`
+	SupportedVideoCodecs  []string                `json:"supported_video_codecs,omitempty"`
+	SupportedAudioCodecs  []string                `json:"supported_audio_codecs,omitempty"`
+	CodecSummary          map[string]int          `json:"codec_summary,omitempty"`         // codec_name -> count
+	HasModernCodecs       bool                    `json:"has_modern_codecs"`
+	HasLegacyCodecs       bool                    `json:"has_legacy_codecs"`
+	IsStreamingOptimized  bool                    `json:"is_streaming_optimized"`
+	Validation            *CodecValidation        `json:"validation,omitempty"`
+}
+
+// VideoCodecInfo contains detailed video codec information
+type VideoCodecInfo struct {
+	CodecName       string       `json:"codec_name"`
+	CodecLongName   string       `json:"codec_long_name"`
+	CodecFamily     string       `json:"codec_family"`        // "H.264/AVC", "H.265/HEVC", etc.
+	Profile         string       `json:"profile"`
+	Level           int          `json:"level"`
+	ProfileInfo     *ProfileInfo `json:"profile_info,omitempty"`
+	LevelInfo       *LevelInfo   `json:"level_info,omitempty"`
+	Generation      string       `json:"generation"`          // "4th Generation", "5th Generation"
+	Features        []string     `json:"features,omitempty"`  // Codec-specific features
+	HardwareSupport []string     `json:"hardware_support,omitempty"`
+	IsValid         bool         `json:"is_valid"`            // Whether profile/level combination is valid
+}
+
+// AudioCodecInfo contains detailed audio codec information
+type AudioCodecInfo struct {
+	CodecName       string       `json:"codec_name"`
+	CodecLongName   string       `json:"codec_long_name"`
+	CodecFamily     string       `json:"codec_family"`        // "AAC", "MP3", etc.
+	Profile         string       `json:"profile"`
+	ProfileInfo     *ProfileInfo `json:"profile_info,omitempty"`
+	SampleFormat    string       `json:"sample_format"`
+	SampleRate      string       `json:"sample_rate"`
+	Channels        int          `json:"channels"`
+	ChannelLayout   string       `json:"channel_layout"`
+	IsLossless      bool         `json:"is_lossless"`
+	IsSurround      bool         `json:"is_surround"`
+	HardwareSupport []string     `json:"hardware_support,omitempty"`
+	IsValid         bool         `json:"is_valid"`
+}
+
+// ProfileInfo contains codec profile information
+type ProfileInfo struct {
+	Name         string   `json:"name"`
+	Description  string   `json:"description,omitempty"`
+	Capabilities []string `json:"capabilities,omitempty"`
+}
+
+// LevelInfo contains codec level information
+type LevelInfo struct {
+	Level         int    `json:"level"`
+	Description   string `json:"description,omitempty"`
+	MaxResolution string `json:"max_resolution,omitempty"`
+	MaxFrameRate  string `json:"max_frame_rate,omitempty"`
+}
+
+// CodecValidation contains codec validation results
+type CodecValidation struct {
+	IsValid         bool     `json:"is_valid"`
+	Issues          []string `json:"issues,omitempty"`
+	Recommendations []string `json:"recommendations,omitempty"`
+}
+
+// ContainerAnalysis provides comprehensive container format analysis
+type ContainerAnalysis struct {
+	FormatName           string              `json:"format_name"`
+	FormatLongName       string              `json:"format_long_name"`
+	FileName             string              `json:"file_name"`
+	ContainerFamily      string              `json:"container_family"`        // "MP4", "Matroska", etc.
+	ContainerInfo        *ContainerInfo      `json:"container_info,omitempty"`
+	StreamCount          int                 `json:"stream_count"`
+	ProgramCount         int                 `json:"program_count"`
+	Duration             float64             `json:"duration_seconds"`
+	FileSize             int64               `json:"file_size_bytes"`
+	OverallBitRate       int64               `json:"overall_bit_rate"`
+	ProbeScore           int                 `json:"probe_score"`
+	IsStreamingFriendly  bool                `json:"is_streaming_friendly"`
+	SupportedCodecs      *SupportedCodecs    `json:"supported_codecs,omitempty"`
+	Features             []string            `json:"features,omitempty"`
+	UseCases             []string            `json:"use_cases,omitempty"`
+	Tags                 map[string]string   `json:"tags,omitempty"`
+	Validation           *ContainerValidation `json:"validation,omitempty"`
+}
+
+// ContainerInfo contains detailed container format information
+type ContainerInfo struct {
+	Description      string   `json:"description"`
+	MimeType         string   `json:"mime_type,omitempty"`
+	Extensions       []string `json:"extensions,omitempty"`
+	StandardizedBy   string   `json:"standardized_by,omitempty"`
+	YearIntroduced   int      `json:"year_introduced,omitempty"`
+	IsOpenStandard   bool     `json:"is_open_standard"`
+}
+
+// SupportedCodecs contains codec support information for container
+type SupportedCodecs struct {
+	Video    []string `json:"video,omitempty"`
+	Audio    []string `json:"audio,omitempty"`
+	Subtitle []string `json:"subtitle,omitempty"`
+}
+
+// ContainerValidation contains container validation results
+type ContainerValidation struct {
+	IsValid         bool     `json:"is_valid"`
+	Issues          []string `json:"issues,omitempty"`
+	Recommendations []string `json:"recommendations,omitempty"`
 }

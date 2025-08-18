@@ -36,8 +36,11 @@ type Router struct {
 	comparisonHandler *handlers.ComparisonHandler
 	rawHandler        *handlers.RawHandler
 	storageHandler    *handlers.StorageHandler
+	graphqlHandler    *handlers.GraphQLHandler
+	apiKeyHandler     *handlers.APIKeyHandler
 	authMiddleware    *middleware.AuthMiddleware
 	rateLimiter       *middleware.RateLimitMiddleware
+	tenantRateLimiter *middleware.TenantRateLimiter
 	security          *middleware.SecurityMiddleware
 	monitoring        *middleware.MonitoringMiddleware
 	logger            zerolog.Logger
@@ -142,6 +145,49 @@ func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Rout
 	// Create user service
 	userService := services.NewUserService(db.DB, logger)
 	
+	// Create secret rotation service
+	rotationConfig := services.SecretRotationConfig{
+		RotationInterval:   90 * 24 * time.Hour,  // 90 days
+		GracePeriod:        7 * 24 * time.Hour,   // 7 days
+		MinSecretLength:    32,
+		MaxActiveKeys:      5,
+		EnableAutoRotation: true,
+	}
+	rotationService := services.NewSecretRotationService(db.DB, nil, logger, rotationConfig)
+	
+	// Create tenant rate limiter
+	tenantRateLimitConfig := middleware.RateLimitConfig{
+		DefaultRPM:         cfg.RateLimitPerMinute,
+		DefaultRPH:         cfg.RateLimitPerHour,
+		DefaultRPD:         cfg.RateLimitPerDay,
+		EnableTenantLimits: true,
+		EnableUserLimits:   true,
+		BurstMultiplier:    1.5,
+		IncludeHeaders:     true,
+	}
+	tenantRateLimiter := middleware.NewTenantRateLimiter(nil, logger, tenantRateLimitConfig)
+	
+	// Create GraphQL handler
+	graphqlConfig := handlers.GraphQLConfig{
+		EnablePlayground:      cfg.LogLevel == "debug",
+		EnableIntrospection:   cfg.LogLevel == "debug",
+		EnableQueryComplexity: true,
+		MaxQueryComplexity:    1000,
+		MaxQueryDepth:         15,
+		QueryCacheSize:        1000,
+		EnableTracing:         cfg.LogLevel == "debug",
+		EnableAPQ:             true,
+	}
+	graphqlHandler := handlers.NewGraphQLHandler(
+		db.DB, nil, logger,
+		analysisService, comparisonService, reportService,
+		rotationService, userService, storageService,
+		graphqlConfig,
+	)
+	
+	// Create API key handler
+	apiKeyHandler := handlers.NewAPIKeyHandler(rotationService, logger)
+	
 	return &Router{
 		probeHandler:  handlers.NewProbeHandler(analysisService, reportGenerator, logger),
 		uploadHandler: func() *handlers.UploadHandler {
@@ -161,8 +207,11 @@ func NewRouter(cfg *config.Config, db *database.DB, logger zerolog.Logger) *Rout
 		comparisonHandler: handlers.NewComparisonHandler(comparisonService),
 		rawHandler:        handlers.NewRawHandler(analysisService, logger),
 		storageHandler:    handlers.NewStorageHandler(storageService, logger),
+		graphqlHandler:    graphqlHandler,
+		apiKeyHandler:     apiKeyHandler,
 		authMiddleware:    authMiddleware,
 		rateLimiter:       rateLimiter,
+		tenantRateLimiter: tenantRateLimiter,
 		security:          security,
 		monitoring:        monitoring,
 		logger:            logger,
@@ -222,9 +271,33 @@ func (r *Router) SetupRoutes() *gin.Engine {
 		}
 
 
+		// GraphQL endpoints (optional authentication)
+		graphql := v1.Group("/graphql")
+		{
+			// GraphQL playground (development only)
+			if r.config.LogLevel == "debug" {
+				graphql.GET("/playground", r.graphqlHandler.GraphQLPlaygroundHandler())
+			}
+			
+			// GraphQL schema introspection
+			graphql.GET("/schema", r.graphqlHandler.GraphQLSchemaHandler())
+			
+			// Main GraphQL endpoint with optional authentication
+			graphql.Use(r.graphqlHandler.GraphQLMiddleware())
+			graphql.POST("", r.graphqlHandler.GraphQLEndpoint())
+			graphql.GET("", r.graphqlHandler.GraphQLEndpoint()) // For GET queries
+		}
+
 		// Apply authentication to protected routes
 		protected := v1.Group("", authMiddleware)
 		{
+			// API Key Management endpoints
+			keys := protected.Group("/keys")
+			{
+				keys.POST("/create", r.apiKeyHandler.CreateAPIKey)
+				keys.POST("/rotate", r.apiKeyHandler.RotateAPIKey)
+			}
+
 			// Additional auth endpoints (require auth)
 			authProtected := protected.Group("/auth")
 			{
@@ -235,6 +308,15 @@ func (r *Router) SetupRoutes() *gin.Engine {
 				authProtected.POST("/api-key", r.authHandler.GenerateAPIKey)
 				authProtected.GET("/api-keys", r.authHandler.ListAPIKeys)
 				authProtected.DELETE("/api-keys/:id", r.authHandler.RevokeAPIKey)
+			}
+
+			// Admin endpoints (require admin role)
+			admin := protected.Group("/admin")
+			{
+				admin.POST("/rotate-jwt", r.apiKeyHandler.RotateJWTSecret)
+				admin.POST("/rate-limits", r.apiKeyHandler.UpdateRateLimits)
+				admin.GET("/rotation-status", r.apiKeyHandler.CheckRotationStatus)
+				admin.POST("/cleanup", r.apiKeyHandler.CleanupExpiredKeys)
 			}
 
 			// Probe endpoints

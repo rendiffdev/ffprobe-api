@@ -68,7 +68,7 @@ func (s *LLMService) AnswerQuestion(ctx context.Context, analysis *models.Analys
 	return response, nil
 }
 
-// generateWithLocalLLM attempts to use local LLM via Ollama
+// generateWithLocalLLM attempts to use local LLM via Ollama with fallback
 func (s *LLMService) generateWithLocalLLM(ctx context.Context, prompt string) (string, error) {
 	// Check if local LLM is enabled
 	if !s.config.EnableLocalLLM {
@@ -83,21 +83,55 @@ func (s *LLMService) generateWithLocalLLM(ctx context.Context, prompt string) (s
 		return "", fmt.Errorf("Ollama model not configured")
 	}
 
-	// Prepare Ollama request
-	requestBody := map[string]interface{}{
-		"model":  s.config.OllamaModel,
-		"prompt": prompt,
-		"stream": false,
-		"options": map[string]interface{}{
+	// Try primary model first (Gemma 3 270M - optimized for speed)
+	response, err := s.generateWithOllamaModel(ctx, s.config.OllamaModel, prompt, map[string]interface{}{
+		"temperature":    0.7,
+		"top_p":          0.9,
+		"top_k":          40,
+		"repeat_penalty": 1.1,
+		"num_predict":    1500,    // Good for structured reports
+		"num_ctx":        8192,    // Gemma3 supports 8K context
+		"num_batch":      16,      // Larger batch for faster processing
+		"num_thread":     4,       // CPU threads to use
+	})
+	
+	if err == nil {
+		s.logger.Info().Str("model", s.config.OllamaModel).Msg("Successfully generated with primary model")
+		return response, nil
+	}
+
+	// If primary model fails, try fallback model (Phi-3 Mini - better reasoning)
+	s.logger.Warn().Err(err).Str("model", s.config.OllamaModel).Msg("Primary model failed, trying fallback")
+	
+	if s.config.OllamaFallbackModel != "" {
+		response, err = s.generateWithOllamaModel(ctx, s.config.OllamaFallbackModel, prompt, map[string]interface{}{
 			"temperature":    0.7,
 			"top_p":          0.9,
 			"top_k":          40,
 			"repeat_penalty": 1.1,
-			"num_predict":    1500,    // Increased for comprehensive analysis
-			"num_ctx":        2048,    // Context window size
-			"num_batch":      8,       // Batch size for prompt processing
+			"num_predict":    2000,    // More tokens for complex analysis
+			"num_ctx":        4096,    // Phi3 mini context window
+			"num_batch":      8,       // Standard batch size
 			"num_thread":     4,       // CPU threads to use
-		},
+		})
+		
+		if err == nil {
+			s.logger.Info().Str("model", s.config.OllamaFallbackModel).Msg("Successfully generated with fallback model")
+			return response, nil
+		}
+	}
+	
+	return "", fmt.Errorf("both primary and fallback models failed: %w", err)
+}
+
+// generateWithOllamaModel generates response using specific Ollama model
+func (s *LLMService) generateWithOllamaModel(ctx context.Context, model string, prompt string, options map[string]interface{}) (string, error) {
+	// Prepare Ollama request
+	requestBody := map[string]interface{}{
+		"model":   model,
+		"prompt":  prompt,
+		"stream":  false,
+		"options": options,
 	}
 
 	jsonBody, err := json.Marshal(requestBody)
@@ -105,8 +139,12 @@ func (s *LLMService) generateWithLocalLLM(ctx context.Context, prompt string) (s
 		return "", fmt.Errorf("failed to marshal Ollama request: %w", err)
 	}
 
-	// Create request with timeout
-	ctx, cancel := context.WithTimeout(ctx, 120*time.Second) // Increase timeout for local LLM
+	// Create request with timeout (shorter for Gemma3, longer for Phi3)
+	timeout := 60 * time.Second
+	if model == s.config.OllamaFallbackModel {
+		timeout = 120 * time.Second
+	}
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, "POST", s.config.OllamaURL+"/api/generate", bytes.NewBuffer(jsonBody))
@@ -150,7 +188,6 @@ func (s *LLMService) generateWithLocalLLM(ctx context.Context, prompt string) (s
 		return "", fmt.Errorf("empty response from Ollama")
 	}
 
-	s.logger.Info().Str("model", s.config.OllamaModel).Msg("Successfully generated response with local LLM")
 	return strings.TrimSpace(response.Response), nil
 }
 
@@ -467,12 +504,23 @@ func (s *LLMService) CheckOllamaHealth(ctx context.Context) (*OllamaHealthStatus
 		}
 	}
 
-	// Check if configured model is available
+	// Check if configured models are available
 	if s.config.OllamaModel != "" {
 		status.ConfiguredModel = s.config.OllamaModel
 		for _, model := range status.Models {
 			if model == s.config.OllamaModel {
 				status.ModelAvailable = true
+				break
+			}
+		}
+	}
+	
+	// Check fallback model availability
+	if s.config.OllamaFallbackModel != "" {
+		status.FallbackModel = s.config.OllamaFallbackModel
+		for _, model := range status.Models {
+			if model == s.config.OllamaFallbackModel {
+				status.FallbackModelAvailable = true
 				break
 			}
 		}
@@ -524,11 +572,13 @@ func (s *LLMService) PullModel(ctx context.Context, modelName string) error {
 
 // OllamaHealthStatus represents the health status of Ollama service
 type OllamaHealthStatus struct {
-	URL             string    `json:"url"`
-	Healthy         bool      `json:"healthy"`
-	Models          []string  `json:"models"`
-	ConfiguredModel string    `json:"configured_model"`
-	ModelAvailable  bool      `json:"model_available"`
-	Error           string    `json:"error,omitempty"`
-	Timestamp       time.Time `json:"timestamp"`
+	URL                    string    `json:"url"`
+	Healthy                bool      `json:"healthy"`
+	Models                 []string  `json:"models"`
+	ConfiguredModel        string    `json:"configured_model"`
+	ModelAvailable         bool      `json:"model_available"`
+	FallbackModel          string    `json:"fallback_model,omitempty"`
+	FallbackModelAvailable bool      `json:"fallback_model_available,omitempty"`
+	Error                  string    `json:"error,omitempty"`
+	Timestamp              time.Time `json:"timestamp"`
 }
