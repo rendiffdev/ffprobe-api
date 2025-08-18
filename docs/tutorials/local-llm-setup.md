@@ -14,12 +14,12 @@ The FFprobe API uses an optimized dual-model AI approach:
 
 ### 🐳 **Fully Containerized Services**
 ```bash
-docker compose up -d
+docker compose -f docker-image/compose.yaml up -d
 # That's it! Everything is configured automatically:
-# ✅ Ollama with Phi-3 Mini model
-# ✅ PostgreSQL database  
-# ✅ Redis caching
-# ✅ FFmpeg/FFprobe workers
+# ✅ Ollama with Gemma 3 270M + Phi-3 Mini models
+# ✅ SQLite/PostgreSQL database  
+# ✅ Valkey caching
+# ✅ FFmpeg/FFprobe integration
 # ✅ API server with authentication
 ```
 

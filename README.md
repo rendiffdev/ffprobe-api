@@ -11,9 +11,9 @@
 - 🏆 **Professional QC**: 20+ advanced quality control categories beyond basic FFprobe
 - 💡 **Executive Summaries**: AI translates technical data for non-technical stakeholders
 
-[![Production Ready](https://img.shields.io/badge/production-ready-green.svg)](PRODUCTION_READINESS_REPORT.md)
+[![Production Ready](https://img.shields.io/badge/production-ready-green.svg)](docs/PRODUCTION_READINESS_REPORT.md)
 [![QC Analysis](https://img.shields.io/badge/QC-20%20Categories-blue.svg)](#advanced-quality-control-features)
-[![Docker](https://img.shields.io/badge/docker-ready--to--deploy-blue.svg)](docker-image/QUICK_START.md)
+[![Docker](https://img.shields.io/badge/docker-ready--to--deploy-blue.svg)](#quick-start)
 
 ## 🧠 Core GenAI Differentiators
 
@@ -53,19 +53,18 @@
 **🤖 The setup script automatically validates your system meets the requirements for your chosen deployment mode:**
 
 ```bash
-# 🎯 Interactive setup with automatic system validation (recommended)
-curl -fsSL https://raw.githubusercontent.com/rendiffdev/ffprobe-api/main/setup.sh | bash
-
-# ⚡ Non-interactive modes with automatic requirements checking:
-curl -fsSL setup.sh | bash -s -- --quick      # 3GB RAM, 8GB disk
-curl -fsSL setup.sh | bash -s -- --minimal    # 2GB RAM, 6GB disk
-curl -fsSL setup.sh | bash -s -- --production # 8GB RAM, 20GB disk
-curl -fsSL setup.sh | bash -s -- --development # 4GB RAM, 15GB disk
-
-# 🔧 Manual setup (no requirements checking)
-git clone https://github.com/rendiffdev/ffprobe-api.git
+# 🔧 Clone and setup (recommended)
+git clone <your-repo-url>
 cd ffprobe-api
 make quick
+
+# ⚡ Alternative quick modes:
+make minimal     # 2GB RAM, 6GB disk - core services only
+make dev         # 4GB RAM, 15GB disk - development environment  
+make prod        # 8GB RAM, 20GB disk - production with monitoring
+
+# 🎯 Interactive setup with system validation
+./setup.sh       # Automatically detects best deployment mode
 ```
 
 **✨ What the smart installer checks:**
@@ -173,7 +172,7 @@ make prod
 
 The FFprobe API provides **comprehensive professional QC analysis** with industry-standard compliance checking.
 
-📋 **[Complete QC Analysis List](QC_ANALYSIS_LIST.md)** - Detailed breakdown of all 20+ QC categories
+📋 **[Complete QC Analysis List](docs/QC_ANALYSIS_LIST.md)** - Detailed breakdown of all 20+ QC categories
 
 ### QC Analysis Categories Overview
 
@@ -538,10 +537,9 @@ docker compose exec ollama ollama pull gemma3:270m
 
 ## 📚 Documentation
 
-- **[🚀 Quick Start (Docker)](docker-image/QUICK_START.md)** - One-command deployment
 - **[📖 Complete Documentation](docs/README.md)** - Full documentation index  
 - **[📡 API Reference](docs/api/README.md)** - REST and GraphQL APIs
-- **[🔍 QC Features](QC_ANALYSIS_LIST.md)** - All 20+ quality control categories
+- **[🔍 QC Features](docs/QC_ANALYSIS_LIST.md)** - All 20+ quality control categories
 - **[🏢 Production Guide](docs/deployment/README.md)** - Enterprise deployment
 - **[🤖 AI Setup](docs/tutorials/local-llm-setup.md)** - Local AI analysis setup
 
@@ -560,8 +558,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🆘 Support
 
 - **Documentation**: [docs/](docs/)
-- **Issues**: [GitHub Issues](https://github.com/rendiffdev/ffprobe-api/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/rendiffdev/ffprobe-api/discussions)
+- **Issues**: Create GitHub Issues for bug reports
+- **Questions**: Check documentation or create discussions
 
 ---
 

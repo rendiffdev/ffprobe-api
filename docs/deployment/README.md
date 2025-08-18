@@ -22,11 +22,11 @@ FFprobe API supports multiple deployment strategies to meet different scales and
 
 ```bash
 # Clone repository
-git clone https://github.com/rendiffdev/ffprobe-api.git
+git clone <your-repo-url>
 cd ffprobe-api
 
 # Start all services
-docker compose up -d
+docker compose -f docker-image/compose.yaml up -d
 
 # Verify deployment
 curl http://localhost:8080/health
@@ -40,10 +40,10 @@ curl http://localhost:8080/health
 
 ```bash
 # Basic services only
-docker compose up -d
+docker compose -f docker-image/compose.yaml up -d
 
 # Verify services
-docker compose ps
+docker compose -f docker-image/compose.yaml ps
 ```
 
 **Resources**: 4GB RAM, 2 CPU cores, 10GB storage
@@ -54,10 +54,10 @@ docker compose ps
 
 ```bash
 # Production configuration with monitoring
-docker compose -f compose.yml -f compose.production.yml up -d
+docker compose -f docker-image/compose.yaml -f docker-image/compose.production.yaml up -d
 
 # Scale API instances
-docker compose -f compose.yml -f compose.production.yml up -d --scale ffprobe-api=2
+docker compose -f docker-image/compose.yaml -f docker-image/compose.production.yaml up -d --scale ffprobe-api=2
 ```
 
 **Resources**: 8GB RAM, 4 CPU cores, 50GB storage  
@@ -69,10 +69,9 @@ docker compose -f compose.yml -f compose.production.yml up -d --scale ffprobe-ap
 
 ```bash
 # Enterprise deployment with full monitoring stack
-docker compose -f compose.yml -f compose.enterprise.yml up -d \
+docker compose -f docker-image/compose.yaml -f docker-image/compose.production.yaml up -d \
   --scale ffprobe-api=3 \
-  --scale ffprobe-worker=5 \
-  --scale llm-service=2
+  --scale ollama=2
 ```
 
 **Resources**: 16GB+ RAM, 8+ CPU cores, 100GB+ storage  
@@ -92,13 +91,13 @@ docker compose -f compose.yml -f compose.enterprise.yml up -d \
 
 ```bash
 # Horizontal scaling
-docker compose up -d --scale ffprobe-api=3
+docker compose -f docker-image/compose.yaml up -d --scale ffprobe-api=3
 
 # Resource limits (production)
-docker compose -f compose.yml -f compose.production.yml up -d
+docker compose -f docker-image/compose.yaml -f docker-image/compose.production.yaml up -d
 
 # Enterprise with monitoring
-docker compose -f compose.yml -f compose.enterprise.yml up -d
+docker compose -f docker-image/compose.yaml -f docker-image/compose.production.yaml up -d
 ```
 
 ## Environment Configuration
@@ -303,10 +302,10 @@ Available at `http://localhost:8080/metrics`:
 
 ```bash
 # View application logs
-docker compose logs -f ffprobe-api
+docker compose -f docker-image/compose.yaml logs -f ffprobe-api
 
 # Monitor specific service
-docker compose logs -f postgres
+docker compose -f docker-image/compose.yaml logs -f postgres
 ```
 
 ## Backup and Recovery
@@ -315,10 +314,10 @@ docker compose logs -f postgres
 
 ```bash
 # Create backup
-docker compose exec postgres pg_dump -U postgres ffprobe_api > backup.sql
+docker compose -f docker-image/compose.yaml exec postgres pg_dump -U postgres ffprobe_api > backup.sql
 
 # Restore backup
-docker compose exec -T postgres psql -U postgres ffprobe_api < backup.sql
+docker compose -f docker-image/compose.yaml exec -T postgres psql -U postgres ffprobe_api < backup.sql
 ```
 
 ### Configuration Backup
@@ -357,10 +356,10 @@ docker compose exec postgres psql -U postgres -c "SELECT * FROM pg_stat_activity
 
 ```bash
 # Pull latest images
-docker compose pull
+docker compose -f docker-image/compose.yaml pull
 
 # Restart with new version
-docker compose up -d
+docker compose -f docker-image/compose.yaml up -d
 
 # Verify update
 curl http://localhost:8080/health
@@ -372,16 +371,14 @@ Database migrations run automatically on startup. For manual migration:
 
 ```bash
 # Run migrations manually
-docker compose exec ffprobe-api ./migrate -path ./migrations -database "postgres://..." up
+docker compose -f docker-image/compose.yaml exec ffprobe-api ./migrate -path ./migrations -database "postgres://..." up
 ```
 
 ---
 
 ## Next Steps
 
-- [Configuration Reference](configuration.md)
-- [Monitoring Setup](monitoring.md) 
-- [Production Readiness Checklist](PRODUCTION_READINESS_CHECKLIST.md)
-- [Troubleshooting Guide](../troubleshooting/README.md)
-
-*For support, see [GitHub Issues](https://github.com/rendiffdev/ffprobe-api/issues)*
+- [Monitoring Setup](../operations/monitoring.md) 
+- [Security Guide](../operations/security.md)
+- [Production Readiness Report](../PRODUCTION_READINESS_REPORT.md)
+- [Troubleshooting Guide](../../README.md#troubleshooting)

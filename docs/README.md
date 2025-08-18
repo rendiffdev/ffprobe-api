@@ -6,7 +6,7 @@
 
 ### 🚀 Getting Started
 - **[Quick Start Guide](../README.md#quick-start)** - Get running in 2 minutes
-- **[Docker Deployment](../docker-image/QUICK_START.md)** - Zero-config Docker deployment
+- **[Docker Deployment](../README.md#deployment-modes)** - Zero-config Docker deployment
 - **[Local AI Setup](tutorials/local-llm-setup.md)** - AI-powered analysis setup
 
 ### 📡 API Reference
@@ -19,20 +19,20 @@
 - **[Production Deployment](deployment/README.md)** - Production deployment strategies
 - **[Architecture Overview](development/architecture.md)** - System architecture and design
 - **[Secret Rotation](api/SECRET_ROTATION_GUIDE.md)** - API key and JWT management
-- **[Complete QC Analysis List](../QC_ANALYSIS_LIST.md)** - All 20+ QC categories detailed
+- **[Complete QC Analysis List](QC_ANALYSIS_LIST.md)** - All 20+ QC categories detailed
 - **[GraphQL API Guide](api/GRAPHQL_API_GUIDE.md)** - GraphQL endpoints  
 - **[Authentication Guide](api/authentication.md)** - API keys and security
 - **[Secret Rotation Guide](api/SECRET_ROTATION_GUIDE.md)** - Security management
 
 ### 🏗️ Development & Architecture
 - **[System Architecture](development/architecture.md)** - Technical design overview
-- **[Video Comparison System](COMPARISON_SYSTEM.md)** - Quality comparison features
+- **[Video Comparison System](../README.md#advanced-quality-control-features)** - Quality comparison features
 
 ### 🔧 Operations & Monitoring
 - **[FFmpeg Management](operations/ffmpeg-management.md)** - FFmpeg updates and configuration
 - **[Monitoring Setup](operations/monitoring.md)** - Prometheus and Grafana
 - **[Security Guide](operations/security.md)** - Security best practices
-- **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Troubleshooting](../README.md#troubleshooting)** - Common issues and solutions
 
 ### 📋 Production Readiness
 - **[Production Checklist](deployment/PRODUCTION_READINESS_CHECKLIST.md)** - Pre-deployment validation
@@ -45,7 +45,7 @@
 
 #### **Analyze videos**
 - [Upload and analyze a video file →](api/README.md)
-- [Compare video quality improvements →](COMPARISON_SYSTEM.md)
+- [Compare video quality improvements →](../README.md#genai-analysis-examples-core-usp)
 - [Enable AI-powered insights →](tutorials/local-llm-setup.md)
 
 #### **Deploy to production**
@@ -54,14 +54,14 @@
 - [Monitoring setup →](operations/monitoring.md)
 
 #### **Develop and extend**
-- [API development tutorial →](tutorials/api_usage.md)
+- [API development guide →](api/README.md)
 - [System architecture →](development/architecture.md)
 - [Contributing guidelines →](../CONTRIBUTING.md)
 
 #### **Troubleshoot issues**
-- [Common problems and solutions →](TROUBLESHOOTING.md)
+- [Common problems and solutions →](../README.md#troubleshooting)
 - [FFmpeg issues →](operations/ffmpeg-management.md)
-- [Docker Compose issues →](deployment/modern-docker-compose.md)
+- [Docker setup help →](../README.md#quick-start)
 
 ---
 
@@ -99,9 +99,9 @@
 
 ## 🆘 Support
 
-- **Documentation Issues**: Check [troubleshooting guide](TROUBLESHOOTING.md)
-- **Bug Reports**: [GitHub Issues](https://github.com/rendiffdev/ffprobe-api/issues)
-- **Feature Requests**: [GitHub Discussions](https://github.com/rendiffdev/ffprobe-api/discussions)
+- **Documentation Issues**: Check [troubleshooting guide](../README.md#troubleshooting)
+- **Bug Reports**: Create GitHub Issues for bugs
+- **Feature Requests**: Create GitHub Issues for feature requests
 
 ---
 

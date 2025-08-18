@@ -11,7 +11,7 @@ Thank you for your interest in contributing to FFprobe API! This document provid
 2. **Clone** your fork: `git clone https://github.com/YOUR-USERNAME/ffprobe-api.git`
 3. **Add upstream**: `git remote add upstream https://github.com/rendiffdev/ffprobe-api.git`
 3. **Read** [Technical Guidelines](CONTRIBUTOR-GUIDELINES.md) for detailed setup instructions
-4. **Install** dependencies: `docker compose up -d` 
+4. **Install** dependencies: `docker compose -f docker-image/compose.yaml up -d` 
 5. **Run** tests: `go test ./...`
 6. **Start** development: `go run cmd/ffprobe-api/main.go`
 
@@ -31,7 +31,7 @@ git clone https://github.com/rendiffdev/ffprobe-api.git
 cd ffprobe-api
 
 # Start development environment (includes PostgreSQL, Redis, FFmpeg)
-docker compose -f compose.yaml -f compose.development.yaml up -d
+docker compose -f docker-image/compose.yaml -f docker-image/compose.development.yaml up -d
 
 # Verify setup
 curl http://localhost:8080/health

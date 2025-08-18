@@ -457,11 +457,11 @@ curl http://prometheus:9090/api/v1/query?query=prometheus_tsdb_symbol_table_size
 ### Log Overflow
 ```bash
 # Check log volume
-docker compose logs ffprobe-api | wc -l
+docker compose -f docker-image/compose.yaml logs ffprobe-api | wc -l
 
 # Adjust log level
 export LOG_LEVEL=warn
-docker compose restart ffprobe-api
+docker compose -f docker-image/compose.yaml restart ffprobe-api
 ```
 
 ---
