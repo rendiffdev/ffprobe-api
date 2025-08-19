@@ -88,18 +88,18 @@ func (rl *RateLimitMiddleware) RateLimit() gin.HandlerFunc {
 		}
 
 		var identifier string
-		
+
 		// Determine identifier based on configuration
 		if rl.config.EnablePerUser {
 			if userID := c.GetString("user_id"); userID != "" {
 				identifier = "user:" + userID
 			}
 		}
-		
+
 		if identifier == "" && rl.config.EnablePerIP {
 			identifier = "ip:" + c.ClientIP()
 		}
-		
+
 		if identifier == "" {
 			identifier = "global"
 		}
@@ -116,7 +116,7 @@ func (rl *RateLimitMiddleware) RateLimit() gin.HandlerFunc {
 
 			// Get retry after time
 			retryAfter := rl.getRetryAfter(identifier)
-			
+
 			c.Header("X-RateLimit-Limit", strconv.Itoa(limits.RequestsPerMinute))
 			c.Header("X-RateLimit-Remaining", "0")
 			c.Header("X-RateLimit-Reset", strconv.FormatInt(retryAfter.Unix(), 10))
@@ -168,7 +168,7 @@ func (rl *RateLimitMiddleware) checkRateLimit(identifier string) bool {
 // checkWindow checks if request is within window limit
 func (rl *RateLimitMiddleware) checkWindow(identifier, window string, now time.Time, duration time.Duration, limit int) bool {
 	var windowMap map[string]*WindowCounter
-	
+
 	switch window {
 	case "minute":
 		windowMap = rl.counters.Minute
@@ -206,10 +206,10 @@ func (rl *RateLimitMiddleware) incrementCounters(identifier string, now time.Tim
 
 	// Increment minute counter
 	rl.incrementCounter(rl.counters.Minute, identifier, now, time.Minute)
-	
+
 	// Increment hour counter
 	rl.incrementCounter(rl.counters.Hour, identifier, now, time.Hour)
-	
+
 	// Increment day counter
 	rl.incrementCounter(rl.counters.Day, identifier, now, 24*time.Hour)
 }
@@ -217,7 +217,7 @@ func (rl *RateLimitMiddleware) incrementCounters(identifier string, now time.Tim
 // incrementCounter increments a specific window counter and returns the new count
 func (rl *RateLimitMiddleware) incrementCounter(windowMap map[string]*WindowCounter, identifier string, now time.Time, duration time.Duration) int {
 	counter, exists := windowMap[identifier]
-	
+
 	if !exists {
 		windowMap[identifier] = &WindowCounter{
 			Count:     1,
@@ -267,7 +267,7 @@ func (rl *RateLimitMiddleware) getRetryAfter(identifier string) time.Time {
 
 	// Check which window is blocking
 	now := time.Now()
-	
+
 	// Check minute window
 	if counter, exists := rl.counters.Minute[identifier]; exists {
 		counter.mutex.RLock()
@@ -326,9 +326,9 @@ func (rl *RateLimitMiddleware) cleanup() {
 
 	for range ticker.C {
 		now := time.Now()
-		
+
 		rl.counters.mutex.Lock()
-		
+
 		// Clean minute counters
 		for id, counter := range rl.counters.Minute {
 			counter.mutex.RLock()
@@ -337,7 +337,7 @@ func (rl *RateLimitMiddleware) cleanup() {
 			}
 			counter.mutex.RUnlock()
 		}
-		
+
 		// Clean hour counters
 		for id, counter := range rl.counters.Hour {
 			counter.mutex.RLock()
@@ -346,7 +346,7 @@ func (rl *RateLimitMiddleware) cleanup() {
 			}
 			counter.mutex.RUnlock()
 		}
-		
+
 		// Clean day counters
 		for id, counter := range rl.counters.Day {
 			counter.mutex.RLock()
@@ -355,7 +355,7 @@ func (rl *RateLimitMiddleware) cleanup() {
 			}
 			counter.mutex.RUnlock()
 		}
-		
+
 		rl.counters.mutex.Unlock()
 	}
 }
@@ -366,11 +366,11 @@ func (rl *RateLimitMiddleware) GetStats() map[string]interface{} {
 	defer rl.counters.mutex.RUnlock()
 
 	stats := make(map[string]interface{})
-	
+
 	stats["active_minute_windows"] = len(rl.counters.Minute)
 	stats["active_hour_windows"] = len(rl.counters.Hour)
 	stats["active_day_windows"] = len(rl.counters.Day)
-	
+
 	// Get top consumers
 	topMinute := make(map[string]int)
 	for id, counter := range rl.counters.Minute {
@@ -379,7 +379,7 @@ func (rl *RateLimitMiddleware) GetStats() map[string]interface{} {
 		counter.mutex.RUnlock()
 	}
 	stats["top_minute_consumers"] = topMinute
-	
+
 	return stats
 }
 
@@ -387,14 +387,14 @@ func (rl *RateLimitMiddleware) GetStats() map[string]interface{} {
 func IPWhitelist(allowedIPs []string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		clientIP := c.ClientIP()
-		
+
 		for _, allowedIP := range allowedIPs {
 			if clientIP == allowedIP {
 				c.Set("skip_rate_limit", true)
 				break
 			}
 		}
-		
+
 		c.Next()
 	}
 }
@@ -484,20 +484,20 @@ func (rl *RateLimitMiddleware) checkRateLimitWithLimits(identifier string, limit
 func (rl *RateLimitMiddleware) getRemainingRequestsWithLimits(identifier string, limits RoleLimits) int {
 	now := time.Now()
 	minuteKey := fmt.Sprintf("%s:minute:%d", identifier, now.Unix()/60)
-	
+
 	rl.mu.RLock()
 	count, exists := rl.counters.Minute[minuteKey]
 	rl.mu.RUnlock()
-	
+
 	if !exists {
 		return limits.RequestsPerMinute
 	}
-	
+
 	remaining := limits.RequestsPerMinute - count.Count
 	if remaining < 0 {
 		return 0
 	}
-	
+
 	return remaining
 }
 
@@ -536,10 +536,10 @@ func (rl *RateLimitMiddleware) DynamicRateLimit() gin.HandlerFunc {
 		// Apply rate limiting with adjusted config
 		originalConfig := rl.config
 		rl.config = config
-		
+
 		// Continue with normal rate limiting
 		rl.RateLimit()(c)
-		
+
 		// Restore original config
 		rl.config = originalConfig
 	}

@@ -153,7 +153,7 @@ func RequestIDMiddleware() gin.HandlerFunc {
 
 		// Add to gin context
 		c.Set("request_id", requestID)
-		
+
 		// Add to Go context
 		ctx := context.WithValue(c.Request.Context(), RequestIDKey, requestID)
 		c.Request = c.Request.WithContext(ctx)
@@ -181,7 +181,7 @@ func LoggingMiddleware(logger zerolog.Logger) gin.HandlerFunc {
 
 		// Get request ID from context
 		requestID := c.GetString("request_id")
-		
+
 		// Create structured log entry
 		logEvent := logger.Info().
 			Str("method", c.Request.Method).

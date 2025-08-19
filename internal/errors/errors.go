@@ -19,13 +19,13 @@ type ErrorResponse struct {
 // Common error codes
 const (
 	CodeValidationError    = "VALIDATION_ERROR"
-	CodeNotFound          = "NOT_FOUND"
-	CodeUnauthorized      = "UNAUTHORIZED" 
-	CodeForbidden         = "FORBIDDEN"
-	CodeInternalError     = "INTERNAL_ERROR"
-	CodeBadRequest        = "BAD_REQUEST"
-	CodeConflict          = "CONFLICT"
-	CodeTooManyRequests   = "TOO_MANY_REQUESTS"
+	CodeNotFound           = "NOT_FOUND"
+	CodeUnauthorized       = "UNAUTHORIZED"
+	CodeForbidden          = "FORBIDDEN"
+	CodeInternalError      = "INTERNAL_ERROR"
+	CodeBadRequest         = "BAD_REQUEST"
+	CodeConflict           = "CONFLICT"
+	CodeTooManyRequests    = "TOO_MANY_REQUESTS"
 	CodeServiceUnavailable = "SERVICE_UNAVAILABLE"
 )
 

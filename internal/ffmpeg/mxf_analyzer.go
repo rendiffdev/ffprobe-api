@@ -43,71 +43,71 @@ type MXFAnalysis struct {
 
 // OperationalPattern contains MXF operational pattern information
 type OperationalPattern struct {
-	PatternLabel        string `json:"pattern_label"`
-	PatternName         string `json:"pattern_name"`
-	Complexity          string `json:"complexity"`          // "Atom", "Molecule", etc.
-	PackageStructure    string `json:"package_structure"`   // "Ganged", "Alternative", etc.
-	EssenceStructure    string `json:"essence_structure"`   // "Unicast", "Multicast", etc.
-	ClipWrapping        bool   `json:"clip_wrapping"`
-	FrameWrapping       bool   `json:"frame_wrapping"`
-	IsValid             bool   `json:"is_valid"`
-	Issues              []string `json:"issues,omitempty"`
+	PatternLabel     string   `json:"pattern_label"`
+	PatternName      string   `json:"pattern_name"`
+	Complexity       string   `json:"complexity"`        // "Atom", "Molecule", etc.
+	PackageStructure string   `json:"package_structure"` // "Ganged", "Alternative", etc.
+	EssenceStructure string   `json:"essence_structure"` // "Unicast", "Multicast", etc.
+	ClipWrapping     bool     `json:"clip_wrapping"`
+	FrameWrapping    bool     `json:"frame_wrapping"`
+	IsValid          bool     `json:"is_valid"`
+	Issues           []string `json:"issues,omitempty"`
 }
 
 // EssenceContainerInfo contains information about essence containers
 type EssenceContainerInfo struct {
-	ContainerLabel      string               `json:"container_label"`
-	ContainerName       string               `json:"container_name"`
-	EssenceType         string               `json:"essence_type"`        // "Picture", "Sound", "Data", etc.
-	EssenceCompression  string               `json:"essence_compression"`
-	WrappingType        string               `json:"wrapping_type"`       // "Frame", "Clip"
-	TrackCount          int                  `json:"track_count"`
-	EssenceDescriptors  []EssenceDescriptorInfo `json:"essence_descriptors,omitempty"`
-	IsCompliant         bool                 `json:"is_compliant"`
-	Issues              []string             `json:"issues,omitempty"`
+	ContainerLabel     string                  `json:"container_label"`
+	ContainerName      string                  `json:"container_name"`
+	EssenceType        string                  `json:"essence_type"` // "Picture", "Sound", "Data", etc.
+	EssenceCompression string                  `json:"essence_compression"`
+	WrappingType       string                  `json:"wrapping_type"` // "Frame", "Clip"
+	TrackCount         int                     `json:"track_count"`
+	EssenceDescriptors []EssenceDescriptorInfo `json:"essence_descriptors,omitempty"`
+	IsCompliant        bool                    `json:"is_compliant"`
+	Issues             []string                `json:"issues,omitempty"`
 }
 
 // EssenceDescriptorInfo contains detailed essence descriptor information
 type EssenceDescriptorInfo struct {
-	DescriptorType      string   `json:"descriptor_type"`
-	InstanceUID         string   `json:"instance_uid,omitempty"`
-	LinkedTrackID       int      `json:"linked_track_id"`
-	SampleRate          string   `json:"sample_rate,omitempty"`
-	ContainerDuration   string   `json:"container_duration,omitempty"`
-	EssenceContainer    string   `json:"essence_container"`
-	PictureEssence      *PictureEssenceInfo `json:"picture_essence,omitempty"`
-	SoundEssence        *SoundEssenceInfo   `json:"sound_essence,omitempty"`
-	DataEssence         *DataEssenceInfo    `json:"data_essence,omitempty"`
+	DescriptorType    string              `json:"descriptor_type"`
+	InstanceUID       string              `json:"instance_uid,omitempty"`
+	LinkedTrackID     int                 `json:"linked_track_id"`
+	SampleRate        string              `json:"sample_rate,omitempty"`
+	ContainerDuration string              `json:"container_duration,omitempty"`
+	EssenceContainer  string              `json:"essence_container"`
+	PictureEssence    *PictureEssenceInfo `json:"picture_essence,omitempty"`
+	SoundEssence      *SoundEssenceInfo   `json:"sound_essence,omitempty"`
+	DataEssence       *DataEssenceInfo    `json:"data_essence,omitempty"`
 }
 
 // PictureEssenceInfo contains picture essence specific information
 type PictureEssenceInfo struct {
-	PictureCompression  string   `json:"picture_compression"`
-	StoredDimensions    string   `json:"stored_dimensions"`
-	SampledDimensions   string   `json:"sampled_dimensions"`
-	DisplayDimensions   string   `json:"display_dimensions"`
-	AspectRatio         string   `json:"aspect_ratio"`
-	FrameLayout         string   `json:"frame_layout"`       // "FullFrame", "SeparateFields", "MixedFields"
-	VideoLineMap        []int    `json:"video_line_map,omitempty"`
-	ColorSiting         string   `json:"color_siting"`
-	ComponentDepth      int      `json:"component_depth"`
-	HorizontalSubsampling int    `json:"horizontal_subsampling"`
-	VerticalSubsampling int      `json:"vertical_subsampling"`
-	ColorRange          string   `json:"color_range"`
-	Issues              []string `json:"issues,omitempty"`
+	PictureCompression    string   `json:"picture_compression"`
+	StoredDimensions      string   `json:"stored_dimensions"`
+	SampledDimensions     string   `json:"sampled_dimensions"`
+	DisplayDimensions     string   `json:"display_dimensions"`
+	AspectRatio           string   `json:"aspect_ratio"`
+	FrameLayout           string   `json:"frame_layout"` // "FullFrame", "SeparateFields", "MixedFields"
+	VideoLineMap          []int    `json:"video_line_map,omitempty"`
+	ColorSiting           string   `json:"color_siting"`
+	ComponentDepth        int      `json:"component_depth"`
+	HorizontalSubsampling int      `json:"horizontal_subsampling"`
+	VerticalSubsampling   int      `json:"vertical_subsampling"`
+	ColorRange            string   `json:"color_range"`
+	Issues                []string `json:"issues,omitempty"`
 }
 
 // SoundEssenceInfo contains sound essence specific information
 type SoundEssenceInfo struct {
-	AudioSamplingRate   string   `json:"audio_sampling_rate"`
-	Locked              bool     `json:"locked"`
-	AudioRefLevel       int      `json:"audio_ref_level"`
-	ElectroSpatialForm  string   `json:"electro_spatial_form"`
-	ChannelCount        int      `json:"channel_count"`
-	QuantizationBits    int      `json:"quantization_bits"`
-	DialNorm            int      `json:"dial_norm,omitempty"`
-	SoundEssenceCompression string `json:"sound_essence_compression"`
-	Issues              []string `json:"issues,omitempty"`
+	AudioSamplingRate       string   `json:"audio_sampling_rate"`
+	Locked                  bool     `json:"locked"`
+	AudioRefLevel           int      `json:"audio_ref_level"`
+	ElectroSpatialForm      string   `json:"electro_spatial_form"`
+	ChannelCount            int      `json:"channel_count"`
+	QuantizationBits        int      `json:"quantization_bits"`
+	DialNorm                int      `json:"dial_norm,omitempty"`
+	SoundEssenceCompression string   `json:"sound_essence_compression"`
+	Issues                  []string `json:"issues,omitempty"`
 }
 
 // DataEssenceInfo contains data essence specific information
@@ -120,205 +120,205 @@ type DataEssenceInfo struct {
 
 // HeaderMetadata contains MXF header metadata analysis
 type HeaderMetadata struct {
-	HeaderByteCount     int64                `json:"header_byte_count"`
-	MetadataVersion     string               `json:"metadata_version"`
-	ObjectDirectory     *ObjectDirectory     `json:"object_directory,omitempty"`
-	MaterialPackage     *MaterialPackage     `json:"material_package,omitempty"`
-	SourcePackages      []SourcePackage      `json:"source_packages,omitempty"`
+	HeaderByteCount      int64                 `json:"header_byte_count"`
+	MetadataVersion      string                `json:"metadata_version"`
+	ObjectDirectory      *ObjectDirectory      `json:"object_directory,omitempty"`
+	MaterialPackage      *MaterialPackage      `json:"material_package,omitempty"`
+	SourcePackages       []SourcePackage       `json:"source_packages,omitempty"`
 	EssenceContainerData *EssenceContainerData `json:"essence_container_data,omitempty"`
-	Timecode            *TimecodeComponent   `json:"timecode,omitempty"`
-	IdentificationSets  []IdentificationSet  `json:"identification_sets,omitempty"`
-	ValidationResults   *HeaderValidation    `json:"validation_results,omitempty"`
+	Timecode             *TimecodeComponent    `json:"timecode,omitempty"`
+	IdentificationSets   []IdentificationSet   `json:"identification_sets,omitempty"`
+	ValidationResults    *HeaderValidation     `json:"validation_results,omitempty"`
 }
 
 // IndexTableAnalysis contains MXF index table analysis
 type IndexTableAnalysis struct {
-	HasIndexTables      bool                `json:"has_index_tables"`
-	IndexTableCount     int                 `json:"index_table_count"`
-	IndexEditRate       string              `json:"index_edit_rate,omitempty"`
-	IndexStartPosition  int64               `json:"index_start_position"`
-	IndexDuration       int64               `json:"index_duration"`
-	EditUnitByteCount   int                 `json:"edit_unit_byte_count"`
-	SliceCount          int                 `json:"slice_count"`
-	DeltaEntryArray     []DeltaEntry        `json:"delta_entry_array,omitempty"`
-	IndexEntryArray     []IndexEntry        `json:"index_entry_array,omitempty"`
-	ValidationResults   *IndexValidation    `json:"validation_results,omitempty"`
+	HasIndexTables     bool             `json:"has_index_tables"`
+	IndexTableCount    int              `json:"index_table_count"`
+	IndexEditRate      string           `json:"index_edit_rate,omitempty"`
+	IndexStartPosition int64            `json:"index_start_position"`
+	IndexDuration      int64            `json:"index_duration"`
+	EditUnitByteCount  int              `json:"edit_unit_byte_count"`
+	SliceCount         int              `json:"slice_count"`
+	DeltaEntryArray    []DeltaEntry     `json:"delta_entry_array,omitempty"`
+	IndexEntryArray    []IndexEntry     `json:"index_entry_array,omitempty"`
+	ValidationResults  *IndexValidation `json:"validation_results,omitempty"`
 }
 
 // PartitionStructure contains MXF partition structure analysis
 type PartitionStructure struct {
-	PartitionCount      int                 `json:"partition_count"`
-	Partitions          []PartitionInfo     `json:"partitions,omitempty"`
-	HasHeaderPartition  bool                `json:"has_header_partition"`
-	HasBodyPartitions   bool                `json:"has_body_partitions"`
-	HasFooterPartition  bool                `json:"has_footer_partition"`
+	PartitionCount       int                   `json:"partition_count"`
+	Partitions           []PartitionInfo       `json:"partitions,omitempty"`
+	HasHeaderPartition   bool                  `json:"has_header_partition"`
+	HasBodyPartitions    bool                  `json:"has_body_partitions"`
+	HasFooterPartition   bool                  `json:"has_footer_partition"`
 	PartitionConsistency *PartitionConsistency `json:"partition_consistency,omitempty"`
-	Issues              []string            `json:"issues,omitempty"`
+	Issues               []string              `json:"issues,omitempty"`
 }
 
 // MXFFormatCompliance contains comprehensive MXF format compliance analysis
 type MXFFormatCompliance struct {
-	SMPTECompliant      bool                `json:"smpte_compliant"`
-	SMPTE377Compliant   bool                `json:"smpte_377_compliant"`   // MXF File Format
-	SMPTE378Compliant   bool                `json:"smpte_378_compliant"`   // MXF Operational Pattern 1a
-	SMPTE379Compliant   bool                `json:"smpte_379_compliant"`   // MXF Generic Container
-	SMPTE381Compliant   bool                `json:"smpte_381_compliant"`   // MXF Mapping MPEG Streams
-	EBUCompliant        bool                `json:"ebu_compliant"`         // EBU Tech 3285
-	AS02Compliant       bool                `json:"as02_compliant"`        // AMWA AS-02
-	AS03Compliant       bool                `json:"as03_compliant"`        // AMWA AS-03
-	ComplianceLevel     string              `json:"compliance_level"`      // "Full", "Partial", "Non-compliant"
-	ComplianceIssues    []string            `json:"compliance_issues,omitempty"`
-	ComplianceScore     float64             `json:"compliance_score"`      // 0-100
+	SMPTECompliant    bool     `json:"smpte_compliant"`
+	SMPTE377Compliant bool     `json:"smpte_377_compliant"` // MXF File Format
+	SMPTE378Compliant bool     `json:"smpte_378_compliant"` // MXF Operational Pattern 1a
+	SMPTE379Compliant bool     `json:"smpte_379_compliant"` // MXF Generic Container
+	SMPTE381Compliant bool     `json:"smpte_381_compliant"` // MXF Mapping MPEG Streams
+	EBUCompliant      bool     `json:"ebu_compliant"`       // EBU Tech 3285
+	AS02Compliant     bool     `json:"as02_compliant"`      // AMWA AS-02
+	AS03Compliant     bool     `json:"as03_compliant"`      // AMWA AS-03
+	ComplianceLevel   string   `json:"compliance_level"`    // "Full", "Partial", "Non-compliant"
+	ComplianceIssues  []string `json:"compliance_issues,omitempty"`
+	ComplianceScore   float64  `json:"compliance_score"` // 0-100
 }
 
 // BroadcastMXFCompliance contains broadcast-specific MXF compliance
 type BroadcastMXFCompliance struct {
-	BBCCompliant        bool                `json:"bbc_compliant"`
-	CBSCompliant        bool                `json:"cbs_compliant"`
-	NBCCompliant        bool                `json:"nbc_compliant"`
-	ABCCompliant        bool                `json:"abc_compliant"`
-	EBUCompliant        bool                `json:"ebu_compliant"`
-	ARDZDFCompliant     bool                `json:"ard_zdf_compliant"`
-	NordicCompliant     bool                `json:"nordic_compliant"`
-	BroadcastProfile    string              `json:"broadcast_profile,omitempty"`
-	BroadcastIssues     []string            `json:"broadcast_issues,omitempty"`
+	BBCCompliant     bool     `json:"bbc_compliant"`
+	CBSCompliant     bool     `json:"cbs_compliant"`
+	NBCCompliant     bool     `json:"nbc_compliant"`
+	ABCCompliant     bool     `json:"abc_compliant"`
+	EBUCompliant     bool     `json:"ebu_compliant"`
+	ARDZDFCompliant  bool     `json:"ard_zdf_compliant"`
+	NordicCompliant  bool     `json:"nordic_compliant"`
+	BroadcastProfile string   `json:"broadcast_profile,omitempty"`
+	BroadcastIssues  []string `json:"broadcast_issues,omitempty"`
 }
 
 // InteroperabilityTests contains MXF interoperability test results
 type InteroperabilityTests struct {
-	AvidCompliant       bool                `json:"avid_compliant"`
-	FinalCutCompliant   bool                `json:"final_cut_compliant"`
-	PremiereCompliant   bool                `json:"premiere_compliant"`
-	ResolveCompliant    bool                `json:"resolve_compliant"`
-	MediaComposerCompliant bool             `json:"media_composer_compliant"`
-	PlayoutCompliant    bool                `json:"playout_compliant"`
-	ArchivalCompliant   bool                `json:"archival_compliant"`
-	InteropIssues       []string            `json:"interop_issues,omitempty"`
-	InteropScore        float64             `json:"interop_score"`          // 0-100
+	AvidCompliant          bool     `json:"avid_compliant"`
+	FinalCutCompliant      bool     `json:"final_cut_compliant"`
+	PremiereCompliant      bool     `json:"premiere_compliant"`
+	ResolveCompliant       bool     `json:"resolve_compliant"`
+	MediaComposerCompliant bool     `json:"media_composer_compliant"`
+	PlayoutCompliant       bool     `json:"playout_compliant"`
+	ArchivalCompliant      bool     `json:"archival_compliant"`
+	InteropIssues          []string `json:"interop_issues,omitempty"`
+	InteropScore           float64  `json:"interop_score"` // 0-100
 }
 
 // Supporting structures for detailed MXF analysis
 
 type ObjectDirectory struct {
-	ObjectCount         int                 `json:"object_count"`
-	PackageCount        int                 `json:"package_count"`
-	TrackCount          int                 `json:"track_count"`
-	SequenceCount       int                 `json:"sequence_count"`
-	ComponentCount      int                 `json:"component_count"`
+	ObjectCount    int `json:"object_count"`
+	PackageCount   int `json:"package_count"`
+	TrackCount     int `json:"track_count"`
+	SequenceCount  int `json:"sequence_count"`
+	ComponentCount int `json:"component_count"`
 }
 
 type MaterialPackage struct {
-	PackageUID          string              `json:"package_uid"`
-	Name                string              `json:"name,omitempty"`
-	CreationDate        string              `json:"creation_date,omitempty"`
-	ModifiedDate        string              `json:"modified_date,omitempty"`
-	TrackCount          int                 `json:"track_count"`
-	Duration            string              `json:"duration,omitempty"`
+	PackageUID   string `json:"package_uid"`
+	Name         string `json:"name,omitempty"`
+	CreationDate string `json:"creation_date,omitempty"`
+	ModifiedDate string `json:"modified_date,omitempty"`
+	TrackCount   int    `json:"track_count"`
+	Duration     string `json:"duration,omitempty"`
 }
 
 type SourcePackage struct {
-	PackageUID          string              `json:"package_uid"`
-	Name                string              `json:"name,omitempty"`
-	PackageType         string              `json:"package_type"`        // "Physical", "File", "Tape"
-	Descriptor          string              `json:"descriptor,omitempty"`
-	TrackCount          int                 `json:"track_count"`
+	PackageUID  string `json:"package_uid"`
+	Name        string `json:"name,omitempty"`
+	PackageType string `json:"package_type"` // "Physical", "File", "Tape"
+	Descriptor  string `json:"descriptor,omitempty"`
+	TrackCount  int    `json:"track_count"`
 }
 
 type EssenceContainerData struct {
-	InstanceUID         string              `json:"instance_uid"`
-	LinkedPackageUID    string              `json:"linked_package_uid"`
-	BodySID             int                 `json:"body_sid"`
-	IndexSID            int                 `json:"index_sid"`
+	InstanceUID      string `json:"instance_uid"`
+	LinkedPackageUID string `json:"linked_package_uid"`
+	BodySID          int    `json:"body_sid"`
+	IndexSID         int    `json:"index_sid"`
 }
 
 type TimecodeComponent struct {
-	RoundedTimecodeBase int                 `json:"rounded_timecode_base"`
-	DropFrame           bool                `json:"drop_frame"`
-	StartTimecode       string              `json:"start_timecode,omitempty"`
-	Duration            int64               `json:"duration"`
+	RoundedTimecodeBase int    `json:"rounded_timecode_base"`
+	DropFrame           bool   `json:"drop_frame"`
+	StartTimecode       string `json:"start_timecode,omitempty"`
+	Duration            int64  `json:"duration"`
 }
 
 type IdentificationSet struct {
-	InstanceUID         string              `json:"instance_uid"`
-	GenerationUID       string              `json:"generation_uid,omitempty"`
-	CompanyName         string              `json:"company_name,omitempty"`
-	ProductName         string              `json:"product_name,omitempty"`
-	ProductVersion      string              `json:"product_version,omitempty"`
-	VersionString       string              `json:"version_string,omitempty"`
-	ProductUID          string              `json:"product_uid,omitempty"`
-	ModificationDate    string              `json:"modification_date,omitempty"`
-	Platform            string              `json:"platform,omitempty"`
+	InstanceUID      string `json:"instance_uid"`
+	GenerationUID    string `json:"generation_uid,omitempty"`
+	CompanyName      string `json:"company_name,omitempty"`
+	ProductName      string `json:"product_name,omitempty"`
+	ProductVersion   string `json:"product_version,omitempty"`
+	VersionString    string `json:"version_string,omitempty"`
+	ProductUID       string `json:"product_uid,omitempty"`
+	ModificationDate string `json:"modification_date,omitempty"`
+	Platform         string `json:"platform,omitempty"`
 }
 
 type DeltaEntry struct {
-	PosTableIndex       int                 `json:"pos_table_index"`
-	Slice               int                 `json:"slice"`
-	ElementData         int                 `json:"element_data"`
+	PosTableIndex int `json:"pos_table_index"`
+	Slice         int `json:"slice"`
+	ElementData   int `json:"element_data"`
 }
 
 type IndexEntry struct {
-	TemporalOffset      int                 `json:"temporal_offset"`
-	KeyFrameOffset      int                 `json:"key_frame_offset"`
-	Flags               int                 `json:"flags"`
-	StreamOffset        int64               `json:"stream_offset"`
+	TemporalOffset int   `json:"temporal_offset"`
+	KeyFrameOffset int   `json:"key_frame_offset"`
+	Flags          int   `json:"flags"`
+	StreamOffset   int64 `json:"stream_offset"`
 }
 
 type PartitionInfo struct {
-	PartitionType       string              `json:"partition_type"`      // "Header", "Body", "Footer"
-	Status              string              `json:"status"`              // "Open", "Closed", "Complete"
-	MajorVersion        int                 `json:"major_version"`
-	MinorVersion        int                 `json:"minor_version"`
-	KAGSize             int                 `json:"kag_size"`
-	ThisPartition       int64               `json:"this_partition"`
-	PreviousPartition   int64               `json:"previous_partition"`
-	FooterPartition     int64               `json:"footer_partition"`
-	HeaderByteCount     int64               `json:"header_byte_count"`
-	IndexByteCount      int64               `json:"index_byte_count"`
-	BodyOffset          int64               `json:"body_offset"`
-	BodySID             int                 `json:"body_sid"`
-	OperationalPattern  string              `json:"operational_pattern"`
-	EssenceContainers   []string            `json:"essence_containers,omitempty"`
+	PartitionType      string   `json:"partition_type"` // "Header", "Body", "Footer"
+	Status             string   `json:"status"`         // "Open", "Closed", "Complete"
+	MajorVersion       int      `json:"major_version"`
+	MinorVersion       int      `json:"minor_version"`
+	KAGSize            int      `json:"kag_size"`
+	ThisPartition      int64    `json:"this_partition"`
+	PreviousPartition  int64    `json:"previous_partition"`
+	FooterPartition    int64    `json:"footer_partition"`
+	HeaderByteCount    int64    `json:"header_byte_count"`
+	IndexByteCount     int64    `json:"index_byte_count"`
+	BodyOffset         int64    `json:"body_offset"`
+	BodySID            int      `json:"body_sid"`
+	OperationalPattern string   `json:"operational_pattern"`
+	EssenceContainers  []string `json:"essence_containers,omitempty"`
 }
 
 // Validation result structures
 
 type MXFValidationResults struct {
-	OverallCompliance   bool                `json:"overall_compliance"`
-	CriticalIssues      []string            `json:"critical_issues,omitempty"`
-	Warnings            []string            `json:"warnings,omitempty"`
-	Recommendations     []string            `json:"recommendations,omitempty"`
-	ValidationScore     float64             `json:"validation_score"`       // 0-100
-	ValidationSummary   string              `json:"validation_summary"`
+	OverallCompliance bool     `json:"overall_compliance"`
+	CriticalIssues    []string `json:"critical_issues,omitempty"`
+	Warnings          []string `json:"warnings,omitempty"`
+	Recommendations   []string `json:"recommendations,omitempty"`
+	ValidationScore   float64  `json:"validation_score"` // 0-100
+	ValidationSummary string   `json:"validation_summary"`
 }
 
 type HeaderValidation struct {
-	HeaderComplete      bool                `json:"header_complete"`
-	MetadataValid       bool                `json:"metadata_valid"`
-	UUIDsValid          bool                `json:"uuids_valid"`
-	ReferencesValid     bool                `json:"references_valid"`
-	Issues              []string            `json:"issues,omitempty"`
+	HeaderComplete  bool     `json:"header_complete"`
+	MetadataValid   bool     `json:"metadata_valid"`
+	UUIDsValid      bool     `json:"uuids_valid"`
+	ReferencesValid bool     `json:"references_valid"`
+	Issues          []string `json:"issues,omitempty"`
 }
 
 type IndexValidation struct {
-	IndexComplete       bool                `json:"index_complete"`
-	IndexConsistent     bool                `json:"index_consistent"`
-	RandomAccessValid   bool                `json:"random_access_valid"`
-	Issues              []string            `json:"issues,omitempty"`
+	IndexComplete     bool     `json:"index_complete"`
+	IndexConsistent   bool     `json:"index_consistent"`
+	RandomAccessValid bool     `json:"random_access_valid"`
+	Issues            []string `json:"issues,omitempty"`
 }
 
 type PartitionConsistency struct {
-	PartitionChainValid bool                `json:"partition_chain_valid"`
-	RandomAccessPoints  int                 `json:"random_access_points"`
-	PartitionBalance    bool                `json:"partition_balance"`    // Even distribution
-	Issues              []string            `json:"issues,omitempty"`
+	PartitionChainValid bool     `json:"partition_chain_valid"`
+	RandomAccessPoints  int      `json:"random_access_points"`
+	PartitionBalance    bool     `json:"partition_balance"` // Even distribution
+	Issues              []string `json:"issues,omitempty"`
 }
 
 // AnalyzeMXF performs comprehensive MXF format analysis
 func (mxf *MXFAnalyzer) AnalyzeMXF(ctx context.Context, filePath string) (*MXFAnalysis, error) {
 	analysis := &MXFAnalysis{
-		IsMXFFile:           false,
-		EssenceContainers:   []EssenceContainerInfo{},
-		RecommendedActions:  []string{},
+		IsMXFFile:          false,
+		EssenceContainers:  []EssenceContainerInfo{},
+		RecommendedActions: []string{},
 	}
 
 	// Step 1: Verify this is an MXF file
@@ -547,7 +547,7 @@ func (mxf *MXFAnalyzer) analyzeHeaderMetadata(ctx context.Context, filePath stri
 	}
 
 	headerMeta := &HeaderMetadata{
-		SourcePackages:    []SourcePackage{},
+		SourcePackages:     []SourcePackage{},
 		IdentificationSets: []IdentificationSet{},
 	}
 
@@ -584,13 +584,13 @@ func (mxf *MXFAnalyzer) analyzeIndexTables(ctx context.Context, filePath string,
 	// Index table analysis is complex and requires specialized MXF tools
 	// For now, provide basic analysis based on available information
 	indexAnalysis := &IndexTableAnalysis{
-		HasIndexTables:    true, // Assume present for valid MXF
-		IndexTableCount:   1,
+		HasIndexTables:     true, // Assume present for valid MXF
+		IndexTableCount:    1,
 		IndexStartPosition: 0,
-		EditUnitByteCount: 0,
-		SliceCount:        1,
-		DeltaEntryArray:   []DeltaEntry{},
-		IndexEntryArray:   []IndexEntry{},
+		EditUnitByteCount:  0,
+		SliceCount:         1,
+		DeltaEntryArray:    []DeltaEntry{},
+		IndexEntryArray:    []IndexEntry{},
 	}
 
 	// Basic validation
@@ -620,34 +620,34 @@ func (mxf *MXFAnalyzer) analyzePartitionStructure(ctx context.Context, filePath 
 
 	// Create standard partition structure
 	headerPartition := PartitionInfo{
-		PartitionType:     "Header",
-		Status:            "Closed",
-		MajorVersion:      1,
-		MinorVersion:      3,
-		KAGSize:           512,
-		ThisPartition:     0,
-		PreviousPartition: 0,
-		BodySID:           1,
+		PartitionType:      "Header",
+		Status:             "Closed",
+		MajorVersion:       1,
+		MinorVersion:       3,
+		KAGSize:            512,
+		ThisPartition:      0,
+		PreviousPartition:  0,
+		BodySID:            1,
 		OperationalPattern: "OP1a",
 	}
 
 	bodyPartition := PartitionInfo{
-		PartitionType:     "Body",
-		Status:            "Closed",
-		MajorVersion:      1,
-		MinorVersion:      3,
-		KAGSize:           512,
-		BodySID:           1,
+		PartitionType:      "Body",
+		Status:             "Closed",
+		MajorVersion:       1,
+		MinorVersion:       3,
+		KAGSize:            512,
+		BodySID:            1,
 		OperationalPattern: "OP1a",
 	}
 
 	footerPartition := PartitionInfo{
-		PartitionType:     "Footer",
-		Status:            "Closed",
-		MajorVersion:      1,
-		MinorVersion:      3,
-		KAGSize:           512,
-		BodySID:           0,
+		PartitionType:      "Footer",
+		Status:             "Closed",
+		MajorVersion:       1,
+		MinorVersion:       3,
+		KAGSize:            512,
+		BodySID:            0,
 		OperationalPattern: "OP1a",
 	}
 
@@ -659,7 +659,7 @@ func (mxf *MXFAnalyzer) analyzePartitionStructure(ctx context.Context, filePath 
 		PartitionChainValid: true,
 		RandomAccessPoints:  1,
 		PartitionBalance:    true,
-		Issues:             []string{},
+		Issues:              []string{},
 	}
 
 	analysis.PartitionStructure = partitionStructure
@@ -782,27 +782,27 @@ func (mxf *MXFAnalyzer) createEssenceDescriptor(stream StreamInfo) EssenceDescri
 	case "video":
 		descriptor.DescriptorType = "CDCIEssenceDescriptor"
 		descriptor.PictureEssence = &PictureEssenceInfo{
-			PictureCompression:   stream.CodecName,
-			StoredDimensions:     fmt.Sprintf("%dx%d", stream.Width, stream.Height),
-			SampledDimensions:    fmt.Sprintf("%dx%d", stream.Width, stream.Height),
-			DisplayDimensions:    fmt.Sprintf("%dx%d", stream.Width, stream.Height),
-			AspectRatio:          stream.DisplayAspectRatio,
-			FrameLayout:          "FullFrame",
-			ComponentDepth:       stream.BitsPerSample,
-			ColorRange:           stream.ColorRange,
-			Issues:               []string{},
+			PictureCompression: stream.CodecName,
+			StoredDimensions:   fmt.Sprintf("%dx%d", stream.Width, stream.Height),
+			SampledDimensions:  fmt.Sprintf("%dx%d", stream.Width, stream.Height),
+			DisplayDimensions:  fmt.Sprintf("%dx%d", stream.Width, stream.Height),
+			AspectRatio:        stream.DisplayAspectRatio,
+			FrameLayout:        "FullFrame",
+			ComponentDepth:     stream.BitsPerSample,
+			ColorRange:         stream.ColorRange,
+			Issues:             []string{},
 		}
 	case "audio":
 		descriptor.DescriptorType = "WaveAudioEssenceDescriptor"
 		descriptor.SoundEssence = &SoundEssenceInfo{
-			AudioSamplingRate:      stream.SampleRate,
-			Locked:                 true,
-			AudioRefLevel:          -20,
-			ElectroSpatialForm:     mxf.getElectroSpatialForm(stream.Channels),
-			ChannelCount:           stream.Channels,
-			QuantizationBits:       stream.BitsPerSample,
+			AudioSamplingRate:       stream.SampleRate,
+			Locked:                  true,
+			AudioRefLevel:           -20,
+			ElectroSpatialForm:      mxf.getElectroSpatialForm(stream.Channels),
+			ChannelCount:            stream.Channels,
+			QuantizationBits:        stream.BitsPerSample,
 			SoundEssenceCompression: stream.CodecName,
-			Issues:                 []string{},
+			Issues:                  []string{},
 		}
 	default:
 		descriptor.DescriptorType = "DataEssenceDescriptor"
@@ -908,7 +908,7 @@ func (mxf *MXFAnalyzer) checkMXFCompliance(analysis *MXFAnalysis) *MXFFormatComp
 	for _, container := range analysis.EssenceContainers {
 		if !container.IsCompliant {
 			compliance.SMPTE379Compliant = false
-			compliance.ComplianceIssues = append(compliance.ComplianceIssues, 
+			compliance.ComplianceIssues = append(compliance.ComplianceIssues,
 				fmt.Sprintf("Non-compliant essence container: %s", container.ContainerName))
 			compliance.ComplianceScore -= 10
 		}
@@ -944,7 +944,7 @@ func (mxf *MXFAnalyzer) checkBroadcastCompliance(analysis *MXFAnalysis) *Broadca
 		if analysis.OperationalPattern.PatternLabel != "OP1a" {
 			compliance.BBCCompliant = false
 			compliance.CBSCompliant = false
-			compliance.BroadcastIssues = append(compliance.BroadcastIssues, 
+			compliance.BroadcastIssues = append(compliance.BroadcastIssues,
 				"Non-OP1a patterns may not be supported by all broadcast systems")
 		}
 	}
@@ -1053,11 +1053,11 @@ func (mxf *MXFAnalyzer) generateRecommendedActions(analysis *MXFAnalysis) []stri
 func (mxf *MXFAnalyzer) executeCommand(ctx context.Context, cmd []string) (string, error) {
 	execCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	
+
 	output, err := executeFFprobeCommand(execCtx, cmd)
 	if err != nil {
 		return "", err
 	}
-	
+
 	return string(output), nil
 }

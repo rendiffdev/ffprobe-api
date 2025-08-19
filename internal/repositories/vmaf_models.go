@@ -29,7 +29,7 @@ func (j *JSONB) Scan(value interface{}) error {
 		*j = nil
 		return nil
 	}
-	
+
 	var bytes []byte
 	switch v := value.(type) {
 	case []byte:
@@ -39,7 +39,7 @@ func (j *JSONB) Scan(value interface{}) error {
 	default:
 		return fmt.Errorf("cannot scan %T into JSONB", value)
 	}
-	
+
 	return json.Unmarshal(bytes, j)
 }
 
@@ -155,13 +155,13 @@ func (r *VMAFModelRepository) List(ctx context.Context, userID uuid.UUID, includ
 			   is_default, metadata, created_at, updated_at
 		FROM vmaf_models 
 		WHERE deleted_at IS NULL AND (user_id = $1`
-	
+
 	args := []interface{}{userID}
-	
+
 	if includePublic {
 		query += ` OR is_public = true`
 	}
-	
+
 	query += `) ORDER BY is_default DESC, created_at DESC`
 
 	err := r.db.SelectContext(ctx, &models, query, args...)
@@ -263,7 +263,7 @@ func (r *VMAFModelRepository) SetDefault(ctx context.Context, id uuid.UUID) erro
 	}
 
 	// Set the new default
-	result, err := tx.ExecContext(ctx, 
+	result, err := tx.ExecContext(ctx,
 		`UPDATE vmaf_models SET is_default = true, updated_at = $2 WHERE id = $1 AND deleted_at IS NULL`,
 		id, time.Now(),
 	)
@@ -313,7 +313,7 @@ func (r *VMAFModelRepository) GetDefault(ctx context.Context) (*VMAFModel, error
 func (r *VMAFModelRepository) ExistsByName(ctx context.Context, name string) (bool, error) {
 	var exists bool
 	query := `SELECT EXISTS(SELECT 1 FROM vmaf_models WHERE name = $1 AND deleted_at IS NULL)`
-	
+
 	err := r.db.GetContext(ctx, &exists, query, name)
 	if err != nil {
 		return false, fmt.Errorf("failed to check VMAF model existence: %w", err)

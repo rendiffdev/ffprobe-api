@@ -311,11 +311,11 @@ func validatePromptSafety(prompt string) error {
 func detectExcessiveRepetition(prompt string) bool {
 	// Simple check: if any 10-character substring appears more than 50 times
 	substrings := make(map[string]int)
-	
+
 	if len(prompt) < 10 {
 		return false
 	}
-	
+
 	for i := 0; i <= len(prompt)-10; i++ {
 		substr := prompt[i : i+10]
 		substrings[substr]++
@@ -323,7 +323,7 @@ func detectExcessiveRepetition(prompt string) bool {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -409,11 +409,11 @@ type LLMRequest struct {
 }
 
 type LLMResponse struct {
-	Content        string          `json:"content"`
-	FinishReason   string          `json:"finish_reason,omitempty"`
-	Usage          *LLMUsage       `json:"usage,omitempty"`
-	ProcessingTime time.Duration   `json:"processing_time"`
-	Model          string          `json:"model,omitempty"`
+	Content        string        `json:"content"`
+	FinishReason   string        `json:"finish_reason,omitempty"`
+	Usage          *LLMUsage     `json:"usage,omitempty"`
+	ProcessingTime time.Duration `json:"processing_time"`
+	Model          string        `json:"model,omitempty"`
 }
 
 type LLMUsage struct {

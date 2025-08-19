@@ -3,10 +3,10 @@ package middleware
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
-	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
@@ -92,7 +92,7 @@ func (sm *SecurityMiddleware) Security() gin.HandlerFunc {
 
 		// Strict-Transport-Security
 		if sm.config.EnableHSTS && c.Request.TLS != nil {
-			c.Header("Strict-Transport-Security", 
+			c.Header("Strict-Transport-Security",
 				fmt.Sprintf("max-age=%d; includeSubDomains; preload", sm.config.HSTSMaxAge))
 		}
 
@@ -114,7 +114,7 @@ func (sm *SecurityMiddleware) Security() gin.HandlerFunc {
 func (sm *SecurityMiddleware) CORS() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
-		
+
 		// Check if origin is allowed
 		allowed := false
 		for _, allowedOrigin := range sm.config.AllowedOrigins {
@@ -137,11 +137,11 @@ func (sm *SecurityMiddleware) CORS() gin.HandlerFunc {
 
 		c.Header("Access-Control-Allow-Methods", strings.Join(sm.config.AllowedMethods, ", "))
 		c.Header("Access-Control-Allow-Headers", strings.Join(sm.config.AllowedHeaders, ", "))
-		
+
 		if len(sm.config.ExposeHeaders) > 0 {
 			c.Header("Access-Control-Expose-Headers", strings.Join(sm.config.ExposeHeaders, ", "))
 		}
-		
+
 		if sm.config.MaxAge > 0 {
 			c.Header("Access-Control-Max-Age", fmt.Sprintf("%d", sm.config.MaxAge))
 		}
@@ -185,13 +185,13 @@ func (sm *SecurityMiddleware) CSRF() gin.HandlerFunc {
 
 		// Get expected token from session/context
 		expectedToken := c.GetString("csrf_token")
-		
+
 		if token == "" || expectedToken == "" || token != expectedToken {
 			sm.logger.Warn().
 				Str("path", c.Request.URL.Path).
 				Str("ip", c.ClientIP()).
 				Msg("CSRF token validation failed")
-			
+
 			c.JSON(http.StatusForbidden, gin.H{
 				"error": "CSRF token validation failed",
 				"code":  "CSRF_TOKEN_INVALID",
@@ -211,7 +211,7 @@ func (sm *SecurityMiddleware) GenerateCSRFToken(c *gin.Context) {
 		sm.logger.Error().Err(err).Msg("Failed to generate CSRF token")
 		return
 	}
-	
+
 	c.Set("csrf_token", token)
 	c.Header("X-CSRF-Token", token)
 }
@@ -264,7 +264,7 @@ func (sm *SecurityMiddleware) RequestLogging() gin.HandlerFunc {
 func (sm *SecurityMiddleware) IPWhitelist(trustedIPs []string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		clientIP := c.ClientIP()
-		
+
 		// Check if IP is in trusted list
 		trusted := false
 		for _, trustedIP := range trustedIPs {
@@ -279,7 +279,7 @@ func (sm *SecurityMiddleware) IPWhitelist(trustedIPs []string) gin.HandlerFunc {
 				Str("ip", clientIP).
 				Str("path", c.Request.URL.Path).
 				Msg("Untrusted IP attempt")
-			
+
 			c.JSON(http.StatusForbidden, gin.H{
 				"error": "Access denied",
 				"code":  "IP_NOT_WHITELISTED",
@@ -317,7 +317,7 @@ func (sm *SecurityMiddleware) GeoRestriction(allowedCountries []string) gin.Hand
 					Str("ip", c.ClientIP()).
 					Str("path", c.Request.URL.Path).
 					Msg("Geo-restricted access attempt")
-				
+
 				c.JSON(http.StatusForbidden, gin.H{
 					"error": "Access restricted from your location",
 					"code":  "GEO_RESTRICTED",
@@ -363,17 +363,17 @@ func sanitizeInput(input string) string {
 	// Basic input sanitization
 	// Remove null bytes
 	input = strings.ReplaceAll(input, "\x00", "")
-	
+
 	// Remove potentially dangerous characters
 	dangerous := []string{
 		"<script", "</script>", "javascript:", "vbscript:",
 		"onload=", "onerror=", "onclick=", "onmouseover=",
 	}
-	
+
 	for _, danger := range dangerous {
 		input = strings.ReplaceAll(strings.ToLower(input), danger, "")
 	}
-	
+
 	return strings.TrimSpace(input)
 }
 
@@ -383,19 +383,19 @@ func (sm *SecurityMiddleware) ThreatDetection() gin.HandlerFunc {
 		// Check for common attack patterns
 		userAgent := strings.ToLower(c.Request.UserAgent())
 		path := strings.ToLower(c.Request.URL.Path)
-		
+
 		// SQL injection patterns
 		sqlPatterns := []string{
-			"union select", "drop table", "insert into", 
+			"union select", "drop table", "insert into",
 			"delete from", "' or 1=1", "' or '1'='1",
 		}
-		
-		// XSS patterns  
+
+		// XSS patterns
 		xssPatterns := []string{
 			"<script", "javascript:", "vbscript:",
 			"onload=", "onerror=", "eval(",
 		}
-		
+
 		// Bot patterns
 		botPatterns := []string{
 			"sqlmap", "nikto", "nmap", "masscan",
@@ -405,7 +405,7 @@ func (sm *SecurityMiddleware) ThreatDetection() gin.HandlerFunc {
 		// Check patterns
 		threatDetected := false
 		threatType := ""
-		
+
 		for _, pattern := range sqlPatterns {
 			if strings.Contains(path, pattern) {
 				threatDetected = true
@@ -413,7 +413,7 @@ func (sm *SecurityMiddleware) ThreatDetection() gin.HandlerFunc {
 				break
 			}
 		}
-		
+
 		if !threatDetected {
 			for _, pattern := range xssPatterns {
 				if strings.Contains(path, pattern) {
@@ -423,7 +423,7 @@ func (sm *SecurityMiddleware) ThreatDetection() gin.HandlerFunc {
 				}
 			}
 		}
-		
+
 		if !threatDetected {
 			for _, pattern := range botPatterns {
 				if strings.Contains(userAgent, pattern) {
@@ -441,7 +441,7 @@ func (sm *SecurityMiddleware) ThreatDetection() gin.HandlerFunc {
 				Str("user_agent", c.Request.UserAgent()).
 				Str("path", c.Request.URL.Path).
 				Msg("Threat detected")
-			
+
 			c.JSON(http.StatusForbidden, gin.H{
 				"error": "Security threat detected",
 				"code":  threatType,

@@ -26,14 +26,14 @@ func NewFilePathValidator() *FilePathValidator {
 		},
 		maxPathLength: 4096,
 		blockPatterns: []*regexp.Regexp{
-			regexp.MustCompile(`\.\.`),                    // Directory traversal
-			regexp.MustCompile(`^/etc/`),                  // System files
-			regexp.MustCompile(`^/proc/`),                 // Process info
-			regexp.MustCompile(`^/sys/`),                  // System info
-			regexp.MustCompile(`^/dev/`),                  // Device files
-			regexp.MustCompile(`\x00`),                    // Null bytes
-			regexp.MustCompile(`[<>"|*?]`),                // Invalid characters
-			regexp.MustCompile(`^\s*$`),                   // Empty paths
+			regexp.MustCompile(`\.\.`),     // Directory traversal
+			regexp.MustCompile(`^/etc/`),   // System files
+			regexp.MustCompile(`^/proc/`),  // Process info
+			regexp.MustCompile(`^/sys/`),   // System info
+			regexp.MustCompile(`^/dev/`),   // Device files
+			regexp.MustCompile(`\x00`),     // Null bytes
+			regexp.MustCompile(`[<>"|*?]`), // Invalid characters
+			regexp.MustCompile(`^\s*$`),    // Empty paths
 		},
 	}
 }
@@ -124,12 +124,12 @@ func ValidateURL(urlStr string) error {
 // isPrivateIP checks if a host is a private IP
 func isPrivateIP(host string) bool {
 	privatePatterns := []string{
-		`^10\.`,                    // 10.0.0.0/8
+		`^10\.`,                         // 10.0.0.0/8
 		`^172\.(1[6-9]|2[0-9]|3[01])\.`, // 172.16.0.0/12
-		`^192\.168\.`,              // 192.168.0.0/16
-		`^169\.254\.`,              // 169.254.0.0/16 (link-local)
-		`^fc00:`,                   // IPv6 private
-		`^fe80:`,                   // IPv6 link-local
+		`^192\.168\.`,                   // 192.168.0.0/16
+		`^169\.254\.`,                   // 169.254.0.0/16 (link-local)
+		`^fc00:`,                        // IPv6 private
+		`^fe80:`,                        // IPv6 link-local
 	}
 
 	for _, pattern := range privatePatterns {

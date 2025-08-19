@@ -206,7 +206,7 @@ func (r *SQLiteRepository) UpdateAnalysisLLMReport(ctx context.Context, id uuid.
 // DeleteAnalysis deletes an analysis record
 func (r *SQLiteRepository) DeleteAnalysis(ctx context.Context, id uuid.UUID) error {
 	query := `DELETE FROM analyses WHERE id = ?`
-	
+
 	_, err := r.db.DB.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete analysis: %w", err)
@@ -223,7 +223,7 @@ func (r *SQLiteRepository) CreateQualityFrame(ctx context.Context, frame *models
 			component_scores, created_at
 		) VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
-	
+
 	_, err := r.db.DB.ExecContext(
 		ctx, query,
 		frame.ID, frame.QualityMetricID, frame.FrameNumber, frame.Timestamp, frame.Score,
@@ -241,7 +241,7 @@ func (r *SQLiteRepository) CreateQualityMetrics(ctx context.Context, metrics *mo
 			frame_count, processing_time, model_version, created_at
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	
+
 	_, err := r.db.DB.ExecContext(
 		ctx, query,
 		metrics.ID, metrics.AnalysisID, metrics.ReferenceFileID, metrics.MetricType, metrics.OverallScore,
@@ -259,13 +259,13 @@ func (r *SQLiteRepository) GetQualityMetrics(ctx context.Context, analysisID uui
 			   frame_count, processing_time, model_version, created_at
 		FROM quality_metrics WHERE analysis_id = ?
 	`
-	
+
 	rows, err := r.db.DB.QueryContext(ctx, query, analysisID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var metrics []models.QualityMetrics
 	for rows.Next() {
 		var m models.QualityMetrics
@@ -279,7 +279,7 @@ func (r *SQLiteRepository) GetQualityMetrics(ctx context.Context, analysisID uui
 		}
 		metrics = append(metrics, m)
 	}
-	
+
 	return metrics, rows.Err()
 }
 
@@ -291,13 +291,13 @@ func (r *SQLiteRepository) GetQualityFrames(ctx context.Context, metricID uuid.U
 		FROM quality_frames WHERE quality_metric_id = ?
 		ORDER BY frame_number LIMIT ? OFFSET ?
 	`
-	
+
 	rows, err := r.db.DB.QueryContext(ctx, query, metricID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var frames []models.QualityFrame
 	for rows.Next() {
 		var f models.QualityFrame
@@ -310,10 +310,9 @@ func (r *SQLiteRepository) GetQualityFrames(ctx context.Context, metricID uuid.U
 		}
 		frames = append(frames, f)
 	}
-	
+
 	return frames, rows.Err()
 }
-
 
 // Quality metrics operations are implemented in quality_repository.go
 
@@ -327,7 +326,7 @@ func (r *SQLiteRepository) CreateHLSAnalysis(ctx context.Context, hls *models.HL
 			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 		)
 	`
-	
+
 	_, err := r.db.DB.ExecContext(
 		ctx, query,
 		hls.ID, hls.AnalysisID, hls.ManifestPath, hls.ManifestType, hls.ManifestData,
@@ -345,7 +344,7 @@ func (r *SQLiteRepository) GetHLSAnalysis(ctx context.Context, analysisID uuid.U
 		FROM hls_analyses
 		WHERE analysis_id = ?
 	`
-	
+
 	var hls models.HLSAnalysis
 	err := r.db.DB.GetContext(ctx, &hls, query, analysisID)
 	if err != nil {
@@ -364,7 +363,7 @@ func (r *SQLiteRepository) CreateHLSSegment(ctx context.Context, segment *models
 			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 		)
 	`
-	
+
 	_, err := r.db.DB.ExecContext(
 		ctx, query,
 		segment.ID, segment.HLSAnalysisID, segment.SegmentURI, segment.SequenceNumber, segment.Duration,
@@ -384,7 +383,7 @@ func (r *SQLiteRepository) GetHLSSegments(ctx context.Context, hlsAnalysisID uui
 		ORDER BY sequence_number
 		LIMIT ?
 	`
-	
+
 	var segments []*models.HLSSegment
 	err := r.db.DB.SelectContext(ctx, &segments, query, hlsAnalysisID, limit)
 	if err != nil {
@@ -401,7 +400,7 @@ func (r *SQLiteRepository) GetHLSAnalysisByAnalysisID(ctx context.Context, analy
 		FROM hls_analyses
 		WHERE analysis_id = ?
 	`
-	
+
 	var hls models.HLSAnalysis
 	err := r.db.DB.GetContext(ctx, &hls, query, analysisID)
 	if err != nil {
@@ -413,25 +412,25 @@ func (r *SQLiteRepository) GetHLSAnalysisByAnalysisID(ctx context.Context, analy
 func (r *SQLiteRepository) ListHLSAnalyses(ctx context.Context, userID *uuid.UUID, limit, offset int) ([]*models.HLSAnalysis, int, error) {
 	var analyses []*models.HLSAnalysis
 	var total int
-	
+
 	baseQuery := `FROM hls_analyses h JOIN analyses a ON h.analysis_id = a.id`
 	whereClause := ""
 	args := []interface{}{}
 	argCount := 0
-	
+
 	if userID != nil {
 		argCount++
 		whereClause = fmt.Sprintf(" WHERE a.user_id = $%d", argCount)
 		args = append(args, *userID)
 	}
-	
+
 	// Get total count
 	countQuery := "SELECT COUNT(*) " + baseQuery + whereClause
 	err := r.db.DB.GetContext(ctx, &total, countQuery, args...)
 	if err != nil {
 		return nil, 0, err
 	}
-	
+
 	// Get paginated results
 	argCount++
 	limitArg := argCount
@@ -439,7 +438,7 @@ func (r *SQLiteRepository) ListHLSAnalyses(ctx context.Context, userID *uuid.UUI
 	argCount++
 	offsetArg := argCount
 	args = append(args, offset)
-	
+
 	query := fmt.Sprintf(`
 		SELECT h.id, h.analysis_id, h.manifest_path, h.manifest_type, h.manifest_data,
 			h.segment_count, h.total_duration, h.bitrate_variants, h.segment_duration,
@@ -448,12 +447,12 @@ func (r *SQLiteRepository) ListHLSAnalyses(ctx context.Context, userID *uuid.UUI
 		ORDER BY h.created_at DESC
 		LIMIT $%d OFFSET $%d
 	`, baseQuery, whereClause, limitArg, offsetArg)
-	
+
 	err = r.db.DB.SelectContext(ctx, &analyses, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
-	
+
 	return analyses, total, nil
 }
 
@@ -462,7 +461,7 @@ func (r *SQLiteRepository) CreateUser(ctx context.Context, user *models.User) er
 	query := `
 		INSERT INTO users (id, email, username, password_hash, role, is_active, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-	
+
 	_, err := r.db.DB.ExecContext(ctx, query,
 		user.ID, user.Email, user.Username, user.PasswordHash,
 		user.Role, user.IsActive, user.CreatedAt, user.UpdatedAt)
@@ -473,7 +472,7 @@ func (r *SQLiteRepository) GetUser(ctx context.Context, id uuid.UUID) (*models.U
 	query := `
 		SELECT id, email, username, password_hash, role, is_active, created_at, updated_at
 		FROM users WHERE id = ?`
-	
+
 	var user models.User
 	err := r.db.DB.QueryRowContext(ctx, query, id).Scan(
 		&user.ID, &user.Email, &user.Username, &user.PasswordHash,
@@ -488,7 +487,7 @@ func (r *SQLiteRepository) GetUserByEmail(ctx context.Context, email string) (*m
 	query := `
 		SELECT id, email, username, password_hash, role, is_active, created_at, updated_at
 		FROM users WHERE email = ?`
-	
+
 	var user models.User
 	err := r.db.DB.QueryRowContext(ctx, query, email).Scan(
 		&user.ID, &user.Email, &user.Username, &user.PasswordHash,
@@ -503,7 +502,7 @@ func (r *SQLiteRepository) CreateAPIKey(ctx context.Context, apiKey *models.APIK
 	query := `
 		INSERT INTO api_keys (id, user_id, key_hash, name, permissions, is_active, expires_at, created_at, last_used)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-	
+
 	_, err := r.db.DB.ExecContext(ctx, query,
 		apiKey.ID, apiKey.UserID, apiKey.KeyHash, apiKey.Name,
 		apiKey.Permissions, apiKey.IsActive, apiKey.ExpiresAt,
@@ -515,7 +514,7 @@ func (r *SQLiteRepository) GetAPIKey(ctx context.Context, keyHash string) (*mode
 	query := `
 		SELECT id, user_id, key_hash, name, permissions, is_active, expires_at, created_at, last_used
 		FROM api_keys WHERE key_hash = ? AND is_active = true`
-	
+
 	var apiKey models.APIKey
 	err := r.db.DB.QueryRowContext(ctx, query, keyHash).Scan(
 		&apiKey.ID, &apiKey.UserID, &apiKey.KeyHash, &apiKey.Name,
@@ -543,7 +542,7 @@ func (r *SQLiteRepository) CreateReport(ctx context.Context, report *models.Repo
 			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 		)
 	`
-	
+
 	_, err := r.db.DB.ExecContext(
 		ctx, query,
 		report.ID, report.AnalysisID, report.UserID, report.ReportType, report.Format,
@@ -560,7 +559,7 @@ func (r *SQLiteRepository) GetReport(ctx context.Context, id uuid.UUID) (*models
 		FROM reports
 		WHERE id = ?
 	`
-	
+
 	var report models.Report
 	err := r.db.DB.GetContext(ctx, &report, query, id)
 	if err != nil {
@@ -572,18 +571,18 @@ func (r *SQLiteRepository) GetReport(ctx context.Context, id uuid.UUID) (*models
 func (r *SQLiteRepository) ListReports(ctx context.Context, userID *uuid.UUID, analysisID, reportType, format string, limit, offset int) ([]*models.Report, int, error) {
 	var reports []*models.Report
 	var total int
-	
+
 	baseQuery := "FROM reports"
 	whereConditions := []string{}
 	args := []interface{}{}
 	argCount := 0
-	
+
 	if userID != nil {
 		argCount++
 		whereConditions = append(whereConditions, fmt.Sprintf("user_id = $%d", argCount))
 		args = append(args, *userID)
 	}
-	
+
 	if analysisID != "" {
 		if analysisUUID, err := uuid.Parse(analysisID); err == nil {
 			argCount++
@@ -591,31 +590,31 @@ func (r *SQLiteRepository) ListReports(ctx context.Context, userID *uuid.UUID, a
 			args = append(args, analysisUUID)
 		}
 	}
-	
+
 	if reportType != "" {
 		argCount++
 		whereConditions = append(whereConditions, fmt.Sprintf("report_type = $%d", argCount))
 		args = append(args, reportType)
 	}
-	
+
 	if format != "" {
 		argCount++
 		whereConditions = append(whereConditions, fmt.Sprintf("format = $%d", argCount))
 		args = append(args, format)
 	}
-	
+
 	whereClause := ""
 	if len(whereConditions) > 0 {
 		whereClause = " WHERE " + strings.Join(whereConditions, " AND ")
 	}
-	
+
 	// Get total count
 	countQuery := "SELECT COUNT(*) " + baseQuery + whereClause
 	err := r.db.DB.GetContext(ctx, &total, countQuery, args...)
 	if err != nil {
 		return nil, 0, err
 	}
-	
+
 	// Get paginated results
 	argCount++
 	limitArg := argCount
@@ -623,7 +622,7 @@ func (r *SQLiteRepository) ListReports(ctx context.Context, userID *uuid.UUID, a
 	argCount++
 	offsetArg := argCount
 	args = append(args, offset)
-	
+
 	query := fmt.Sprintf(`
 		SELECT id, analysis_id, user_id, report_type, format, title, description,
 			file_path, file_size, download_count, is_public, expires_at, created_at, last_download
@@ -631,12 +630,12 @@ func (r *SQLiteRepository) ListReports(ctx context.Context, userID *uuid.UUID, a
 		ORDER BY created_at DESC
 		LIMIT $%d OFFSET $%d
 	`, baseQuery, whereClause, limitArg, offsetArg)
-	
+
 	err = r.db.DB.SelectContext(ctx, &reports, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
-	
+
 	return reports, total, nil
 }
 
@@ -666,7 +665,7 @@ func (r *SQLiteRepository) CreateQualityComparison(ctx context.Context, comparis
 			?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 		)
 	`
-	
+
 	_, err := r.db.DB.ExecContext(
 		ctx, query,
 		comparison.ID, comparison.ReferenceID, comparison.DistortedID, comparison.ComparisonType,
@@ -683,7 +682,7 @@ func (r *SQLiteRepository) GetQualityComparison(ctx context.Context, id uuid.UUI
 		FROM quality_comparisons
 		WHERE id = ?
 	`
-	
+
 	var comparison models.QualityComparison
 	err := r.db.DB.GetContext(ctx, &comparison, query, id)
 	if err != nil {
@@ -699,7 +698,7 @@ func (r *SQLiteRepository) UpdateQualityComparison(ctx context.Context, comparis
 			completed_at = ?, error_msg = ?, updated_at = datetime('now')
 		WHERE id = ?
 	`
-	
+
 	_, err := r.db.DB.ExecContext(
 		ctx, query,
 		comparison.ID, comparison.Status, comparison.ResultSummary, comparison.ProcessingTime,
@@ -717,20 +716,20 @@ func (r *SQLiteRepository) UpdateQualityComparisonStatus(ctx context.Context, id
 func (r *SQLiteRepository) ListQualityComparisons(ctx context.Context, userID *uuid.UUID, referenceID, distortedID, status string, limit, offset int) ([]*models.QualityComparison, int, error) {
 	var comparisons []*models.QualityComparison
 	var total int
-	
+
 	baseQuery := `FROM quality_comparisons qc 
 		LEFT JOIN analyses ref ON qc.reference_id = ref.id
 		LEFT JOIN analyses dist ON qc.distorted_id = dist.id`
 	whereConditions := []string{}
 	args := []interface{}{}
 	argCount := 0
-	
+
 	if userID != nil {
 		argCount++
 		whereConditions = append(whereConditions, fmt.Sprintf("(ref.user_id = $%d OR dist.user_id = $%d)", argCount, argCount))
 		args = append(args, *userID)
 	}
-	
+
 	if referenceID != "" {
 		if refUUID, err := uuid.Parse(referenceID); err == nil {
 			argCount++
@@ -738,7 +737,7 @@ func (r *SQLiteRepository) ListQualityComparisons(ctx context.Context, userID *u
 			args = append(args, refUUID)
 		}
 	}
-	
+
 	if distortedID != "" {
 		if distUUID, err := uuid.Parse(distortedID); err == nil {
 			argCount++
@@ -746,25 +745,25 @@ func (r *SQLiteRepository) ListQualityComparisons(ctx context.Context, userID *u
 			args = append(args, distUUID)
 		}
 	}
-	
+
 	if status != "" {
 		argCount++
 		whereConditions = append(whereConditions, fmt.Sprintf("qc.status = $%d", argCount))
 		args = append(args, status)
 	}
-	
+
 	whereClause := ""
 	if len(whereConditions) > 0 {
 		whereClause = " WHERE " + strings.Join(whereConditions, " AND ")
 	}
-	
+
 	// Get total count
 	countQuery := "SELECT COUNT(*) " + baseQuery + whereClause
 	err := r.db.DB.GetContext(ctx, &total, countQuery, args...)
 	if err != nil {
 		return nil, 0, err
 	}
-	
+
 	// Get paginated results
 	argCount++
 	limitArg := argCount
@@ -772,7 +771,7 @@ func (r *SQLiteRepository) ListQualityComparisons(ctx context.Context, userID *u
 	argCount++
 	offsetArg := argCount
 	args = append(args, offset)
-	
+
 	query := fmt.Sprintf(`
 		SELECT qc.id, qc.reference_id, qc.distorted_id, qc.comparison_type, qc.status,
 			qc.result_summary, qc.processing_time, qc.created_at, qc.completed_at, qc.error_msg
@@ -780,12 +779,12 @@ func (r *SQLiteRepository) ListQualityComparisons(ctx context.Context, userID *u
 		ORDER BY qc.created_at DESC
 		LIMIT $%d OFFSET $%d
 	`, baseQuery, whereClause, limitArg, offsetArg)
-	
+
 	err = r.db.DB.SelectContext(ctx, &comparisons, query, args...)
 	if err != nil {
 		return nil, 0, err
 	}
-	
+
 	return comparisons, total, nil
 }
 
@@ -795,16 +794,16 @@ func (r *SQLiteRepository) DeleteQualityComparison(ctx context.Context, id uuid.
 	if err != nil {
 		return err
 	}
-	
+
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return err
 	}
-	
+
 	if rowsAffected == 0 {
 		return fmt.Errorf("processing job not found")
 	}
-	
+
 	return nil
 }
 
@@ -814,7 +813,7 @@ func (r *SQLiteRepository) CreateProcessingJob(ctx context.Context, job *models.
 		INSERT INTO processing_jobs (id, analysis_id, job_type, status, priority, 
 			scheduled_at, started_at, completed_at, error_msg, retry_count, max_retries)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-	
+
 	_, err := r.db.DB.ExecContext(ctx, query,
 		job.ID, job.AnalysisID, job.JobType, job.Status, job.Priority,
 		job.ScheduledAt, job.StartedAt, job.CompletedAt, job.ErrorMsg,
@@ -827,7 +826,7 @@ func (r *SQLiteRepository) GetProcessingJob(ctx context.Context, id uuid.UUID) (
 		SELECT id, analysis_id, job_type, status, priority, scheduled_at, 
 			started_at, completed_at, error_msg, retry_count, max_retries, created_at
 		FROM processing_jobs WHERE id = ?`
-	
+
 	var job models.ProcessingJob
 	err := r.db.DB.QueryRowContext(ctx, query, id).Scan(
 		&job.ID, &job.AnalysisID, &job.JobType, &job.Status, &job.Priority,
@@ -844,7 +843,7 @@ func (r *SQLiteRepository) UpdateProcessingJob(ctx context.Context, job *models.
 		UPDATE processing_jobs 
 		SET status = ?, started_at = ?, completed_at = ?, error_msg = ?, retry_count = ?
 		WHERE id = ?`
-	
+
 	_, err := r.db.DB.ExecContext(ctx, query,
 		job.ID, job.Status, job.StartedAt, job.CompletedAt, job.ErrorMsg, job.RetryCount)
 	return err
@@ -858,13 +857,13 @@ func (r *SQLiteRepository) GetPendingJobs(ctx context.Context, jobType models.Jo
 		WHERE job_type = ? AND status = 'pending' 
 		ORDER BY priority DESC, scheduled_at ASC 
 		LIMIT ?`
-	
+
 	rows, err := r.db.DB.QueryContext(ctx, query, jobType, limit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	var jobs []models.ProcessingJob
 	for rows.Next() {
 		var job models.ProcessingJob
@@ -880,13 +879,13 @@ func (r *SQLiteRepository) GetPendingJobs(ctx context.Context, jobType models.Jo
 	return jobs, nil
 }
 
-// Cache operations - basic implementations  
+// Cache operations - basic implementations
 func (r *SQLiteRepository) CreateCacheEntry(ctx context.Context, entry *models.CacheEntry) error {
 	query := `
 		INSERT INTO cache_entries (id, content_hash, cache_type, file_path, 
 			hit_count, expires_at, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?)`
-	
+
 	_, err := r.db.DB.ExecContext(ctx, query,
 		entry.ID, entry.ContentHash, entry.CacheType, entry.FilePath,
 		entry.HitCount, entry.ExpiresAt, entry.CreatedAt)
@@ -898,7 +897,7 @@ func (r *SQLiteRepository) GetCacheEntry(ctx context.Context, contentHash string
 		SELECT id, content_hash, cache_type, file_path, hit_count, expires_at, created_at
 		FROM cache_entries 
 		WHERE content_hash = ? AND cache_type = ? AND expires_at > datetime('now')`
-	
+
 	var entry models.CacheEntry
 	err := r.db.DB.QueryRowContext(ctx, query, contentHash, cacheType).Scan(
 		&entry.ID, &entry.ContentHash, &entry.CacheType, &entry.FilePath,

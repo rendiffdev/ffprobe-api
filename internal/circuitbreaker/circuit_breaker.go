@@ -30,17 +30,17 @@ func (s State) String() string {
 
 // CircuitBreaker implements the circuit breaker pattern
 type CircuitBreaker struct {
-	name            string
-	maxRequests     uint32
-	interval        time.Duration
-	timeout         time.Duration
-	readyToTrip     func(counts Counts) bool
-	onStateChange   func(name string, from State, to State)
-	
-	mutex    sync.RWMutex
-	state    State
-	counts   Counts
-	expiry   time.Time
+	name          string
+	maxRequests   uint32
+	interval      time.Duration
+	timeout       time.Duration
+	readyToTrip   func(counts Counts) bool
+	onStateChange func(name string, from State, to State)
+
+	mutex  sync.RWMutex
+	state  State
+	counts Counts
+	expiry time.Time
 }
 
 // Counts holds the numbers of requests and their successes/failures
@@ -54,25 +54,25 @@ type Counts struct {
 
 // Settings configures the circuit breaker
 type Settings struct {
-	Name        string
-	MaxRequests uint32        // Maximum requests allowed in half-open state
-	Interval    time.Duration // Period to clear counters in closed state
-	Timeout     time.Duration // Period to wait before half-open from open state
-	ReadyToTrip func(counts Counts) bool
+	Name          string
+	MaxRequests   uint32        // Maximum requests allowed in half-open state
+	Interval      time.Duration // Period to clear counters in closed state
+	Timeout       time.Duration // Period to wait before half-open from open state
+	ReadyToTrip   func(counts Counts) bool
 	OnStateChange func(name string, from State, to State)
 }
 
 // NewCircuitBreaker creates a new circuit breaker
 func NewCircuitBreaker(st Settings) *CircuitBreaker {
 	cb := &CircuitBreaker{
-		name:            st.Name,
-		maxRequests:     st.MaxRequests,
-		interval:        st.Interval,
-		timeout:         st.Timeout,
-		readyToTrip:     st.ReadyToTrip,
-		onStateChange:   st.OnStateChange,
-		state:          StateClosed,
-		counts:         Counts{},
+		name:          st.Name,
+		maxRequests:   st.MaxRequests,
+		interval:      st.Interval,
+		timeout:       st.Timeout,
+		readyToTrip:   st.ReadyToTrip,
+		onStateChange: st.OnStateChange,
+		state:         StateClosed,
+		counts:        Counts{},
 	}
 
 	// Default ready to trip function: trip after 5 consecutive failures

@@ -33,7 +33,7 @@ func (m *RequestLimitMiddleware) Limit() gin.HandlerFunc {
 
 		m.mutex.Lock()
 		current := m.activeReqs[clientID]
-		
+
 		if current >= m.maxConcurrent {
 			m.mutex.Unlock()
 			m.logger.Warn().
@@ -41,10 +41,10 @@ func (m *RequestLimitMiddleware) Limit() gin.HandlerFunc {
 				Int("current_requests", current).
 				Int("max_concurrent", m.maxConcurrent).
 				Msg("Request limit exceeded")
-			
+
 			c.JSON(http.StatusTooManyRequests, gin.H{
-				"error": "Too many concurrent requests",
-				"code":  "RATE_LIMIT_EXCEEDED",
+				"error":       "Too many concurrent requests",
+				"code":        "RATE_LIMIT_EXCEEDED",
 				"retry_after": 30,
 			})
 			c.Abort()
@@ -86,7 +86,7 @@ func (m *RequestLimitMiddleware) GetStats() map[string]interface{} {
 
 	stats := make(map[string]interface{})
 	totalActive := 0
-	
+
 	for clientID, count := range m.activeReqs {
 		stats[clientID] = count
 		totalActive += count

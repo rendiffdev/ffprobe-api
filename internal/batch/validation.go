@@ -266,8 +266,8 @@ func validateMetadataKey(key string) error {
 
 	// Check for valid characters (alphanumeric, dash, underscore)
 	for _, char := range key {
-		if !((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || 
-			 (char >= '0' && char <= '9') || char == '-' || char == '_') {
+		if !((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') ||
+			(char >= '0' && char <= '9') || char == '-' || char == '_') {
 			return fmt.Errorf("metadata key contains invalid character: %c", char)
 		}
 	}
@@ -359,20 +359,20 @@ func ValidateBatchConfiguration(config *BatchConfig) error {
 
 // Batch processing types for validation
 type BatchRequest struct {
-	Files       []BatchFile           `json:"files"`
+	Files       []BatchFile            `json:"files"`
 	Options     *ffmpeg.FFprobeOptions `json:"options,omitempty"`
-	Priority    string                `json:"priority,omitempty"`
-	Timeout     time.Duration         `json:"timeout,omitempty"`
-	Concurrency int                   `json:"concurrency,omitempty"`
-	Async       bool                  `json:"async,omitempty"`
+	Priority    string                 `json:"priority,omitempty"`
+	Timeout     time.Duration          `json:"timeout,omitempty"`
+	Concurrency int                    `json:"concurrency,omitempty"`
+	Async       bool                   `json:"async,omitempty"`
 }
 
 type BatchFile struct {
-	ID         string                    `json:"id"`
-	Path       string                    `json:"path"`
-	SourceType string                    `json:"source_type,omitempty"`
-	Options    *ffmpeg.FFprobeOptions     `json:"options,omitempty"`
-	Metadata   map[string]string         `json:"metadata,omitempty"`
+	ID         string                 `json:"id"`
+	Path       string                 `json:"path"`
+	SourceType string                 `json:"source_type,omitempty"`
+	Options    *ffmpeg.FFprobeOptions `json:"options,omitempty"`
+	Metadata   map[string]string      `json:"metadata,omitempty"`
 }
 
 type BatchResult struct {

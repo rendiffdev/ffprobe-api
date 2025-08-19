@@ -9,18 +9,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rs/zerolog"
+	"github.com/rendiffdev/ffprobe-api/internal/circuitbreaker"
 	"github.com/rendiffdev/ffprobe-api/internal/config"
 	"github.com/rendiffdev/ffprobe-api/internal/models"
-	"github.com/rendiffdev/ffprobe-api/internal/circuitbreaker"
+	"github.com/rs/zerolog"
 )
 
 // LLMService handles LLM operations for GenAI features
 type LLMService struct {
-	config           *config.Config
-	logger           zerolog.Logger
-	httpClient       *http.Client
-	ollamaCircuitBreaker *circuitbreaker.CircuitBreaker
+	config                   *config.Config
+	logger                   zerolog.Logger
+	httpClient               *http.Client
+	ollamaCircuitBreaker     *circuitbreaker.CircuitBreaker
 	openrouterCircuitBreaker *circuitbreaker.CircuitBreaker
 }
 
@@ -40,10 +40,10 @@ func NewLLMService(cfg *config.Config, logger zerolog.Logger) *LLMService {
 	// Create circuit breaker for Ollama service
 	ollamaTimeout := time.Duration(cfg.CircuitBreakerTimeout) * time.Second
 	ollamaInterval := time.Duration(cfg.CircuitBreakerInterval) * time.Second
-	
+
 	ollamaCircuitBreaker := circuitbreaker.NewCircuitBreaker(circuitbreaker.Settings{
 		Name:        "ollama-llm",
-		MaxRequests: 3,  // Allow 3 requests in half-open state
+		MaxRequests: 3,              // Allow 3 requests in half-open state
 		Interval:    ollamaInterval, // Configurable interval
 		Timeout:     ollamaTimeout,  // Configurable timeout
 		ReadyToTrip: func(counts circuitbreaker.Counts) bool {
@@ -61,12 +61,12 @@ func NewLLMService(cfg *config.Config, logger zerolog.Logger) *LLMService {
 	})
 
 	// Create circuit breaker for OpenRouter service
-	openrouterTimeout := time.Duration(cfg.CircuitBreakerTimeout * 2) * time.Second // Double timeout for external API
-	openrouterInterval := time.Duration(cfg.CircuitBreakerInterval * 2) * time.Second // Double interval for external API
-	
+	openrouterTimeout := time.Duration(cfg.CircuitBreakerTimeout*2) * time.Second   // Double timeout for external API
+	openrouterInterval := time.Duration(cfg.CircuitBreakerInterval*2) * time.Second // Double interval for external API
+
 	openrouterCircuitBreaker := circuitbreaker.NewCircuitBreaker(circuitbreaker.Settings{
 		Name:        "openrouter-llm",
-		MaxRequests: 2,  // More conservative for external API
+		MaxRequests: 2,                  // More conservative for external API
 		Interval:    openrouterInterval, // Configurable longer interval for external service
 		Timeout:     openrouterTimeout,  // Configurable longer timeout before retry
 		ReadyToTrip: func(counts circuitbreaker.Counts) bool {
@@ -84,8 +84,8 @@ func NewLLMService(cfg *config.Config, logger zerolog.Logger) *LLMService {
 	})
 
 	return &LLMService{
-		config:                   cfg,
-		logger:                   logger,
+		config: cfg,
+		logger: logger,
 		httpClient: &http.Client{
 			Timeout: timeout,
 		},
@@ -98,7 +98,7 @@ func NewLLMService(cfg *config.Config, logger zerolog.Logger) *LLMService {
 func (s *LLMService) GenerateAnalysis(ctx context.Context, analysis *models.Analysis) (string, error) {
 	// Create prompt for media analysis
 	prompt := s.buildAnalysisPrompt(analysis)
-	
+
 	// Try local LLM first (if available), then fallback to OpenRouter
 	response, err := s.generateWithLocalLLM(ctx, prompt)
 	if err != nil {
@@ -108,7 +108,7 @@ func (s *LLMService) GenerateAnalysis(ctx context.Context, analysis *models.Anal
 			return "", fmt.Errorf("both local and remote LLM failed: %w", err)
 		}
 	}
-	
+
 	return response, nil
 }
 
@@ -116,7 +116,7 @@ func (s *LLMService) GenerateAnalysis(ctx context.Context, analysis *models.Anal
 func (s *LLMService) AnswerQuestion(ctx context.Context, analysis *models.Analysis, question string) (string, error) {
 	// Create prompt for Q&A
 	prompt := s.buildQAPrompt(analysis, question)
-	
+
 	// Try local LLM first, then fallback to OpenRouter
 	response, err := s.generateWithLocalLLM(ctx, prompt)
 	if err != nil {
@@ -126,7 +126,7 @@ func (s *LLMService) AnswerQuestion(ctx context.Context, analysis *models.Analys
 			return "", fmt.Errorf("both local and remote LLM failed: %w", err)
 		}
 	}
-	
+
 	return response, nil
 }
 
@@ -153,12 +153,12 @@ func (s *LLMService) generateWithLocalLLM(ctx context.Context, prompt string) (s
 			"top_p":          0.9,
 			"top_k":          40,
 			"repeat_penalty": 1.1,
-			"num_predict":    1500,    // Good for structured reports
-			"num_ctx":        8192,    // Gemma3 supports 8K context
-			"num_batch":      16,      // Larger batch for faster processing
-			"num_thread":     4,       // CPU threads to use
+			"num_predict":    1500, // Good for structured reports
+			"num_ctx":        8192, // Gemma3 supports 8K context
+			"num_batch":      16,   // Larger batch for faster processing
+			"num_thread":     4,    // CPU threads to use
 		})
-		
+
 		if err == nil {
 			s.logger.Info().
 				Str("model", s.config.OllamaModel).
@@ -172,19 +172,19 @@ func (s *LLMService) generateWithLocalLLM(ctx context.Context, prompt string) (s
 			Err(err).
 			Str("model", s.config.OllamaModel).
 			Msg("Primary model failed, trying fallback")
-		
+
 		if s.config.OllamaFallbackModel != "" {
 			response, err = s.generateWithOllamaModel(ctx, s.config.OllamaFallbackModel, prompt, map[string]interface{}{
 				"temperature":    0.7,
 				"top_p":          0.9,
 				"top_k":          40,
 				"repeat_penalty": 1.1,
-				"num_predict":    2000,    // More tokens for complex analysis
-				"num_ctx":        4096,    // Phi3 mini context window
-				"num_batch":      8,       // Standard batch size
-				"num_thread":     4,       // CPU threads to use
+				"num_predict":    2000, // More tokens for complex analysis
+				"num_ctx":        4096, // Phi3 mini context window
+				"num_batch":      8,    // Standard batch size
+				"num_thread":     4,    // CPU threads to use
 			})
-			
+
 			if err == nil {
 				s.logger.Info().
 					Str("model", s.config.OllamaFallbackModel).
@@ -193,7 +193,7 @@ func (s *LLMService) generateWithLocalLLM(ctx context.Context, prompt string) (s
 				return response, nil
 			}
 		}
-		
+
 		return "", fmt.Errorf("both primary and fallback models failed: %w", err)
 	})
 
@@ -281,7 +281,7 @@ func (s *LLMService) generateWithOpenRouter(ctx context.Context, prompt string) 
 	if s.config.OpenRouterAPIKey == "" {
 		return "", fmt.Errorf("OpenRouter API key not configured")
 	}
-	
+
 	// Use circuit breaker to protect against external API failures
 	result, err := s.openrouterCircuitBreaker.Execute(func() (interface{}, error) {
 		// Prepare request
@@ -293,37 +293,37 @@ func (s *LLMService) generateWithOpenRouter(ctx context.Context, prompt string) 
 					"content": prompt,
 				},
 			},
-			"max_tokens": 1000,
+			"max_tokens":  1000,
 			"temperature": 0.7,
 		}
-		
+
 		jsonBody, err := json.Marshal(requestBody)
 		if err != nil {
 			return "", fmt.Errorf("failed to marshal request: %w", err)
 		}
-		
+
 		// Create request
 		req, err := http.NewRequestWithContext(ctx, "POST", "https://openrouter.ai/api/v1/chat/completions", bytes.NewBuffer(jsonBody))
 		if err != nil {
 			return "", fmt.Errorf("failed to create request: %w", err)
 		}
-		
+
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+s.config.OpenRouterAPIKey)
 		req.Header.Set("HTTP-Referer", "https://ffprobe-api.local")
 		req.Header.Set("X-Title", "FFprobe API")
-		
+
 		// Send request
 		resp, err := s.httpClient.Do(req)
 		if err != nil {
 			return "", fmt.Errorf("failed to send request: %w", err)
 		}
 		defer resp.Body.Close()
-		
+
 		if resp.StatusCode != http.StatusOK {
 			return "", fmt.Errorf("OpenRouter API returned status %d", resp.StatusCode)
 		}
-		
+
 		// Parse response
 		var response struct {
 			Choices []struct {
@@ -335,19 +335,19 @@ func (s *LLMService) generateWithOpenRouter(ctx context.Context, prompt string) 
 				Message string `json:"message"`
 			} `json:"error"`
 		}
-		
+
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 			return "", fmt.Errorf("failed to decode response: %w", err)
 		}
-		
+
 		if response.Error.Message != "" {
 			return "", fmt.Errorf("OpenRouter API error: %s", response.Error.Message)
 		}
-		
+
 		if len(response.Choices) == 0 {
 			return "", fmt.Errorf("no response from OpenRouter API")
 		}
-		
+
 		return strings.TrimSpace(response.Choices[0].Message.Content), nil
 	})
 
@@ -370,7 +370,7 @@ func (s *LLMService) generateWithOpenRouter(ctx context.Context, prompt string) 
 // buildAnalysisPrompt creates a prompt for general media analysis
 func (s *LLMService) buildAnalysisPrompt(analysis *models.Analysis) string {
 	var prompt strings.Builder
-	
+
 	prompt.WriteString("You are a senior video engineer and media processing expert working in a studio-quality post-production environment.\n\n")
 	prompt.WriteString("Analyze the following FFprobe JSON output and provide a highly detailed and professional summary report.\n\n")
 	prompt.WriteString("Break your response into the following structured sections:\n\n")
@@ -441,52 +441,52 @@ func (s *LLMService) buildAnalysisPrompt(analysis *models.Analysis) string {
 	prompt.WriteString("- Add 1-line justification per tag\n\n")
 	prompt.WriteString("---\n\n")
 	prompt.WriteString("JSON will be provided next. Parse all values and reason holistically. Be precise, professional, and use terms common in studios, broadcasting, and OTT.\n\n")
-	
+
 	prompt.WriteString(fmt.Sprintf("File: %s\n", analysis.FileName))
 	prompt.WriteString(fmt.Sprintf("Size: %d bytes\n", analysis.FileSize))
 	prompt.WriteString(fmt.Sprintf("Source: %s\n\n", analysis.SourceType))
-	
-	// Add ffprobe data if available  
+
+	// Add ffprobe data if available
 	if len(analysis.FFprobeData.Format) > 0 || len(analysis.FFprobeData.Streams) > 0 {
 		prompt.WriteString("Technical Data:\n")
 		jsonData, _ := json.MarshalIndent(analysis.FFprobeData, "", "  ")
 		prompt.Write(jsonData)
 		prompt.WriteString("\n\n")
 	}
-	
+
 	prompt.WriteString("Be comprehensive and professional. Use industry-standard terminology.")
-	
+
 	return prompt.String()
 }
 
 // buildQAPrompt creates a prompt for Q&A about media file
 func (s *LLMService) buildQAPrompt(analysis *models.Analysis, question string) string {
 	var prompt strings.Builder
-	
+
 	prompt.WriteString("You are an expert media analyst. Answer the following question about this media file.\n\n")
-	
+
 	prompt.WriteString(fmt.Sprintf("File: %s\n", analysis.FileName))
 	prompt.WriteString(fmt.Sprintf("Size: %d bytes\n", analysis.FileSize))
 	prompt.WriteString(fmt.Sprintf("Source: %s\n\n", analysis.SourceType))
-	
-	// Add ffprobe data if available  
+
+	// Add ffprobe data if available
 	if len(analysis.FFprobeData.Format) > 0 || len(analysis.FFprobeData.Streams) > 0 {
 		prompt.WriteString("Technical Data:\n")
 		jsonData, _ := json.MarshalIndent(analysis.FFprobeData, "", "  ")
 		prompt.Write(jsonData)
 		prompt.WriteString("\n\n")
 	}
-	
+
 	prompt.WriteString(fmt.Sprintf("Question: %s\n\n", question))
 	prompt.WriteString("Please provide a helpful, accurate answer based on the technical data above.")
-	
+
 	return prompt.String()
 }
 
 // GenerateQualityInsights generates insights about video quality metrics
 func (s *LLMService) GenerateQualityInsights(ctx context.Context, analysis *models.Analysis, metrics []models.QualityMetrics) (string, error) {
 	prompt := s.buildQualityInsightsPrompt(analysis, metrics)
-	
+
 	// Try local LLM first, then fallback to OpenRouter
 	response, err := s.generateWithLocalLLM(ctx, prompt)
 	if err != nil {
@@ -496,7 +496,7 @@ func (s *LLMService) GenerateQualityInsights(ctx context.Context, analysis *mode
 			return "", fmt.Errorf("both local and remote LLM failed: %w", err)
 		}
 	}
-	
+
 	return response, nil
 }
 
@@ -511,35 +511,35 @@ func (s *LLMService) GenerateResponse(ctx context.Context, prompt string) (strin
 			return "", fmt.Errorf("both local and remote LLM failed: %w", err)
 		}
 	}
-	
+
 	return response, nil
 }
 
 // buildQualityInsightsPrompt creates a prompt for quality metrics analysis
 func (s *LLMService) buildQualityInsightsPrompt(analysis *models.Analysis, metrics []models.QualityMetrics) string {
 	var prompt strings.Builder
-	
+
 	prompt.WriteString("You are an expert video quality analyst. Analyze the following quality metrics and provide insights.\n\n")
 	prompt.WriteString("Focus on:\n")
 	prompt.WriteString("- Overall quality assessment\n")
 	prompt.WriteString("- Comparison to industry standards\n")
 	prompt.WriteString("- Recommendations for improvement\n")
 	prompt.WriteString("- Suitability for different use cases\n\n")
-	
+
 	prompt.WriteString(fmt.Sprintf("File: %s\n\n", analysis.FileName))
-	
+
 	prompt.WriteString("Quality Metrics:\n")
 	for _, metric := range metrics {
-		prompt.WriteString(fmt.Sprintf("- %s: Overall=%.2f, Min=%.2f, Max=%.2f, Mean=%.2f\n", 
-			metric.MetricType, 
-			metric.OverallScore, 
-			metric.MinScore, 
-			metric.MaxScore, 
+		prompt.WriteString(fmt.Sprintf("- %s: Overall=%.2f, Min=%.2f, Max=%.2f, Mean=%.2f\n",
+			metric.MetricType,
+			metric.OverallScore,
+			metric.MinScore,
+			metric.MaxScore,
 			metric.MeanScore))
 	}
-	
+
 	prompt.WriteString("\nPlease provide practical insights and recommendations based on these quality metrics.")
-	
+
 	return prompt.String()
 }
 
@@ -617,7 +617,7 @@ func (s *LLMService) CheckOllamaHealth(ctx context.Context) (*OllamaHealthStatus
 			}
 		}
 	}
-	
+
 	// Check fallback model availability
 	if s.config.OllamaFallbackModel != "" {
 		status.FallbackModel = s.config.OllamaFallbackModel

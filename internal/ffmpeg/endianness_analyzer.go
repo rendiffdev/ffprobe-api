@@ -27,29 +27,29 @@ func NewEndiannessAnalyzer(logger zerolog.Logger) *EndiannessAnalyzer {
 
 // EndiannessAnalysis contains comprehensive endianness analysis
 type EndiannessAnalysis struct {
-	ContainerEndianness    string                     `json:"container_endianness"`
-	AudioStreamEndianness  map[int]*AudioEndianness   `json:"audio_stream_endianness,omitempty"`
-	VideoStreamEndianness  map[int]*VideoEndianness   `json:"video_stream_endianness,omitempty"`
-	RawDataEndianness      *RawDataEndianness         `json:"raw_data_endianness,omitempty"`
-	FileHeaderAnalysis     *FileHeaderAnalysis        `json:"file_header_analysis,omitempty"`
-	ByteOrderMarks         []ByteOrderMark            `json:"byte_order_marks,omitempty"`
-	EndiannessValidation   *EndiannessValidation      `json:"endianness_validation,omitempty"`
-	PlatformCompatibility  *PlatformCompatibility     `json:"platform_compatibility,omitempty"`
+	ContainerEndianness   string                   `json:"container_endianness"`
+	AudioStreamEndianness map[int]*AudioEndianness `json:"audio_stream_endianness,omitempty"`
+	VideoStreamEndianness map[int]*VideoEndianness `json:"video_stream_endianness,omitempty"`
+	RawDataEndianness     *RawDataEndianness       `json:"raw_data_endianness,omitempty"`
+	FileHeaderAnalysis    *FileHeaderAnalysis      `json:"file_header_analysis,omitempty"`
+	ByteOrderMarks        []ByteOrderMark          `json:"byte_order_marks,omitempty"`
+	EndiannessValidation  *EndiannessValidation    `json:"endianness_validation,omitempty"`
+	PlatformCompatibility *PlatformCompatibility   `json:"platform_compatibility,omitempty"`
 }
 
 // AudioEndianness contains audio-specific endianness information
 type AudioEndianness struct {
-	StreamIndex      int                 `json:"stream_index"`
-	SampleFormat     string              `json:"sample_format"`
-	DetectedEndian   string              `json:"detected_endian"`    // "little", "big", "unknown"
-	ByteOrder        string              `json:"byte_order"`         // "LE", "BE"
-	BitsPerSample    int                 `json:"bits_per_sample"`
-	IsPacked         bool                `json:"is_packed"`
-	IsPlanar         bool                `json:"is_planar"`
-	RequiresSwapping bool                `json:"requires_swapping"`
-	ConfidenceLevel  float64             `json:"confidence_level"`
-	DetectionMethod  string              `json:"detection_method"`
-	Issues           []string            `json:"issues,omitempty"`
+	StreamIndex      int      `json:"stream_index"`
+	SampleFormat     string   `json:"sample_format"`
+	DetectedEndian   string   `json:"detected_endian"` // "little", "big", "unknown"
+	ByteOrder        string   `json:"byte_order"`      // "LE", "BE"
+	BitsPerSample    int      `json:"bits_per_sample"`
+	IsPacked         bool     `json:"is_packed"`
+	IsPlanar         bool     `json:"is_planar"`
+	RequiresSwapping bool     `json:"requires_swapping"`
+	ConfidenceLevel  float64  `json:"confidence_level"`
+	DetectionMethod  string   `json:"detection_method"`
+	Issues           []string `json:"issues,omitempty"`
 }
 
 // VideoEndianness contains video-specific endianness information
@@ -68,29 +68,29 @@ type VideoEndianness struct {
 
 // RawDataEndianness contains raw binary data endianness analysis
 type RawDataEndianness struct {
-	FileSignature       string      `json:"file_signature"`
-	MagicNumbers        []MagicNumber `json:"magic_numbers,omitempty"`
-	DetectedEndian      string      `json:"detected_endian"`
-	SampleAnalysis      []SampleData `json:"sample_analysis,omitempty"`
+	FileSignature       string                 `json:"file_signature"`
+	MagicNumbers        []MagicNumber          `json:"magic_numbers,omitempty"`
+	DetectedEndian      string                 `json:"detected_endian"`
+	SampleAnalysis      []SampleData           `json:"sample_analysis,omitempty"`
 	StatisticalAnalysis *StatisticalEndianness `json:"statistical_analysis,omitempty"`
-	ConfidenceLevel     float64     `json:"confidence_level"`
+	ConfidenceLevel     float64                `json:"confidence_level"`
 }
 
 // FileHeaderAnalysis contains file header-based endianness detection
 type FileHeaderAnalysis struct {
-	FileFormat       string        `json:"file_format"`
-	HeaderEndianness string        `json:"header_endianness"`
-	BOMs             []ByteOrderMark `json:"boms,omitempty"`
+	FileFormat       string                 `json:"file_format"`
+	HeaderEndianness string                 `json:"header_endianness"`
+	BOMs             []ByteOrderMark        `json:"boms,omitempty"`
 	FormatSpecific   map[string]interface{} `json:"format_specific,omitempty"`
-	IsConsistent     bool          `json:"is_consistent"`
-	Issues           []string      `json:"issues,omitempty"`
+	IsConsistent     bool                   `json:"is_consistent"`
+	Issues           []string               `json:"issues,omitempty"`
 }
 
 // ByteOrderMark represents detected byte order marks
 type ByteOrderMark struct {
 	Offset      int64   `json:"offset"`
 	Pattern     string  `json:"pattern"`
-	Type        string  `json:"type"`        // "BOM", "magic_number", "signature"
+	Type        string  `json:"type"` // "BOM", "magic_number", "signature"
 	Endianness  string  `json:"endianness"`
 	Description string  `json:"description"`
 	Confidence  float64 `json:"confidence"`
@@ -107,56 +107,56 @@ type MagicNumber struct {
 
 // SampleData represents sample binary data analysis
 type SampleData struct {
-	Offset            int64   `json:"offset"`
-	DataLength        int     `json:"data_length"`
-	LittleEndianProb  float64 `json:"little_endian_probability"`
-	BigEndianProb     float64 `json:"big_endian_probability"`
-	DetectedPattern   string  `json:"detected_pattern"`
-	AnalysisMethod    string  `json:"analysis_method"`
+	Offset           int64   `json:"offset"`
+	DataLength       int     `json:"data_length"`
+	LittleEndianProb float64 `json:"little_endian_probability"`
+	BigEndianProb    float64 `json:"big_endian_probability"`
+	DetectedPattern  string  `json:"detected_pattern"`
+	AnalysisMethod   string  `json:"analysis_method"`
 }
 
 // StatisticalEndianness contains statistical analysis of byte patterns
 type StatisticalEndianness struct {
-	ByteFrequency      map[string]int `json:"byte_frequency"`
-	SequencePatterns   []string       `json:"sequence_patterns,omitempty"`
-	EntropyAnalysis    float64        `json:"entropy_analysis"`
-	LittleEndianScore  float64        `json:"little_endian_score"`
-	BigEndianScore     float64        `json:"big_endian_score"`
-	NeutralScore       float64        `json:"neutral_score"`
+	ByteFrequency     map[string]int `json:"byte_frequency"`
+	SequencePatterns  []string       `json:"sequence_patterns,omitempty"`
+	EntropyAnalysis   float64        `json:"entropy_analysis"`
+	LittleEndianScore float64        `json:"little_endian_score"`
+	BigEndianScore    float64        `json:"big_endian_score"`
+	NeutralScore      float64        `json:"neutral_score"`
 }
 
 // EndiannessValidation contains validation results
 type EndiannessValidation struct {
-	IsConsistent         bool     `json:"is_consistent"`
-	HasConflicts         bool     `json:"has_conflicts"`
-	ConflictingStreams   []int    `json:"conflicting_streams,omitempty"`
-	Issues               []string `json:"issues,omitempty"`
-	Warnings             []string `json:"warnings,omitempty"`
-	Recommendations      []string `json:"recommendations,omitempty"`
-	OverallConfidence    float64  `json:"overall_confidence"`
+	IsConsistent       bool     `json:"is_consistent"`
+	HasConflicts       bool     `json:"has_conflicts"`
+	ConflictingStreams []int    `json:"conflicting_streams,omitempty"`
+	Issues             []string `json:"issues,omitempty"`
+	Warnings           []string `json:"warnings,omitempty"`
+	Recommendations    []string `json:"recommendations,omitempty"`
+	OverallConfidence  float64  `json:"overall_confidence"`
 }
 
 // PlatformCompatibility contains platform-specific compatibility information
 type PlatformCompatibility struct {
-	IntelCompatible  bool     `json:"intel_compatible"`     // x86/x64 (little endian)
-	ARMCompatible    bool     `json:"arm_compatible"`       // ARM (can be both)
-	PowerPCCompatible bool    `json:"powerpc_compatible"`   // PowerPC (big endian)
-	SPARCCompatible  bool     `json:"sparc_compatible"`     // SPARC (big endian)
-	MIPSCompatible   bool     `json:"mips_compatible"`      // MIPS (can be both)
-	Issues           []string `json:"issues,omitempty"`
-	Recommendations  []string `json:"recommendations,omitempty"`
+	IntelCompatible   bool     `json:"intel_compatible"`   // x86/x64 (little endian)
+	ARMCompatible     bool     `json:"arm_compatible"`     // ARM (can be both)
+	PowerPCCompatible bool     `json:"powerpc_compatible"` // PowerPC (big endian)
+	SPARCCompatible   bool     `json:"sparc_compatible"`   // SPARC (big endian)
+	MIPSCompatible    bool     `json:"mips_compatible"`    // MIPS (can be both)
+	Issues            []string `json:"issues,omitempty"`
+	Recommendations   []string `json:"recommendations,omitempty"`
 }
 
 // Known file signatures and their endianness
 var fileSignatures = map[string]string{
-	"ftyp":     "big",    // MP4 file type box (big endian)
-	"RIFF":     "little", // RIFF header (little endian)
-	"RIFX":     "big",    // RIFF big endian variant
-	"FORM":     "big",    // IFF FORM (big endian)
-	"\x1A\x45\xDF\xA3": "little", // Matroska/WebM EBML header
-	"OggS":     "little", // Ogg header (little endian)
-	"\xFF\xFB": "variable", // MP3 frame header (no inherent endianness)
-	"\xFF\xFA": "variable", // MP3 frame header (no inherent endianness)
+	"ftyp":             "big",      // MP4 file type box (big endian)
+	"RIFF":             "little",   // RIFF header (little endian)
+	"RIFX":             "big",      // RIFF big endian variant
+	"FORM":             "big",      // IFF FORM (big endian)
+	"\x1A\x45\xDF\xA3": "little",   // Matroska/WebM EBML header
+	"OggS":             "little",   // Ogg header (little endian)
+	"\xFF\xFB":         "variable", // MP3 frame header (no inherent endianness)
+	"\xFF\xFA":         "variable", // MP3 frame header (no inherent endianness)
 }
 
 // Known magic numbers and their endianness implications
@@ -174,7 +174,7 @@ var magicNumbers = map[string]MagicNumber{
 var sampleFormatEndianness = map[string]string{
 	"s16le": "little",
 	"s16be": "big",
-	"s24le": "little", 
+	"s24le": "little",
 	"s24be": "big",
 	"s32le": "little",
 	"s32be": "big",
@@ -186,16 +186,16 @@ var sampleFormatEndianness = map[string]string{
 
 // Pixel format endianness indicators
 var pixelFormatEndianness = map[string]string{
-	"rgb565le":  "little",
-	"rgb565be":  "big",
-	"bgr565le":  "little",
-	"bgr565be":  "big",
-	"rgb555le":  "little",
-	"rgb555be":  "big",
-	"bgr555le":  "little",
-	"bgr555be":  "big",
-	"gray16le":  "little",
-	"gray16be":  "big",
+	"rgb565le":    "little",
+	"rgb565be":    "big",
+	"bgr565le":    "little",
+	"bgr565be":    "big",
+	"rgb555le":    "little",
+	"rgb555be":    "big",
+	"bgr555le":    "little",
+	"bgr555be":    "big",
+	"gray16le":    "little",
+	"gray16be":    "big",
 	"yuv420p16le": "little",
 	"yuv420p16be": "big",
 	"yuv422p16le": "little",
@@ -267,7 +267,7 @@ func (ea *EndiannessAnalyzer) analyzeFileHeader(filePath string, analysis *Endia
 
 	// Detect file format from header
 	headerAnalysis.FileFormat = ea.detectFileFormat(headerData)
-	
+
 	// Analyze format-specific endianness
 	switch headerAnalysis.FileFormat {
 	case "MP4":
@@ -353,7 +353,7 @@ func (ea *EndiannessAnalyzer) analyzeAudioStreamEndianness(stream StreamInfo) *A
 	return audioEndian
 }
 
-// analyzeVideoStreamEndianness analyzes video stream endianness  
+// analyzeVideoStreamEndianness analyzes video stream endianness
 func (ea *EndiannessAnalyzer) analyzeVideoStreamEndianness(stream StreamInfo) *VideoEndianness {
 	videoEndian := &VideoEndianness{
 		StreamIndex:     stream.Index,
@@ -421,11 +421,11 @@ func (ea *EndiannessAnalyzer) analyzeRawBinaryData(filePath string, analysis *En
 
 	// Take samples from beginning, middle, and end of file
 	offsets := []int64{
-		0,                           // Beginning
-		fileSize / 4,                // 25%
-		fileSize / 2,                // Middle
-		fileSize * 3 / 4,            // 75%
-		fileSize - sampleSize,       // End
+		0,                     // Beginning
+		fileSize / 4,          // 25%
+		fileSize / 2,          // Middle
+		fileSize * 3 / 4,      // 75%
+		fileSize - sampleSize, // End
 	}
 
 	var allData []byte
@@ -507,8 +507,8 @@ func (ea *EndiannessAnalyzer) detectByteOrderMarks(filePath string, analysis *En
 
 	// Search for UTF BOMs
 	utfBOMs := map[string]ByteOrderMark{
-		"\xFF\xFE":     {0, "FFFE", "utf16_le_bom", "little", "UTF-16 Little Endian BOM", 1.0},
-		"\xFE\xFF":     {0, "FEFF", "utf16_be_bom", "big", "UTF-16 Big Endian BOM", 1.0},
+		"\xFF\xFE":         {0, "FFFE", "utf16_le_bom", "little", "UTF-16 Little Endian BOM", 1.0},
+		"\xFE\xFF":         {0, "FEFF", "utf16_be_bom", "big", "UTF-16 Big Endian BOM", 1.0},
 		"\xFF\xFE\x00\x00": {0, "FFFE0000", "utf32_le_bom", "little", "UTF-32 Little Endian BOM", 1.0},
 		"\x00\x00\xFE\xFF": {0, "0000FEFF", "utf32_be_bom", "big", "UTF-32 Big Endian BOM", 1.0},
 	}
@@ -525,7 +525,7 @@ func (ea *EndiannessAnalyzer) detectByteOrderMarks(filePath string, analysis *En
 // determineContainerEndianness determines overall container endianness
 func (ea *EndiannessAnalyzer) determineContainerEndianness(format *FormatInfo, analysis *EndiannessAnalysis) {
 	// Priority: File header > Magic numbers > Stream analysis
-	
+
 	if analysis.FileHeaderAnalysis != nil && analysis.FileHeaderAnalysis.HeaderEndianness != "unknown" {
 		analysis.ContainerEndianness = analysis.FileHeaderAnalysis.HeaderEndianness
 		return
@@ -559,18 +559,18 @@ func (ea *EndiannessAnalyzer) determineContainerEndianness(format *FormatInfo, a
 // validateEndianness validates endianness consistency across streams
 func (ea *EndiannessAnalyzer) validateEndianness(analysis *EndiannessAnalysis) *EndiannessValidation {
 	validation := &EndiannessValidation{
-		IsConsistent:      true,
-		HasConflicts:      false,
+		IsConsistent:       true,
+		HasConflicts:       false,
 		ConflictingStreams: []int{},
-		Issues:            []string{},
-		Warnings:          []string{},
-		Recommendations:   []string{},
-		OverallConfidence: 0.0,
+		Issues:             []string{},
+		Warnings:           []string{},
+		Recommendations:    []string{},
+		OverallConfidence:  0.0,
 	}
 
 	// Check consistency between container and streams
 	containerEndian := analysis.ContainerEndianness
-	
+
 	var totalConfidence float64
 	var confidenceCount int
 
@@ -580,8 +580,8 @@ func (ea *EndiannessAnalyzer) validateEndianness(analysis *EndiannessAnalysis) *
 			if containerEndian != "unknown" {
 				validation.HasConflicts = true
 				validation.ConflictingStreams = append(validation.ConflictingStreams, audioStream.StreamIndex)
-				validation.Issues = append(validation.Issues, 
-					fmt.Sprintf("Audio stream %d endianness (%s) conflicts with container (%s)", 
+				validation.Issues = append(validation.Issues,
+					fmt.Sprintf("Audio stream %d endianness (%s) conflicts with container (%s)",
 						audioStream.StreamIndex, audioStream.DetectedEndian, containerEndian))
 			}
 		}
@@ -591,13 +591,13 @@ func (ea *EndiannessAnalyzer) validateEndianness(analysis *EndiannessAnalysis) *
 
 	// Validate video streams
 	for _, videoStream := range analysis.VideoStreamEndianness {
-		if videoStream.DetectedEndian != "unknown" && videoStream.DetectedEndian != "neutral" && 
-		   videoStream.DetectedEndian != containerEndian {
+		if videoStream.DetectedEndian != "unknown" && videoStream.DetectedEndian != "neutral" &&
+			videoStream.DetectedEndian != containerEndian {
 			if containerEndian != "unknown" {
 				validation.HasConflicts = true
 				validation.ConflictingStreams = append(validation.ConflictingStreams, videoStream.StreamIndex)
-				validation.Issues = append(validation.Issues, 
-					fmt.Sprintf("Video stream %d endianness (%s) conflicts with container (%s)", 
+				validation.Issues = append(validation.Issues,
+					fmt.Sprintf("Video stream %d endianness (%s) conflicts with container (%s)",
 						videoStream.StreamIndex, videoStream.DetectedEndian, containerEndian))
 			}
 		}
@@ -613,14 +613,14 @@ func (ea *EndiannessAnalyzer) validateEndianness(analysis *EndiannessAnalysis) *
 	// Check if conflicts exist
 	if validation.HasConflicts {
 		validation.IsConsistent = false
-		validation.Recommendations = append(validation.Recommendations, 
+		validation.Recommendations = append(validation.Recommendations,
 			"Verify endianness consistency across all streams")
 	}
 
 	// Add general recommendations
 	if validation.OverallConfidence < 0.7 {
 		validation.Warnings = append(validation.Warnings, "Low confidence in endianness detection")
-		validation.Recommendations = append(validation.Recommendations, 
+		validation.Recommendations = append(validation.Recommendations,
 			"Consider using tools with deeper binary analysis capabilities")
 	}
 
@@ -714,7 +714,7 @@ func (ea *EndiannessAnalyzer) requiresByteSwapping(endianness string) bool {
 
 func (ea *EndiannessAnalyzer) determinePackingFormat(pixelFormat string) string {
 	pixFmt := strings.ToLower(pixelFormat)
-	
+
 	if strings.Contains(pixFmt, "packed") {
 		return "packed"
 	} else if strings.Contains(pixFmt, "planar") || strings.HasSuffix(pixFmt, "p") {
@@ -722,13 +722,13 @@ func (ea *EndiannessAnalyzer) determinePackingFormat(pixelFormat string) string 
 	} else if strings.Contains(pixFmt, "rgb") || strings.Contains(pixFmt, "bgr") {
 		return "interleaved"
 	}
-	
+
 	return "unknown"
 }
 
 func (ea *EndiannessAnalyzer) extractColorComponents(pixelFormat string) []string {
 	pixFmt := strings.ToLower(pixelFormat)
-	
+
 	if strings.Contains(pixFmt, "yuv") {
 		return []string{"Y", "U", "V"}
 	} else if strings.Contains(pixFmt, "rgb") {
@@ -738,15 +738,15 @@ func (ea *EndiannessAnalyzer) extractColorComponents(pixelFormat string) []strin
 	} else if strings.Contains(pixFmt, "gray") {
 		return []string{"Y"}
 	}
-	
+
 	return []string{"unknown"}
 }
 
 func (ea *EndiannessAnalyzer) analyzeSampleEndianness(data []byte, offset int64) SampleData {
 	sample := SampleData{
-		Offset:          offset,
-		DataLength:      len(data),
-		AnalysisMethod:  "statistical_analysis",
+		Offset:         offset,
+		DataLength:     len(data),
+		AnalysisMethod: "statistical_analysis",
 	}
 
 	if len(data) < 4 {
@@ -760,9 +760,9 @@ func (ea *EndiannessAnalyzer) analyzeSampleEndianness(data []byte, offset int64)
 	// Analyze 16-bit and 32-bit word patterns
 	for i := 0; i < len(data)-3; i += 4 {
 		// Read as little endian 32-bit
-		leVal := binary.LittleEndian.Uint32(data[i:i+4])
-		// Read as big endian 32-bit  
-		beVal := binary.BigEndian.Uint32(data[i:i+4])
+		leVal := binary.LittleEndian.Uint32(data[i : i+4])
+		// Read as big endian 32-bit
+		beVal := binary.BigEndian.Uint32(data[i : i+4])
 
 		// Score based on how "natural" the values look
 		littleEndianScore += ea.scoreNaturalness(leVal)
@@ -815,8 +815,8 @@ func (ea *EndiannessAnalyzer) performStatisticalAnalysis(data []byte) *Statistic
 	for i := 0; i < len(data)-3; i += 2 {
 		if i+3 < len(data) {
 			// Check 16-bit patterns
-			leVal := binary.LittleEndian.Uint16(data[i:i+2])
-			beVal := binary.BigEndian.Uint16(data[i:i+2])
+			leVal := binary.LittleEndian.Uint16(data[i : i+2])
+			beVal := binary.BigEndian.Uint16(data[i : i+2])
 
 			littleScore += ea.scoreNaturalness(uint32(leVal))
 			bigScore += ea.scoreNaturalness(uint32(beVal))
@@ -861,25 +861,25 @@ func (ea *EndiannessAnalyzer) calculateEntropy(data []byte) float64 {
 func (ea *EndiannessAnalyzer) scoreNaturalness(value uint32) float64 {
 	// Simple heuristic to score how "natural" a value looks
 	// Lower values and powers of 2 are more common in structured data
-	
+
 	if value == 0 {
 		return 1.0
 	}
-	
+
 	// Score based on magnitude (smaller values are more common)
 	magnitudeScore := 1.0 / (1.0 + float64(value)/1000000.0)
-	
+
 	// Score based on whether it's a power of 2 or common value
 	commonValueScore := 0.0
 	if value&(value-1) == 0 { // Power of 2
 		commonValueScore = 0.5
 	}
-	
+
 	// Check for common file format values
 	if value == 0x00000020 || value == 0x66747970 || value == 0x52494646 {
 		commonValueScore = 1.0
 	}
-	
+
 	return magnitudeScore + commonValueScore
 }
 

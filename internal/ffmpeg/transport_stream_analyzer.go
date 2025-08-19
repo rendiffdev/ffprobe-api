@@ -28,52 +28,52 @@ func NewTransportStreamAnalyzer(ffprobePath string, logger zerolog.Logger) *Tran
 
 // TransportStreamAnalysis contains comprehensive transport stream analysis
 type TransportStreamAnalysis struct {
-	IsTransportStream    bool                    `json:"is_transport_stream"`
-	Programs             []TSProgram             `json:"programs,omitempty"`
-	AudioPIDs            []AudioPID              `json:"audio_pids,omitempty"`
-	VideoPIDs            []VideoPID              `json:"video_pids,omitempty"`
-	DataPIDs             []DataPID               `json:"data_pids,omitempty"`
-	SystemPIDs           []SystemPID             `json:"system_pids,omitempty"`
-	PATInfo              *PATInfo                `json:"pat_info,omitempty"`
-	PMTInfo              []PMTInfo               `json:"pmt_info,omitempty"`
-	SDTInfo              *SDTInfo                `json:"sdt_info,omitempty"`
-	EITInfo              *EITInfo                `json:"eit_info,omitempty"`
-	PIDStatistics        *PIDStatistics          `json:"pid_statistics,omitempty"`
-	TransportValidation  *TransportValidation    `json:"transport_validation,omitempty"`
-	BroadcastCompliance  *TSBroadcastCompliance  `json:"broadcast_compliance,omitempty"`
+	IsTransportStream   bool                   `json:"is_transport_stream"`
+	Programs            []TSProgram            `json:"programs,omitempty"`
+	AudioPIDs           []AudioPID             `json:"audio_pids,omitempty"`
+	VideoPIDs           []VideoPID             `json:"video_pids,omitempty"`
+	DataPIDs            []DataPID              `json:"data_pids,omitempty"`
+	SystemPIDs          []SystemPID            `json:"system_pids,omitempty"`
+	PATInfo             *PATInfo               `json:"pat_info,omitempty"`
+	PMTInfo             []PMTInfo              `json:"pmt_info,omitempty"`
+	SDTInfo             *SDTInfo               `json:"sdt_info,omitempty"`
+	EITInfo             *EITInfo               `json:"eit_info,omitempty"`
+	PIDStatistics       *PIDStatistics         `json:"pid_statistics,omitempty"`
+	TransportValidation *TransportValidation   `json:"transport_validation,omitempty"`
+	BroadcastCompliance *TSBroadcastCompliance `json:"broadcast_compliance,omitempty"`
 }
 
 // TSProgram represents a transport stream program
 type TSProgram struct {
-	ProgramNumber    int                `json:"program_number"`
-	PMTPid           int                `json:"pmt_pid"`
-	PCRPid           int                `json:"pcr_pid"`
-	ServiceName      string             `json:"service_name,omitempty"`
-	ServiceProvider  string             `json:"service_provider,omitempty"`
-	ServiceType      int                `json:"service_type"`
-	ServiceTypeDesc  string             `json:"service_type_description"`
+	ProgramNumber     int                `json:"program_number"`
+	PMTPid            int                `json:"pmt_pid"`
+	PCRPid            int                `json:"pcr_pid"`
+	ServiceName       string             `json:"service_name,omitempty"`
+	ServiceProvider   string             `json:"service_provider,omitempty"`
+	ServiceType       int                `json:"service_type"`
+	ServiceTypeDesc   string             `json:"service_type_description"`
 	ElementaryStreams []ElementaryStream `json:"elementary_streams"`
-	IsEncrypted      bool               `json:"is_encrypted"`
-	CASystemID       int                `json:"ca_system_id,omitempty"`
+	IsEncrypted       bool               `json:"is_encrypted"`
+	CASystemID        int                `json:"ca_system_id,omitempty"`
 }
 
 // AudioPID represents an audio stream PID with detailed information
 type AudioPID struct {
-	PID              int      `json:"pid"`
-	StreamType       int      `json:"stream_type"`
-	StreamTypeDesc   string   `json:"stream_type_description"`
-	CodecName        string   `json:"codec_name"`
-	Language         string   `json:"language,omitempty"`
-	AudioType        string   `json:"audio_type,omitempty"`        // main, hearing_impaired, etc.
-	Channels         int      `json:"channels,omitempty"`
-	SampleRate       int      `json:"sample_rate,omitempty"`
-	BitRate          int      `json:"bit_rate,omitempty"`
-	ProgramNumber    int      `json:"program_number"`
-	PacketCount      int64    `json:"packet_count"`
-	ErrorCount       int64    `json:"error_count"`
-	DiscontinuityCount int64  `json:"discontinuity_count"`
-	IsValid          bool     `json:"is_valid"`
-	Issues           []string `json:"issues,omitempty"`
+	PID                int      `json:"pid"`
+	StreamType         int      `json:"stream_type"`
+	StreamTypeDesc     string   `json:"stream_type_description"`
+	CodecName          string   `json:"codec_name"`
+	Language           string   `json:"language,omitempty"`
+	AudioType          string   `json:"audio_type,omitempty"` // main, hearing_impaired, etc.
+	Channels           int      `json:"channels,omitempty"`
+	SampleRate         int      `json:"sample_rate,omitempty"`
+	BitRate            int      `json:"bit_rate,omitempty"`
+	ProgramNumber      int      `json:"program_number"`
+	PacketCount        int64    `json:"packet_count"`
+	ErrorCount         int64    `json:"error_count"`
+	DiscontinuityCount int64    `json:"discontinuity_count"`
+	IsValid            bool     `json:"is_valid"`
+	Issues             []string `json:"issues,omitempty"`
 }
 
 // VideoPID represents a video stream PID
@@ -100,7 +100,7 @@ type DataPID struct {
 	PID            int      `json:"pid"`
 	StreamType     int      `json:"stream_type"`
 	StreamTypeDesc string   `json:"stream_type_description"`
-	DataType       string   `json:"data_type"`              // subtitles, teletext, etc.
+	DataType       string   `json:"data_type"` // subtitles, teletext, etc.
 	Language       string   `json:"language,omitempty"`
 	ProgramNumber  int      `json:"program_number"`
 	PacketCount    int64    `json:"packet_count"`
@@ -112,7 +112,7 @@ type DataPID struct {
 // SystemPID represents system PIDs (PAT, PMT, NIT, etc.)
 type SystemPID struct {
 	PID         int      `json:"pid"`
-	Type        string   `json:"type"`        // PAT, PMT, NIT, SDT, EIT, etc.
+	Type        string   `json:"type"` // PAT, PMT, NIT, SDT, EIT, etc.
 	Description string   `json:"description"`
 	PacketCount int64    `json:"packet_count"`
 	ErrorCount  int64    `json:"error_count"`
@@ -122,11 +122,11 @@ type SystemPID struct {
 
 // ElementaryStream represents an elementary stream within a program
 type ElementaryStream struct {
-	PID          int                    `json:"pid"`
-	StreamType   int                    `json:"stream_type"`
-	StreamTypeDesc string               `json:"stream_type_description"`
-	Descriptors  []StreamDescriptor     `json:"descriptors,omitempty"`
-	IsEncrypted  bool                   `json:"is_encrypted"`
+	PID            int                `json:"pid"`
+	StreamType     int                `json:"stream_type"`
+	StreamTypeDesc string             `json:"stream_type_description"`
+	Descriptors    []StreamDescriptor `json:"descriptors,omitempty"`
+	IsEncrypted    bool               `json:"is_encrypted"`
 }
 
 // StreamDescriptor represents descriptors associated with elementary streams
@@ -138,13 +138,13 @@ type StreamDescriptor struct {
 
 // PATInfo represents Program Association Table information
 type PATInfo struct {
-	TableID         int       `json:"table_id"`
-	TransportStreamID int     `json:"transport_stream_id"`
-	VersionNumber   int       `json:"version_number"`
-	ProgramCount    int       `json:"program_count"`
-	Programs        []PATProgram `json:"programs"`
-	CRCValid        bool      `json:"crc_valid"`
-	Issues          []string  `json:"issues,omitempty"`
+	TableID           int          `json:"table_id"`
+	TransportStreamID int          `json:"transport_stream_id"`
+	VersionNumber     int          `json:"version_number"`
+	ProgramCount      int          `json:"program_count"`
+	Programs          []PATProgram `json:"programs"`
+	CRCValid          bool         `json:"crc_valid"`
+	Issues            []string     `json:"issues,omitempty"`
 }
 
 // PATProgram represents a program entry in the PAT
@@ -205,13 +205,13 @@ type EITEvent struct {
 
 // PIDStatistics contains statistical analysis of PID usage
 type PIDStatistics struct {
-	TotalPIDs        int                    `json:"total_pids"`
-	UsedPIDs         int                    `json:"used_pids"`
-	UnusedPIDs       int                    `json:"unused_pids"`
-	PIDUtilization   float64                `json:"pid_utilization_percent"`
-	PIDDistribution  map[string]int         `json:"pid_distribution"`     // stream_type -> count
-	PacketStatistics map[int]PacketStats    `json:"packet_statistics"`    // pid -> stats
-	BitRateAnalysis  map[int]float64        `json:"bit_rate_analysis"`    // pid -> bitrate
+	TotalPIDs        int                 `json:"total_pids"`
+	UsedPIDs         int                 `json:"used_pids"`
+	UnusedPIDs       int                 `json:"unused_pids"`
+	PIDUtilization   float64             `json:"pid_utilization_percent"`
+	PIDDistribution  map[string]int      `json:"pid_distribution"`  // stream_type -> count
+	PacketStatistics map[int]PacketStats `json:"packet_statistics"` // pid -> stats
+	BitRateAnalysis  map[int]float64     `json:"bit_rate_analysis"` // pid -> bitrate
 }
 
 // PacketStats contains packet-level statistics for a PID
@@ -226,27 +226,27 @@ type PacketStats struct {
 
 // TransportValidation contains transport stream validation results
 type TransportValidation struct {
-	IsValid              bool     `json:"is_valid"`
-	IsCompliant          bool     `json:"is_compliant"`
-	HasErrors            bool     `json:"has_errors"`
-	HasWarnings          bool     `json:"has_warnings"`
-	Errors               []string `json:"errors,omitempty"`
-	Warnings             []string `json:"warnings,omitempty"`
-	Recommendations      []string `json:"recommendations,omitempty"`
-	PATValid             bool     `json:"pat_valid"`
-	PMTValid             bool     `json:"pmt_valid"`
-	PCRContinuityValid   bool     `json:"pcr_continuity_valid"`
-	PIDContinuityValid   bool     `json:"pid_continuity_valid"`
+	IsValid            bool     `json:"is_valid"`
+	IsCompliant        bool     `json:"is_compliant"`
+	HasErrors          bool     `json:"has_errors"`
+	HasWarnings        bool     `json:"has_warnings"`
+	Errors             []string `json:"errors,omitempty"`
+	Warnings           []string `json:"warnings,omitempty"`
+	Recommendations    []string `json:"recommendations,omitempty"`
+	PATValid           bool     `json:"pat_valid"`
+	PMTValid           bool     `json:"pmt_valid"`
+	PCRContinuityValid bool     `json:"pcr_continuity_valid"`
+	PIDContinuityValid bool     `json:"pid_continuity_valid"`
 }
 
 // TSBroadcastCompliance contains broadcast standard compliance information
 type TSBroadcastCompliance struct {
-	DVBCompliant      bool     `json:"dvb_compliant"`
-	ATSCCompliant     bool     `json:"atsc_compliant"`
-	ISDBCompliant     bool     `json:"isdb_compliant"`
-	ISO138181Compliant bool    `json:"iso13818_1_compliant"`
-	ComplianceIssues  []string `json:"compliance_issues,omitempty"`
-	Standard          string   `json:"primary_standard,omitempty"`
+	DVBCompliant       bool     `json:"dvb_compliant"`
+	ATSCCompliant      bool     `json:"atsc_compliant"`
+	ISDBCompliant      bool     `json:"isdb_compliant"`
+	ISO138181Compliant bool     `json:"iso13818_1_compliant"`
+	ComplianceIssues   []string `json:"compliance_issues,omitempty"`
+	Standard           string   `json:"primary_standard,omitempty"`
 }
 
 // Stream type definitions
@@ -302,12 +302,12 @@ var streamTypeDefinitions = map[int]string{
 // AnalyzeTransportStream performs comprehensive transport stream analysis
 func (tsa *TransportStreamAnalyzer) AnalyzeTransportStream(ctx context.Context, filePath string, streams []StreamInfo, format *FormatInfo) (*TransportStreamAnalysis, error) {
 	analysis := &TransportStreamAnalysis{
-		Programs:    []TSProgram{},
-		AudioPIDs:   []AudioPID{},
-		VideoPIDs:   []VideoPID{},
-		DataPIDs:    []DataPID{},
-		SystemPIDs:  []SystemPID{},
-		PMTInfo:     []PMTInfo{},
+		Programs:   []TSProgram{},
+		AudioPIDs:  []AudioPID{},
+		VideoPIDs:  []VideoPID{},
+		DataPIDs:   []DataPID{},
+		SystemPIDs: []SystemPID{},
+		PMTInfo:    []PMTInfo{},
 	}
 
 	// Check if this is actually a transport stream
@@ -393,13 +393,13 @@ func (tsa *TransportStreamAnalyzer) extractProgramInfo(ctx context.Context, file
 
 	var result struct {
 		Programs []struct {
-			ProgramID   int `json:"program_id"`
-			ProgramNum  int `json:"program_num"`
-			NBStreams   int `json:"nb_streams"`
-			PMTPid      int `json:"pmt_pid"`
-			PCRPid      int `json:"pcr_pid"`
-			Tags        map[string]string `json:"tags"`
-			Streams     []struct {
+			ProgramID  int               `json:"program_id"`
+			ProgramNum int               `json:"program_num"`
+			NBStreams  int               `json:"nb_streams"`
+			PMTPid     int               `json:"pmt_pid"`
+			PCRPid     int               `json:"pcr_pid"`
+			Tags       map[string]string `json:"tags"`
+			Streams    []struct {
 				Index     int               `json:"index"`
 				CodecType string            `json:"codec_type"`
 				CodecName string            `json:"codec_name"`
@@ -416,8 +416,8 @@ func (tsa *TransportStreamAnalyzer) extractProgramInfo(ctx context.Context, file
 	for _, prog := range result.Programs {
 		program := TSProgram{
 			ProgramNumber:     prog.ProgramNum,
-			PMTPid:           prog.PMTPid,
-			PCRPid:           prog.PCRPid,
+			PMTPid:            prog.PMTPid,
+			PCRPid:            prog.PCRPid,
 			ElementaryStreams: []ElementaryStream{},
 		}
 
@@ -470,10 +470,10 @@ func (tsa *TransportStreamAnalyzer) analyzePAT(ctx context.Context, filePath str
 
 	// Parse PAT from output (simplified extraction)
 	patInfo := &PATInfo{
-		TableID:      0, // PAT table ID
-		Programs:     []PATProgram{},
-		CRCValid:     true,
-		Issues:       []string{},
+		TableID:  0, // PAT table ID
+		Programs: []PATProgram{},
+		CRCValid: true,
+		Issues:   []string{},
 	}
 
 	// Extract program information from existing analysis
@@ -534,14 +534,14 @@ func (tsa *TransportStreamAnalyzer) extractPIDInformation(ctx context.Context, f
 		switch strings.ToLower(stream.CodecType) {
 		case "audio":
 			audioPID := AudioPID{
-				PID:            pid,
-				StreamType:     tsa.getStreamTypeFromCodec(stream.CodecName),
-				CodecName:      stream.CodecName,
-				Channels:       stream.Channels,
-				PacketCount:    0, // Would need packet analysis
-				ErrorCount:     0,
-				IsValid:        true,
-				Issues:         []string{},
+				PID:         pid,
+				StreamType:  tsa.getStreamTypeFromCodec(stream.CodecName),
+				CodecName:   stream.CodecName,
+				Channels:    stream.Channels,
+				PacketCount: 0, // Would need packet analysis
+				ErrorCount:  0,
+				IsValid:     true,
+				Issues:      []string{},
 			}
 
 			if sampleRate, err := strconv.Atoi(stream.SampleRate); err == nil {
@@ -561,17 +561,17 @@ func (tsa *TransportStreamAnalyzer) extractPIDInformation(ctx context.Context, f
 
 		case "video":
 			videoPID := VideoPID{
-				PID:            pid,
-				StreamType:     tsa.getStreamTypeFromCodec(stream.CodecName),
-				CodecName:      stream.CodecName,
-				Width:          stream.Width,
-				Height:         stream.Height,
-				FrameRate:      stream.RFrameRate,
-				AspectRatio:    stream.DisplayAspectRatio,
-				PacketCount:    0,
-				ErrorCount:     0,
-				IsValid:        true,
-				Issues:         []string{},
+				PID:         pid,
+				StreamType:  tsa.getStreamTypeFromCodec(stream.CodecName),
+				CodecName:   stream.CodecName,
+				Width:       stream.Width,
+				Height:      stream.Height,
+				FrameRate:   stream.RFrameRate,
+				AspectRatio: stream.DisplayAspectRatio,
+				PacketCount: 0,
+				ErrorCount:  0,
+				IsValid:     true,
+				Issues:      []string{},
 			}
 
 			if bitRate, err := strconv.Atoi(stream.BitRate); err == nil {
@@ -583,13 +583,13 @@ func (tsa *TransportStreamAnalyzer) extractPIDInformation(ctx context.Context, f
 
 		case "subtitle", "data":
 			dataPID := DataPID{
-				PID:            pid,
-				StreamType:     tsa.getStreamTypeFromCodec(stream.CodecName),
-				DataType:       stream.CodecName,
-				PacketCount:    0,
-				ErrorCount:     0,
-				IsValid:        true,
-				Issues:         []string{},
+				PID:         pid,
+				StreamType:  tsa.getStreamTypeFromCodec(stream.CodecName),
+				DataType:    stream.CodecName,
+				PacketCount: 0,
+				ErrorCount:  0,
+				IsValid:     true,
+				Issues:      []string{},
 			}
 
 			if lang, ok := stream.Tags["language"]; ok {
@@ -645,18 +645,18 @@ func (tsa *TransportStreamAnalyzer) analyzePIDStatistics(ctx context.Context, fi
 	// Generate packet statistics (simplified - would need deeper packet analysis)
 	for _, audioPID := range analysis.AudioPIDs {
 		statistics.PacketStatistics[audioPID.PID] = PacketStats{
-			PacketCount:       audioPID.PacketCount,
-			ErrorCount:        audioPID.ErrorCount,
-			ErrorRate:         float64(audioPID.ErrorCount) / float64(audioPID.PacketCount) * 100.0,
+			PacketCount: audioPID.PacketCount,
+			ErrorCount:  audioPID.ErrorCount,
+			ErrorRate:   float64(audioPID.ErrorCount) / float64(audioPID.PacketCount) * 100.0,
 		}
 		statistics.BitRateAnalysis[audioPID.PID] = float64(audioPID.BitRate)
 	}
 
 	for _, videoPID := range analysis.VideoPIDs {
 		statistics.PacketStatistics[videoPID.PID] = PacketStats{
-			PacketCount:       videoPID.PacketCount,
-			ErrorCount:        videoPID.ErrorCount,
-			ErrorRate:         float64(videoPID.ErrorCount) / float64(videoPID.PacketCount) * 100.0,
+			PacketCount: videoPID.PacketCount,
+			ErrorCount:  videoPID.ErrorCount,
+			ErrorRate:   float64(videoPID.ErrorCount) / float64(videoPID.PacketCount) * 100.0,
 		}
 		statistics.BitRateAnalysis[videoPID.PID] = float64(videoPID.BitRate)
 	}
@@ -668,10 +668,10 @@ func (tsa *TransportStreamAnalyzer) analyzePIDStatistics(ctx context.Context, fi
 // analyzeSDT analyzes the Service Description Table
 func (tsa *TransportStreamAnalyzer) analyzeSDT(ctx context.Context, filePath string, analysis *TransportStreamAnalysis) error {
 	sdtInfo := &SDTInfo{
-		TableID:   0x42, // SDT table ID
-		Services:  []SDTService{},
-		CRCValid:  true,
-		Issues:    []string{},
+		TableID:  0x42, // SDT table ID
+		Services: []SDTService{},
+		CRCValid: true,
+		Issues:   []string{},
 	}
 
 	// Extract service information from programs
@@ -760,25 +760,25 @@ func (tsa *TransportStreamAnalyzer) validateTransportStream(analysis *TransportS
 // checkBroadcastCompliance validates against broadcast standards
 func (tsa *TransportStreamAnalyzer) checkBroadcastCompliance(analysis *TransportStreamAnalysis) *TSBroadcastCompliance {
 	compliance := &TSBroadcastCompliance{
-		DVBCompliant:      true,
-		ATSCCompliant:     true,
-		ISDBCompliant:     true,
+		DVBCompliant:       true,
+		ATSCCompliant:      true,
+		ISDBCompliant:      true,
 		ISO138181Compliant: true,
-		ComplianceIssues:  []string{},
-		Standard:          "ISO 13818-1",
+		ComplianceIssues:   []string{},
+		Standard:           "ISO 13818-1",
 	}
 
 	// Check for non-standard stream types
 	for _, audioPID := range analysis.AudioPIDs {
 		if !tsa.isStandardStreamType(audioPID.StreamType) {
-			compliance.ComplianceIssues = append(compliance.ComplianceIssues, 
+			compliance.ComplianceIssues = append(compliance.ComplianceIssues,
 				fmt.Sprintf("Non-standard audio stream type: 0x%02X", audioPID.StreamType))
 		}
 	}
 
 	for _, videoPID := range analysis.VideoPIDs {
 		if !tsa.isStandardStreamType(videoPID.StreamType) {
-			compliance.ComplianceIssues = append(compliance.ComplianceIssues, 
+			compliance.ComplianceIssues = append(compliance.ComplianceIssues,
 				fmt.Sprintf("Non-standard video stream type: 0x%02X", videoPID.StreamType))
 		}
 	}
@@ -800,19 +800,19 @@ func (tsa *TransportStreamAnalyzer) checkBroadcastCompliance(analysis *Transport
 
 func (tsa *TransportStreamAnalyzer) getStreamTypeFromCodec(codecName string) int {
 	codecMap := map[string]int{
-		"mpeg1video":  0x01,
-		"mpeg2video":  0x02,
-		"mp1":         0x03,
-		"mp2":         0x04,
-		"mp3":         0x04,
-		"h264":        0x1B,
-		"h265":        0x24,
-		"hevc":        0x24,
-		"aac":         0x0F,
-		"ac3":         0x81,
-		"eac3":        0x87,
+		"mpeg1video":   0x01,
+		"mpeg2video":   0x02,
+		"mp1":          0x03,
+		"mp2":          0x04,
+		"mp3":          0x04,
+		"h264":         0x1B,
+		"h265":         0x24,
+		"hevc":         0x24,
+		"aac":          0x0F,
+		"ac3":          0x81,
+		"eac3":         0x87,
 		"dvb_subtitle": 0x06,
-		"teletext":    0x06,
+		"teletext":     0x06,
 	}
 
 	if streamType, exists := codecMap[strings.ToLower(codecName)]; exists {
@@ -828,7 +828,7 @@ func (tsa *TransportStreamAnalyzer) isStandardStreamType(streamType int) bool {
 
 func (tsa *TransportStreamAnalyzer) hasATSCStreamTypes(analysis *TransportStreamAnalysis) bool {
 	atscTypes := []int{0x80, 0x81, 0x82, 0x87}
-	
+
 	for _, audioPID := range analysis.AudioPIDs {
 		for _, atscType := range atscTypes {
 			if audioPID.StreamType == atscType {
@@ -842,7 +842,7 @@ func (tsa *TransportStreamAnalyzer) hasATSCStreamTypes(analysis *TransportStream
 func (tsa *TransportStreamAnalyzer) hasDVBStreamTypes(analysis *TransportStreamAnalysis) bool {
 	// DVB typically uses standard MPEG stream types
 	dvbTypes := []int{0x02, 0x04, 0x06}
-	
+
 	for _, videoPID := range analysis.VideoPIDs {
 		for _, dvbType := range dvbTypes {
 			if videoPID.StreamType == dvbType {
@@ -856,11 +856,11 @@ func (tsa *TransportStreamAnalyzer) hasDVBStreamTypes(analysis *TransportStreamA
 func (tsa *TransportStreamAnalyzer) executeCommand(ctx context.Context, cmd []string) (string, error) {
 	execCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	
+
 	output, err := executeFFprobeCommand(execCtx, cmd)
 	if err != nil {
 		return "", err
 	}
-	
+
 	return string(output), nil
 }

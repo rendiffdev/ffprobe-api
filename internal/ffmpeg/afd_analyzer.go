@@ -39,11 +39,11 @@ type AFDAnalysis struct {
 // AFDInfo contains detailed AFD information
 type AFDInfo struct {
 	StreamIndex        int      `json:"stream_index"`
-	AFDValue           int      `json:"afd_value"`           // 4-bit AFD value (0-15)
-	AFDDescription     string   `json:"afd_description"`     // Human-readable description
-	AspectRatio        string   `json:"aspect_ratio"`        // "4:3", "16:9", etc.
-	PresentationMode   string   `json:"presentation_mode"`   // "letterbox", "center_cut", "full_frame", etc.
-	ProtectedArea      string   `json:"protected_area"`      // "14:9", "4:3", "16:9"
+	AFDValue           int      `json:"afd_value"`         // 4-bit AFD value (0-15)
+	AFDDescription     string   `json:"afd_description"`   // Human-readable description
+	AspectRatio        string   `json:"aspect_ratio"`      // "4:3", "16:9", etc.
+	PresentationMode   string   `json:"presentation_mode"` // "letterbox", "center_cut", "full_frame", etc.
+	ProtectedArea      string   `json:"protected_area"`    // "14:9", "4:3", "16:9"
 	FirstDetectedFrame int      `json:"first_detected_frame"`
 	LastDetectedFrame  int      `json:"last_detected_frame"`
 	Confidence         float64  `json:"confidence"`
@@ -74,22 +74,22 @@ type AspectRatioInfo struct {
 
 // AFDValidation contains AFD validation results
 type AFDValidation struct {
-	IsValid                bool     `json:"is_valid"`
-	IsConsistent           bool     `json:"is_consistent"`
-	HasValidTransitions    bool     `json:"has_valid_transitions"`
-	IsBroadcastCompliant   bool     `json:"is_broadcast_compliant"`
-	Issues                 []string `json:"issues,omitempty"`
-	Warnings               []string `json:"warnings,omitempty"`
-	Recommendations        []string `json:"recommendations,omitempty"`
+	IsValid              bool     `json:"is_valid"`
+	IsConsistent         bool     `json:"is_consistent"`
+	HasValidTransitions  bool     `json:"has_valid_transitions"`
+	IsBroadcastCompliant bool     `json:"is_broadcast_compliant"`
+	Issues               []string `json:"issues,omitempty"`
+	Warnings             []string `json:"warnings,omitempty"`
+	Recommendations      []string `json:"recommendations,omitempty"`
 }
 
 // BroadcastCompliance contains broadcast standard compliance information
 type BroadcastCompliance struct {
-	ATSC            bool `json:"atsc_compliant"`             // ATSC A/53 compliance
-	DVB             bool `json:"dvb_compliant"`              // DVB compliance
-	ARIB            bool `json:"arib_compliant"`             // ARIB compliance (Japan)
-	SMPTE           bool `json:"smpte_compliant"`            // SMPTE standards
-	RecommendedAFD  int  `json:"recommended_afd,omitempty"`  // Recommended AFD value
+	ATSC             bool     `json:"atsc_compliant"`            // ATSC A/53 compliance
+	DVB              bool     `json:"dvb_compliant"`             // DVB compliance
+	ARIB             bool     `json:"arib_compliant"`            // ARIB compliance (Japan)
+	SMPTE            bool     `json:"smpte_compliant"`           // SMPTE standards
+	RecommendedAFD   int      `json:"recommended_afd,omitempty"` // Recommended AFD value
 	ComplianceIssues []string `json:"compliance_issues,omitempty"`
 }
 
@@ -473,7 +473,7 @@ func (aa *AFDAnalyzer) validateAFD(analysis *AFDAnalysis) *AFDValidation {
 	// Validate AFD changes
 	if len(analysis.AFDChanges) > 0 {
 		validation.Warnings = append(validation.Warnings, "AFD changes detected - verify intentional")
-		
+
 		// Check for rapid AFD changes
 		for i := 1; i < len(analysis.AFDChanges); i++ {
 			timeDiff := analysis.AFDChanges[i].Timestamp - analysis.AFDChanges[i-1].Timestamp
@@ -585,7 +585,7 @@ func (aa *AFDAnalyzer) categorizeAspectRatio(aspectRatio string) string {
 
 func (aa *AFDAnalyzer) containsAFDData(sideDataType string) bool {
 	afdTypes := []string{
-		"h264_sei", "h265_sei", "afd", "user_data", 
+		"h264_sei", "h265_sei", "afd", "user_data",
 		"cea_708", "atsc_a53", "bar_data",
 	}
 
@@ -674,7 +674,7 @@ func (aa *AFDAnalyzer) inferAFDFromAspectRatio(aspectRatio string) int {
 func (aa *AFDAnalyzer) isLetterboxed(cropW, cropH string) bool {
 	w, _ := strconv.Atoi(cropW)
 	h, _ := strconv.Atoi(cropH)
-	
+
 	if w > 0 && h > 0 {
 		ratio := float64(w) / float64(h)
 		// Letterboxed if significantly wider than 16:9
@@ -702,7 +702,7 @@ func (aa *AFDAnalyzer) isDVBCompliantAFD(afdValue int) bool {
 func (aa *AFDAnalyzer) getRecommendedAFD(aspectRatio string) int {
 	switch aspectRatio {
 	case "4:3":
-		return 8  // Full frame 4:3
+		return 8 // Full frame 4:3
 	case "16:9":
 		return 10 // Full frame 16:9
 	case "14:9":
@@ -715,11 +715,11 @@ func (aa *AFDAnalyzer) getRecommendedAFD(aspectRatio string) int {
 func (aa *AFDAnalyzer) executeCommand(ctx context.Context, cmd []string) (string, error) {
 	execCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	
+
 	output, err := executeFFprobeCommand(execCtx, cmd)
 	if err != nil {
 		return "", err
 	}
-	
+
 	return string(output), nil
 }

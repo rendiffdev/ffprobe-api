@@ -13,26 +13,26 @@ import (
 
 // GoroutineManager manages the lifecycle of goroutines in the application
 type GoroutineManager struct {
-	logger         zerolog.Logger
-	mu             sync.RWMutex
-	goroutines     map[string]*ManagedGoroutine
-	shutdown       chan struct{}
-	shutdownOnce   sync.Once
-	activeCount    int64
-	maxGoroutines  int
+	logger          zerolog.Logger
+	mu              sync.RWMutex
+	goroutines      map[string]*ManagedGoroutine
+	shutdown        chan struct{}
+	shutdownOnce    sync.Once
+	activeCount     int64
+	maxGoroutines   int
 	shutdownTimeout time.Duration
 }
 
 // ManagedGoroutine represents a managed goroutine
 type ManagedGoroutine struct {
-	ID          string
-	Name        string
-	StartTime   time.Time
-	Context     context.Context
-	Cancel      context.CancelFunc
-	Done        chan struct{}
-	Status      GoroutineStatus
-	mu          sync.RWMutex
+	ID        string
+	Name      string
+	StartTime time.Time
+	Context   context.Context
+	Cancel    context.CancelFunc
+	Done      chan struct{}
+	Status    GoroutineStatus
+	mu        sync.RWMutex
 }
 
 // GoroutineStatus represents the status of a goroutine
@@ -172,7 +172,7 @@ func (gm *GoroutineManager) StopAll() error {
 		gm.mu.RLock()
 		mg, exists := gm.goroutines[id]
 		gm.mu.RUnlock()
-		
+
 		if exists {
 			mg.mu.Lock()
 			mg.Status = StatusStopping
@@ -212,11 +212,11 @@ func (gm *GoroutineManager) GetStatus() map[string]interface{} {
 	defer gm.mu.RUnlock()
 
 	status := map[string]interface{}{
-		"total_goroutines":  len(gm.goroutines),
-		"active_count":      atomic.LoadInt64(&gm.activeCount),
-		"max_goroutines":    gm.maxGoroutines,
+		"total_goroutines":   len(gm.goroutines),
+		"active_count":       atomic.LoadInt64(&gm.activeCount),
+		"max_goroutines":     gm.maxGoroutines,
 		"runtime_goroutines": runtime.NumGoroutine(),
-		"goroutines":        make(map[string]interface{}),
+		"goroutines":         make(map[string]interface{}),
 	}
 
 	for id, mg := range gm.goroutines {
@@ -260,7 +260,7 @@ func (gm *GoroutineManager) runManagedGoroutine(mg *ManagedGoroutine, config Gor
 				Str("goroutine_name", mg.Name).
 				Interface("panic", r).
 				Msg("Managed goroutine panicked")
-			
+
 			if config.OnError != nil {
 				config.OnError(fmt.Errorf("panic in goroutine %s: %v", mg.Name, r))
 			}
@@ -302,7 +302,7 @@ func (gm *GoroutineManager) runManagedGoroutine(mg *ManagedGoroutine, config Gor
 			if err == nil {
 				// Success, reset retry count
 				retries = 0
-				
+
 				// If function returns without error, it completed successfully
 				gm.logger.Debug().
 					Str("goroutine_id", mg.ID).

@@ -26,204 +26,204 @@ func NewDeadPixelAnalyzer(ffprobePath string, logger zerolog.Logger) *DeadPixelA
 
 // DeadPixelAnalysis contains comprehensive dead pixel analysis
 type DeadPixelAnalysis struct {
-	HasDeadPixels           bool                    `json:"has_dead_pixels"`
-	HasStuckPixels          bool                    `json:"has_stuck_pixels"`
-	HasHotPixels            bool                    `json:"has_hot_pixels"`
-	DeadPixelCount          int                     `json:"dead_pixel_count"`
-	StuckPixelCount         int                     `json:"stuck_pixel_count"`
-	HotPixelCount           int                     `json:"hot_pixel_count"`
-	DeadPixelMap            []PixelDefect           `json:"dead_pixel_map,omitempty"`
-	StuckPixelMap           []PixelDefect           `json:"stuck_pixel_map,omitempty"`
-	HotPixelMap             []PixelDefect           `json:"hot_pixel_map,omitempty"`
-	TemporalAnalysis        *TemporalPixelAnalysis  `json:"temporal_analysis,omitempty"`
-	SpatialAnalysis         *SpatialPixelAnalysis   `json:"spatial_analysis,omitempty"`
-	PixelStatistics         *PixelStatistics        `json:"pixel_statistics,omitempty"`
-	QualityImpactAssessment *QualityImpact          `json:"quality_impact_assessment,omitempty"`
-	DetectionConfidence     float64                 `json:"detection_confidence"`      // 0-100
-	AnalysisMethod          string                  `json:"analysis_method"`
-	RecommendedActions      []string                `json:"recommended_actions,omitempty"`
+	HasDeadPixels           bool                   `json:"has_dead_pixels"`
+	HasStuckPixels          bool                   `json:"has_stuck_pixels"`
+	HasHotPixels            bool                   `json:"has_hot_pixels"`
+	DeadPixelCount          int                    `json:"dead_pixel_count"`
+	StuckPixelCount         int                    `json:"stuck_pixel_count"`
+	HotPixelCount           int                    `json:"hot_pixel_count"`
+	DeadPixelMap            []PixelDefect          `json:"dead_pixel_map,omitempty"`
+	StuckPixelMap           []PixelDefect          `json:"stuck_pixel_map,omitempty"`
+	HotPixelMap             []PixelDefect          `json:"hot_pixel_map,omitempty"`
+	TemporalAnalysis        *TemporalPixelAnalysis `json:"temporal_analysis,omitempty"`
+	SpatialAnalysis         *SpatialPixelAnalysis  `json:"spatial_analysis,omitempty"`
+	PixelStatistics         *PixelStatistics       `json:"pixel_statistics,omitempty"`
+	QualityImpactAssessment *QualityImpact         `json:"quality_impact_assessment,omitempty"`
+	DetectionConfidence     float64                `json:"detection_confidence"` // 0-100
+	AnalysisMethod          string                 `json:"analysis_method"`
+	RecommendedActions      []string               `json:"recommended_actions,omitempty"`
 }
 
 // PixelDefect represents a defective pixel
 type PixelDefect struct {
-	X                   int                 `json:"x"`
-	Y                   int                 `json:"y"`
-	DefectType          string              `json:"defect_type"`        // "dead", "stuck", "hot"
-	Color               string              `json:"color"`              // RGB values for stuck pixels
-	Intensity           float64             `json:"intensity"`          // 0-1 for brightness/severity
-	FirstDetectedFrame  int                 `json:"first_detected_frame"`
-	LastDetectedFrame   int                 `json:"last_detected_frame"`
-	FrameCount          int                 `json:"frame_count"`        // Number of frames where defect appears
-	Confidence          float64             `json:"confidence"`         // 0-1 detection confidence
-	SurroundingContext  *SurroundingContext `json:"surrounding_context,omitempty"`
-	TemporalBehavior    *TemporalBehavior   `json:"temporal_behavior,omitempty"`
-	Issues              []string            `json:"issues,omitempty"`
+	X                  int                 `json:"x"`
+	Y                  int                 `json:"y"`
+	DefectType         string              `json:"defect_type"` // "dead", "stuck", "hot"
+	Color              string              `json:"color"`       // RGB values for stuck pixels
+	Intensity          float64             `json:"intensity"`   // 0-1 for brightness/severity
+	FirstDetectedFrame int                 `json:"first_detected_frame"`
+	LastDetectedFrame  int                 `json:"last_detected_frame"`
+	FrameCount         int                 `json:"frame_count"` // Number of frames where defect appears
+	Confidence         float64             `json:"confidence"`  // 0-1 detection confidence
+	SurroundingContext *SurroundingContext `json:"surrounding_context,omitempty"`
+	TemporalBehavior   *TemporalBehavior   `json:"temporal_behavior,omitempty"`
+	Issues             []string            `json:"issues,omitempty"`
 }
 
 // SurroundingContext provides information about pixel neighborhood
 type SurroundingContext struct {
-	Neighborhood        [][]float64         `json:"neighborhood"`       // 3x3 or 5x5 surrounding pixels
-	ContextVariance     float64             `json:"context_variance"`   // Variance in surrounding area
-	EdgeDetection       bool                `json:"edge_detection"`     // Is this near an edge?
-	TextDetection       bool                `json:"text_detection"`     // Is this in a text region?
-	MotionDetection     bool                `json:"motion_detection"`   // Is there motion in this area?
+	Neighborhood    [][]float64 `json:"neighborhood"`     // 3x3 or 5x5 surrounding pixels
+	ContextVariance float64     `json:"context_variance"` // Variance in surrounding area
+	EdgeDetection   bool        `json:"edge_detection"`   // Is this near an edge?
+	TextDetection   bool        `json:"text_detection"`   // Is this in a text region?
+	MotionDetection bool        `json:"motion_detection"` // Is there motion in this area?
 }
 
 // TemporalBehavior describes how the pixel behaves over time
 type TemporalBehavior struct {
-	Persistence         string              `json:"persistence"`        // "permanent", "intermittent", "temporary"
-	VariationPattern    string              `json:"variation_pattern"`  // "constant", "flickering", "gradual_change"
-	IntensityVariation  float64             `json:"intensity_variation"`// Standard deviation of intensity over time
-	FrameConsistency    float64             `json:"frame_consistency"`  // 0-1, how consistent across frames
+	Persistence        string  `json:"persistence"`         // "permanent", "intermittent", "temporary"
+	VariationPattern   string  `json:"variation_pattern"`   // "constant", "flickering", "gradual_change"
+	IntensityVariation float64 `json:"intensity_variation"` // Standard deviation of intensity over time
+	FrameConsistency   float64 `json:"frame_consistency"`   // 0-1, how consistent across frames
 }
 
 // TemporalPixelAnalysis analyzes pixel behavior over time
 type TemporalPixelAnalysis struct {
-	FramesAnalyzed      int                 `json:"frames_analyzed"`
-	AnalysisWindowSize  int                 `json:"analysis_window_size"`
-	TemporalStability   float64             `json:"temporal_stability"`   // 0-1, higher = more stable
-	FlickerDetection    *FlickerAnalysis    `json:"flicker_detection,omitempty"`
-	MotionCompensation  bool                `json:"motion_compensation"`  // Whether motion compensation was used
-	SceneChangeHandling bool                `json:"scene_change_handling"`
-	Issues              []string            `json:"issues,omitempty"`
+	FramesAnalyzed      int              `json:"frames_analyzed"`
+	AnalysisWindowSize  int              `json:"analysis_window_size"`
+	TemporalStability   float64          `json:"temporal_stability"` // 0-1, higher = more stable
+	FlickerDetection    *FlickerAnalysis `json:"flicker_detection,omitempty"`
+	MotionCompensation  bool             `json:"motion_compensation"` // Whether motion compensation was used
+	SceneChangeHandling bool             `json:"scene_change_handling"`
+	Issues              []string         `json:"issues,omitempty"`
 }
 
 // SpatialPixelAnalysis analyzes spatial distribution of defects
 type SpatialPixelAnalysis struct {
-	DefectClusters      []DefectCluster     `json:"defect_clusters,omitempty"`
-	ClusterAnalysis     *ClusterAnalysis    `json:"cluster_analysis,omitempty"`
-	SpatialDistribution string              `json:"spatial_distribution"` // "uniform", "clustered", "edge-biased", "corner-biased"
-	HotspotRegions      []Region            `json:"hotspot_regions,omitempty"`
-	EdgeBias            float64             `json:"edge_bias"`             // 0-1, tendency to appear near edges
-	CornerBias          float64             `json:"corner_bias"`           // 0-1, tendency to appear in corners
-	CenterBias          float64             `json:"center_bias"`           // 0-1, tendency to appear in center
+	DefectClusters      []DefectCluster  `json:"defect_clusters,omitempty"`
+	ClusterAnalysis     *ClusterAnalysis `json:"cluster_analysis,omitempty"`
+	SpatialDistribution string           `json:"spatial_distribution"` // "uniform", "clustered", "edge-biased", "corner-biased"
+	HotspotRegions      []Region         `json:"hotspot_regions,omitempty"`
+	EdgeBias            float64          `json:"edge_bias"`   // 0-1, tendency to appear near edges
+	CornerBias          float64          `json:"corner_bias"` // 0-1, tendency to appear in corners
+	CenterBias          float64          `json:"center_bias"` // 0-1, tendency to appear in center
 }
 
 // FlickerAnalysis detects pixel flickering patterns
 type FlickerAnalysis struct {
-	HasFlicker          bool                `json:"has_flicker"`
-	FlickerFrequency    float64             `json:"flicker_frequency"`     // Hz
-	FlickerIntensity    float64             `json:"flicker_intensity"`     // 0-1
-	FlickerPattern      string              `json:"flicker_pattern"`       // "regular", "irregular", "burst"
-	FlickerPixels       []PixelLocation     `json:"flicker_pixels,omitempty"`
+	HasFlicker       bool            `json:"has_flicker"`
+	FlickerFrequency float64         `json:"flicker_frequency"` // Hz
+	FlickerIntensity float64         `json:"flicker_intensity"` // 0-1
+	FlickerPattern   string          `json:"flicker_pattern"`   // "regular", "irregular", "burst"
+	FlickerPixels    []PixelLocation `json:"flicker_pixels,omitempty"`
 }
 
 // DefectCluster represents a cluster of nearby defective pixels
 type DefectCluster struct {
-	ClusterID           int                 `json:"cluster_id"`
-	CenterX             float64             `json:"center_x"`
-	CenterY             float64             `json:"center_y"`
-	Radius              float64             `json:"radius"`
-	PixelCount          int                 `json:"pixel_count"`
-	DominantDefectType  string              `json:"dominant_defect_type"`
-	ClusterSeverity     float64             `json:"cluster_severity"`      // 0-1
-	DefectDensity       float64             `json:"defect_density"`        // pixels per unit area
+	ClusterID          int     `json:"cluster_id"`
+	CenterX            float64 `json:"center_x"`
+	CenterY            float64 `json:"center_y"`
+	Radius             float64 `json:"radius"`
+	PixelCount         int     `json:"pixel_count"`
+	DominantDefectType string  `json:"dominant_defect_type"`
+	ClusterSeverity    float64 `json:"cluster_severity"` // 0-1
+	DefectDensity      float64 `json:"defect_density"`   // pixels per unit area
 }
 
 // ClusterAnalysis provides statistical analysis of defect clusters
 type ClusterAnalysis struct {
-	TotalClusters       int                 `json:"total_clusters"`
-	LargestClusterSize  int                 `json:"largest_cluster_size"`
-	AverageClusterSize  float64             `json:"average_cluster_size"`
-	ClusterDistribution string              `json:"cluster_distribution"`  // "sparse", "moderate", "dense"
-	IsolatedDefects     int                 `json:"isolated_defects"`      // Defects not in clusters
+	TotalClusters       int     `json:"total_clusters"`
+	LargestClusterSize  int     `json:"largest_cluster_size"`
+	AverageClusterSize  float64 `json:"average_cluster_size"`
+	ClusterDistribution string  `json:"cluster_distribution"` // "sparse", "moderate", "dense"
+	IsolatedDefects     int     `json:"isolated_defects"`     // Defects not in clusters
 }
 
 // Region represents a rectangular region in the image
 type Region struct {
-	X                   int                 `json:"x"`
-	Y                   int                 `json:"y"`
-	Width               int                 `json:"width"`
-	Height              int                 `json:"height"`
-	DefectCount         int                 `json:"defect_count"`
-	DefectDensity       float64             `json:"defect_density"`
-	SeverityScore       float64             `json:"severity_score"`
+	X             int     `json:"x"`
+	Y             int     `json:"y"`
+	Width         int     `json:"width"`
+	Height        int     `json:"height"`
+	DefectCount   int     `json:"defect_count"`
+	DefectDensity float64 `json:"defect_density"`
+	SeverityScore float64 `json:"severity_score"`
 }
 
 // PixelLocation represents a pixel coordinate
 type PixelLocation struct {
-	X                   int                 `json:"x"`
-	Y                   int                 `json:"y"`
+	X int `json:"x"`
+	Y int `json:"y"`
 }
 
 // PixelStatistics provides statistical analysis of pixel defects
 type PixelStatistics struct {
-	TotalPixelsAnalyzed int64               `json:"total_pixels_analyzed"`
-	DefectivePixelRatio float64             `json:"defective_pixel_ratio"`   // 0-1
-	DefectDensity       float64             `json:"defect_density"`          // defects per megapixel
-	ColorChannelStats   *ColorChannelStats  `json:"color_channel_stats,omitempty"`
+	TotalPixelsAnalyzed   int64                  `json:"total_pixels_analyzed"`
+	DefectivePixelRatio   float64                `json:"defective_pixel_ratio"` // 0-1
+	DefectDensity         float64                `json:"defect_density"`        // defects per megapixel
+	ColorChannelStats     *ColorChannelStats     `json:"color_channel_stats,omitempty"`
 	IntensityDistribution *IntensityDistribution `json:"intensity_distribution,omitempty"`
-	SeverityHistogram   []int               `json:"severity_histogram,omitempty"`  // Distribution of severity levels
+	SeverityHistogram     []int                  `json:"severity_histogram,omitempty"` // Distribution of severity levels
 }
 
 // ColorChannelStats analyzes defects by color channel
 type ColorChannelStats struct {
-	RedChannelDefects   int                 `json:"red_channel_defects"`
-	GreenChannelDefects int                 `json:"green_channel_defects"`
-	BlueChannelDefects  int                 `json:"blue_channel_defects"`
-	ChrominanceDefects  int                 `json:"chrominance_defects"`
-	LuminanceDefects    int                 `json:"luminance_defects"`
-	ChannelBias         string              `json:"channel_bias"`            // Most affected channel
+	RedChannelDefects   int    `json:"red_channel_defects"`
+	GreenChannelDefects int    `json:"green_channel_defects"`
+	BlueChannelDefects  int    `json:"blue_channel_defects"`
+	ChrominanceDefects  int    `json:"chrominance_defects"`
+	LuminanceDefects    int    `json:"luminance_defects"`
+	ChannelBias         string `json:"channel_bias"` // Most affected channel
 }
 
 // IntensityDistribution analyzes the distribution of defect intensities
 type IntensityDistribution struct {
-	MinIntensity        float64             `json:"min_intensity"`
-	MaxIntensity        float64             `json:"max_intensity"`
-	MeanIntensity       float64             `json:"mean_intensity"`
-	MedianIntensity     float64             `json:"median_intensity"`
-	StdDeviation        float64             `json:"std_deviation"`
-	IntensityBins       []IntensityBin      `json:"intensity_bins,omitempty"`
+	MinIntensity    float64        `json:"min_intensity"`
+	MaxIntensity    float64        `json:"max_intensity"`
+	MeanIntensity   float64        `json:"mean_intensity"`
+	MedianIntensity float64        `json:"median_intensity"`
+	StdDeviation    float64        `json:"std_deviation"`
+	IntensityBins   []IntensityBin `json:"intensity_bins,omitempty"`
 }
 
 // IntensityBin represents a histogram bin for intensity distribution
 type IntensityBin struct {
-	RangeStart          float64             `json:"range_start"`
-	RangeEnd            float64             `json:"range_end"`
-	Count               int                 `json:"count"`
-	Percentage          float64             `json:"percentage"`
+	RangeStart float64 `json:"range_start"`
+	RangeEnd   float64 `json:"range_end"`
+	Count      int     `json:"count"`
+	Percentage float64 `json:"percentage"`
 }
 
 // QualityImpact assesses the impact of dead pixels on video quality
 type QualityImpact struct {
-	OverallImpactScore  float64             `json:"overall_impact_score"`    // 0-10 (10 = severe impact)
-	VisualImpact        string              `json:"visual_impact"`           // "negligible", "minor", "moderate", "severe"
+	OverallImpactScore    float64                `json:"overall_impact_score"` // 0-10 (10 = severe impact)
+	VisualImpact          string                 `json:"visual_impact"`        // "negligible", "minor", "moderate", "severe"
 	ViewingDistanceImpact *ViewingDistanceImpact `json:"viewing_distance_impact,omitempty"`
-	ContentTypeImpact   *ContentTypeImpact  `json:"content_type_impact,omitempty"`
-	UseCaseImpact       *UseCaseImpact      `json:"use_case_impact,omitempty"`
-	RepairFeasibility   string              `json:"repair_feasibility"`      // "easy", "moderate", "difficult", "impossible"
-	PriorityLevel       string              `json:"priority_level"`          // "low", "medium", "high", "critical"
-	ImpactDescription   string              `json:"impact_description"`
+	ContentTypeImpact     *ContentTypeImpact     `json:"content_type_impact,omitempty"`
+	UseCaseImpact         *UseCaseImpact         `json:"use_case_impact,omitempty"`
+	RepairFeasibility     string                 `json:"repair_feasibility"` // "easy", "moderate", "difficult", "impossible"
+	PriorityLevel         string                 `json:"priority_level"`     // "low", "medium", "high", "critical"
+	ImpactDescription     string                 `json:"impact_description"`
 }
 
 // ViewingDistanceImpact assesses impact at different viewing distances
 type ViewingDistanceImpact struct {
-	CloseViewing        string              `json:"close_viewing"`           // Impact when viewed closely
-	NormalViewing       string              `json:"normal_viewing"`          // Impact at normal viewing distance
-	DistantViewing      string              `json:"distant_viewing"`         // Impact when viewed from distance
-	CriticalViewingDistance float64         `json:"critical_viewing_distance"` // Distance where defects become noticeable
+	CloseViewing            string  `json:"close_viewing"`             // Impact when viewed closely
+	NormalViewing           string  `json:"normal_viewing"`            // Impact at normal viewing distance
+	DistantViewing          string  `json:"distant_viewing"`           // Impact when viewed from distance
+	CriticalViewingDistance float64 `json:"critical_viewing_distance"` // Distance where defects become noticeable
 }
 
 // ContentTypeImpact assesses impact based on content type
 type ContentTypeImpact struct {
-	StaticImages        string              `json:"static_images"`
-	MotionVideo         string              `json:"motion_video"`
-	TextContent         string              `json:"text_content"`
-	HighContrastContent string              `json:"high_contrast_content"`
-	LowContrastContent  string              `json:"low_contrast_content"`
-	DarkScenes          string              `json:"dark_scenes"`
-	BrightScenes        string              `json:"bright_scenes"`
+	StaticImages        string `json:"static_images"`
+	MotionVideo         string `json:"motion_video"`
+	TextContent         string `json:"text_content"`
+	HighContrastContent string `json:"high_contrast_content"`
+	LowContrastContent  string `json:"low_contrast_content"`
+	DarkScenes          string `json:"dark_scenes"`
+	BrightScenes        string `json:"bright_scenes"`
 }
 
 // UseCaseImpact assesses impact for different use cases
 type UseCaseImpact struct {
-	Broadcast           string              `json:"broadcast"`
-	Cinema              string              `json:"cinema"`
-	Web                 string              `json:"web"`
-	Mobile              string              `json:"mobile"`
-	ArchivalStorage     string              `json:"archival_storage"`
-	QualityControl      string              `json:"quality_control"`
-	ProfessionalEdit    string              `json:"professional_edit"`
+	Broadcast        string `json:"broadcast"`
+	Cinema           string `json:"cinema"`
+	Web              string `json:"web"`
+	Mobile           string `json:"mobile"`
+	ArchivalStorage  string `json:"archival_storage"`
+	QualityControl   string `json:"quality_control"`
+	ProfessionalEdit string `json:"professional_edit"`
 }
 
 // AnalyzeDeadPixels performs comprehensive dead pixel detection and analysis
@@ -389,12 +389,12 @@ func (dpa *DeadPixelAnalyzer) simulateDeadPixelDetection(frames []FrameData, ana
 	if totalPixels > 0 {
 		// Simulate dead pixels (typically 0.01% of total pixels in consumer displays)
 		estimatedDeadPixels := int(float64(totalPixels) * 0.0001)
-		
+
 		// Generate simulated dead pixel locations
 		for i := 0; i < estimatedDeadPixels; i++ {
 			defect := PixelDefect{
-				X:                  i*13 % frames[0].Width,   // Pseudo-random distribution
-				Y:                  i*17 % frames[0].Height,
+				X:                  i * 13 % frames[0].Width, // Pseudo-random distribution
+				Y:                  i * 17 % frames[0].Height,
 				DefectType:         "dead",
 				Color:              "black",
 				Intensity:          0.0,
@@ -422,8 +422,8 @@ func (dpa *DeadPixelAnalyzer) simulateDeadPixelDetection(frames []FrameData, ana
 		estimatedStuckPixels := estimatedDeadPixels / 3
 		for i := 0; i < estimatedStuckPixels; i++ {
 			defect := PixelDefect{
-				X:                  (i*19) % frames[0].Width,
-				Y:                  (i*23) % frames[0].Height,
+				X:                  (i * 19) % frames[0].Width,
+				Y:                  (i * 23) % frames[0].Height,
 				DefectType:         "stuck",
 				Color:              dpa.getRandomStuckColor(),
 				Intensity:          1.0,
@@ -451,7 +451,7 @@ func (dpa *DeadPixelAnalyzer) simulateDeadPixelDetection(frames []FrameData, ana
 		analysis.DeadPixelCount = len(analysis.DeadPixelMap)
 		analysis.StuckPixelCount = len(analysis.StuckPixelMap)
 		analysis.HotPixelCount = len(analysis.HotPixelMap)
-		
+
 		analysis.HasDeadPixels = analysis.DeadPixelCount > 0
 		analysis.HasStuckPixels = analysis.StuckPixelCount > 0
 		analysis.HasHotPixels = analysis.HotPixelCount > 0
@@ -509,8 +509,8 @@ func (dpa *DeadPixelAnalyzer) performSpatialAnalysis(analysis *DeadPixelAnalysis
 
 	// Calculate cluster analysis
 	clusterAnalysis := &ClusterAnalysis{
-		TotalClusters:      len(clusters),
-		IsolatedDefects:    dpa.countIsolatedDefects(analysis.DeadPixelMap, analysis.StuckPixelMap),
+		TotalClusters:       len(clusters),
+		IsolatedDefects:     dpa.countIsolatedDefects(analysis.DeadPixelMap, analysis.StuckPixelMap),
 		ClusterDistribution: "sparse",
 	}
 
@@ -537,7 +537,7 @@ func (dpa *DeadPixelAnalyzer) performSpatialAnalysis(analysis *DeadPixelAnalysis
 func (dpa *DeadPixelAnalyzer) calculatePixelStatistics(analysis *DeadPixelAnalysis, frames []FrameData) *PixelStatistics {
 	totalDefects := analysis.DeadPixelCount + analysis.StuckPixelCount + analysis.HotPixelCount
 	totalPixels := int64(0)
-	
+
 	if len(frames) > 0 {
 		totalPixels = int64(frames[0].Width * frames[0].Height)
 	}
@@ -599,7 +599,7 @@ func (dpa *DeadPixelAnalyzer) calculatePixelStatistics(analysis *DeadPixelAnalys
 // assessQualityImpact assesses the impact of detected defects on video quality
 func (dpa *DeadPixelAnalyzer) assessQualityImpact(analysis *DeadPixelAnalysis) *QualityImpact {
 	totalDefects := analysis.DeadPixelCount + analysis.StuckPixelCount + analysis.HotPixelCount
-	
+
 	impact := &QualityImpact{
 		OverallImpactScore: 0.0,
 		VisualImpact:       "negligible",
@@ -611,14 +611,14 @@ func (dpa *DeadPixelAnalyzer) assessQualityImpact(analysis *DeadPixelAnalysis) *
 	// Calculate impact score based on defect count and type
 	if totalDefects > 0 {
 		impactScore := math.Log10(float64(totalDefects)) * 2.0
-		
+
 		// Adjust for defect types (stuck pixels are more visible than dead pixels)
 		if analysis.StuckPixelCount > 0 {
 			impactScore += float64(analysis.StuckPixelCount) * 0.5
 		}
-		
+
 		impact.OverallImpactScore = math.Min(impactScore, 10.0)
-		
+
 		// Determine visual impact level
 		switch {
 		case impact.OverallImpactScore < 1.0:
@@ -634,7 +634,7 @@ func (dpa *DeadPixelAnalyzer) assessQualityImpact(analysis *DeadPixelAnalysis) *
 			impact.VisualImpact = "severe"
 			impact.PriorityLevel = "high"
 		}
-		
+
 		impact.ImpactDescription = fmt.Sprintf("Detected %d pixel defects with %s visual impact", totalDefects, impact.VisualImpact)
 	}
 
@@ -679,7 +679,7 @@ func (dpa *DeadPixelAnalyzer) getRandomStuckColor() string {
 func (dpa *DeadPixelAnalyzer) findDefectClusters(deadPixels, stuckPixels []PixelDefect) []DefectCluster {
 	// Simple clustering algorithm simulation
 	clusters := []DefectCluster{}
-	
+
 	allDefects := append(deadPixels, stuckPixels...)
 	if len(allDefects) < 2 {
 		return clusters
@@ -689,8 +689,8 @@ func (dpa *DeadPixelAnalyzer) findDefectClusters(deadPixels, stuckPixels []Pixel
 	if len(allDefects) >= 3 {
 		cluster := DefectCluster{
 			ClusterID:          1,
-			CenterX:            float64(allDefects[0].X + allDefects[1].X) / 2.0,
-			CenterY:            float64(allDefects[0].Y + allDefects[1].Y) / 2.0,
+			CenterX:            float64(allDefects[0].X+allDefects[1].X) / 2.0,
+			CenterY:            float64(allDefects[0].Y+allDefects[1].Y) / 2.0,
 			Radius:             10.0,
 			PixelCount:         min(len(allDefects), 3),
 			DominantDefectType: allDefects[0].DefectType,
@@ -833,9 +833,9 @@ func (dpa *DeadPixelAnalyzer) calculateCriticalViewingDistance(defectCount int) 
 	if defectCount == 0 {
 		return 0.0
 	}
-	
+
 	// More defects = noticeable from further away
-	return math.Max(1.0, 10.0 - math.Log10(float64(defectCount)))
+	return math.Max(1.0, 10.0-math.Log10(float64(defectCount)))
 }
 
 func (dpa *DeadPixelAnalyzer) generateRecommendedActions(analysis *DeadPixelAnalysis) []string {
@@ -884,11 +884,11 @@ func (dpa *DeadPixelAnalyzer) calculateDetectionConfidence(analysis *DeadPixelAn
 	if analysis.TemporalAnalysis != nil {
 		confidence += 10.0
 	}
-	
+
 	if analysis.SpatialAnalysis != nil {
 		confidence += 10.0
 	}
-	
+
 	if analysis.PixelStatistics != nil {
 		confidence += 5.0
 	}
@@ -905,12 +905,12 @@ func (dpa *DeadPixelAnalyzer) calculateDetectionConfidence(analysis *DeadPixelAn
 func (dpa *DeadPixelAnalyzer) executeCommand(ctx context.Context, cmd []string) (string, error) {
 	execCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
-	
+
 	output, err := executeFFprobeCommand(execCtx, cmd)
 	if err != nil {
 		return "", err
 	}
-	
+
 	return string(output), nil
 }
 

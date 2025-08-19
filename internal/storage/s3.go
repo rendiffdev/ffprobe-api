@@ -103,7 +103,7 @@ func (s *S3Provider) GetURL(ctx context.Context, key string) (string, error) {
 
 func (s *S3Provider) GetSignedURL(ctx context.Context, key string, expiration int64) (string, error) {
 	presignClient := s3.NewPresignClient(s.client)
-	
+
 	request, err := presignClient.PresignGetObject(ctx, &s3.GetObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
@@ -113,6 +113,6 @@ func (s *S3Provider) GetSignedURL(ctx context.Context, key string, expiration in
 	if err != nil {
 		return "", fmt.Errorf("failed to generate presigned URL: %w", err)
 	}
-	
+
 	return request.URL, nil
 }

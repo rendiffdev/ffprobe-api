@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/rs/zerolog"
 	"github.com/rendiffdev/ffprobe-api/internal/database"
 	"github.com/rendiffdev/ffprobe-api/internal/ffmpeg"
 	"github.com/rendiffdev/ffprobe-api/internal/models"
+	"github.com/rs/zerolog"
 )
 
 // AnalysisResult represents the result of an analysis
@@ -144,14 +144,14 @@ func (s *AnalysisService) ProcessAnalysisWithContent(ctx context.Context, analys
 	if enableContentAnalysis {
 		s.ffprobe.EnableContentAnalysis()
 		defer s.ffprobe.DisableContentAnalysis()
-		
+
 		// Use content analysis method
 		result, err := s.ffprobe.ProbeFileWithContentAnalysis(ctx, analysis.FilePath)
 		if err != nil {
 			s.updateAnalysisError(ctx, analysisID, fmt.Sprintf("FFprobe with content analysis failed: %v", err))
 			return fmt.Errorf("ffprobe with content analysis failed: %w", err)
 		}
-		
+
 		return s.completeAnalysis(ctx, analysisID, result)
 	}
 
@@ -215,17 +215,17 @@ func (s *AnalysisService) completeAnalysis(ctx context.Context, analysisID uuid.
 	// Generate AI analysis report as part of standard analysis (synchronous)
 	if s.workerClient != nil {
 		s.logger.Info().Str("analysis_id", analysis.ID.String()).Msg("Generating AI analysis report via worker")
-		
+
 		// Create timeout context for AI generation
 		llmCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 		defer cancel()
-		
+
 		// Convert FFprobeData to map for worker
 		analysisMap := make(map[string]interface{})
 		if ffprobeData.Format != nil {
 			json.Unmarshal(ffprobeData.Format, &analysisMap)
 		}
-		
+
 		report, err := s.workerClient.GenerateAnalysisWithLLM(llmCtx, analysisMap)
 		if err != nil {
 			s.logger.Warn().
@@ -236,7 +236,7 @@ func (s *AnalysisService) completeAnalysis(ctx context.Context, analysisID uuid.
 			// Store the AI report
 			analysis.LLMReport = &report
 			analysis.UpdatedAt = time.Now()
-			
+
 			if err := s.updateAnalysisLLMReport(llmCtx, analysis.ID, report); err != nil {
 				s.logger.Error().
 					Err(err).
@@ -252,10 +252,10 @@ func (s *AnalysisService) completeAnalysis(ctx context.Context, analysisID uuid.
 	} else if s.llmService != nil {
 		// Fallback to local LLM service
 		s.logger.Info().Str("analysis_id", analysis.ID.String()).Msg("Generating AI analysis report locally")
-		
+
 		llmCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 		defer cancel()
-		
+
 		report, err := s.llmService.GenerateAnalysis(llmCtx, analysis)
 		if err != nil {
 			s.logger.Warn().
@@ -265,7 +265,7 @@ func (s *AnalysisService) completeAnalysis(ctx context.Context, analysisID uuid.
 		} else {
 			analysis.LLMReport = &report
 			analysis.UpdatedAt = time.Now()
-			
+
 			if err := s.updateAnalysisLLMReport(llmCtx, analysis.ID, report); err != nil {
 				s.logger.Error().
 					Err(err).
@@ -285,7 +285,6 @@ func (s *AnalysisService) completeAnalysis(ctx context.Context, analysisID uuid.
 	return nil
 }
 
-
 // updateAnalysisLLMReport updates the analysis with the LLM report
 func (s *AnalysisService) updateAnalysisLLMReport(ctx context.Context, analysisID uuid.UUID, report string) error {
 	return s.repo.UpdateAnalysisLLMReport(ctx, analysisID, report)
@@ -302,24 +301,24 @@ func (s *AnalysisService) GenerateLLMReport(ctx context.Context, analysisID uuid
 	// Generate LLM report if service is available
 	if s.llmService != nil {
 		s.logger.Info().Str("analysis_id", analysisID.String()).Msg("Generating GenAI analysis report")
-		
+
 		llmCtx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 		defer cancel()
-		
+
 		report, err := s.llmService.GenerateAnalysis(llmCtx, analysis)
 		if err != nil {
 			return fmt.Errorf("LLM analysis failed: %w", err)
 		}
-		
+
 		// Save the LLM report
 		if err := s.updateAnalysisLLMReport(ctx, analysisID, report); err != nil {
 			return fmt.Errorf("failed to save LLM report: %w", err)
 		}
-		
+
 		s.logger.Info().Str("analysis_id", analysisID.String()).Msg("GenAI analysis report generated successfully")
 		return nil
 	}
-	
+
 	return fmt.Errorf("LLM service not available")
 }
 
@@ -602,7 +601,7 @@ func (s *AnalysisService) AnalyzeMedia(ctx context.Context, analysisID string, o
 		// Create independent context with timeout for background processing
 		bgCtx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 		defer cancel()
-		
+
 		if err := s.ProcessAnalysis(bgCtx, id, &ffmpeg.FFprobeOptions{
 			ShowFormat:      true,
 			ShowStreams:     true,
@@ -636,7 +635,7 @@ func detectSourceType(source string) string {
 	if len(source) == 0 {
 		return "unknown"
 	}
-	
+
 	switch {
 	case source[0] == '/' || source[0] == '.' || (len(source) > 1 && source[1] == ':'):
 		return "file"

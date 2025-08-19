@@ -14,12 +14,12 @@ import (
 
 // LLMEnhancedAnalyzer provides AI-powered quality control analysis and reporting
 type LLMEnhancedAnalyzer struct {
-	ollamaURL    string
-	modelName    string
+	ollamaURL     string
+	modelName     string
 	fallbackModel string
-	httpClient   *http.Client
-	logger       zerolog.Logger
-	enabled      bool
+	httpClient    *http.Client
+	logger        zerolog.Logger
+	enabled       bool
 }
 
 // NewLLMEnhancedAnalyzer creates a new LLM-enhanced analyzer
@@ -56,62 +56,62 @@ type LLMEnhancedReport struct {
 // QualityIssue represents an identified quality or technical issue
 // AdvancedQCInsights contains insights from advanced QC analysis
 type AdvancedQCInsights struct {
-	TimecodeInsights       string   `json:"timecode_insights,omitempty"`
-	AFDInsights            string   `json:"afd_insights,omitempty"`
-	TransportStreamInsights string  `json:"transport_stream_insights,omitempty"`
-	EndiannessInsights     string   `json:"endianness_insights,omitempty"`
-	AudioWrappingInsights  string   `json:"audio_wrapping_insights,omitempty"`
-	IMFInsights            string   `json:"imf_insights,omitempty"`
-	MXFInsights            string   `json:"mxf_insights,omitempty"`
-	DeadPixelInsights      string   `json:"dead_pixel_insights,omitempty"`
-	PSEInsights            string   `json:"pse_insights,omitempty"`
-	OverallQCScore         float64  `json:"overall_qc_score"`        // 0-100
-	CriticalFindings       []string `json:"critical_findings,omitempty"`
-	RecommendedActions     []string `json:"recommended_actions,omitempty"`
+	TimecodeInsights        string   `json:"timecode_insights,omitempty"`
+	AFDInsights             string   `json:"afd_insights,omitempty"`
+	TransportStreamInsights string   `json:"transport_stream_insights,omitempty"`
+	EndiannessInsights      string   `json:"endianness_insights,omitempty"`
+	AudioWrappingInsights   string   `json:"audio_wrapping_insights,omitempty"`
+	IMFInsights             string   `json:"imf_insights,omitempty"`
+	MXFInsights             string   `json:"mxf_insights,omitempty"`
+	DeadPixelInsights       string   `json:"dead_pixel_insights,omitempty"`
+	PSEInsights             string   `json:"pse_insights,omitempty"`
+	OverallQCScore          float64  `json:"overall_qc_score"` // 0-100
+	CriticalFindings        []string `json:"critical_findings,omitempty"`
+	RecommendedActions      []string `json:"recommended_actions,omitempty"`
 }
 
 // RiskAssessment contains AI-generated risk analysis
 type RiskAssessment struct {
-	TechnicalRisk          string   `json:"technical_risk"`          // "low", "medium", "high"
-	ComplianceRisk         string   `json:"compliance_risk"`         // "low", "medium", "high"
-	OperationalRisk        string   `json:"operational_risk"`        // "low", "medium", "high"
-	SafetyRisk             string   `json:"safety_risk"`             // "low", "medium", "high"
-	OverallRiskLevel       string   `json:"overall_risk_level"`      // "low", "medium", "high", "critical"
-	RiskFactors            []string `json:"risk_factors,omitempty"`
-	MitigationStrategies   []string `json:"mitigation_strategies,omitempty"`
+	TechnicalRisk             string   `json:"technical_risk"`     // "low", "medium", "high"
+	ComplianceRisk            string   `json:"compliance_risk"`    // "low", "medium", "high"
+	OperationalRisk           string   `json:"operational_risk"`   // "low", "medium", "high"
+	SafetyRisk                string   `json:"safety_risk"`        // "low", "medium", "high"
+	OverallRiskLevel          string   `json:"overall_risk_level"` // "low", "medium", "high", "critical"
+	RiskFactors               []string `json:"risk_factors,omitempty"`
+	MitigationStrategies      []string `json:"mitigation_strategies,omitempty"`
 	MonitoringRecommendations []string `json:"monitoring_recommendations,omitempty"`
 }
 
 // IntegrationRecommendation contains workflow integration suggestions
 type IntegrationRecommendation struct {
-	Category           string  `json:"category"`              // "workflow", "technology", "process"
-	Priority           string  `json:"priority"`              // "low", "medium", "high", "critical"
-	Title              string  `json:"title"`
-	Description        string  `json:"description"`
-	Implementation     string  `json:"implementation"`
-	ExpectedBenefit    string  `json:"expected_benefit"`
-	EstimatedCost      string  `json:"estimated_cost"`        // "low", "medium", "high"
-	Complexity         string  `json:"complexity"`            // "simple", "moderate", "complex"
-	Timeline           string  `json:"timeline"`              // "immediate", "short-term", "long-term"
+	Category        string `json:"category"` // "workflow", "technology", "process"
+	Priority        string `json:"priority"` // "low", "medium", "high", "critical"
+	Title           string `json:"title"`
+	Description     string `json:"description"`
+	Implementation  string `json:"implementation"`
+	ExpectedBenefit string `json:"expected_benefit"`
+	EstimatedCost   string `json:"estimated_cost"` // "low", "medium", "high"
+	Complexity      string `json:"complexity"`     // "simple", "moderate", "complex"
+	Timeline        string `json:"timeline"`       // "immediate", "short-term", "long-term"
 }
 
 type QualityIssue struct {
-	Category    string   `json:"category"`    // "video", "audio", "container", "compliance"
-	Severity    string   `json:"severity"`    // "critical", "major", "minor", "informational"
-	Issue       string   `json:"issue"`       // Description of the issue
-	Impact      string   `json:"impact"`      // Impact on quality/workflow
-	Recommendation string `json:"recommendation"` // How to fix it
-	FrameRange  string   `json:"frame_range,omitempty"` // If applicable
-	StreamIndex int      `json:"stream_index,omitempty"` // If applicable
+	Category       string `json:"category"`               // "video", "audio", "container", "compliance"
+	Severity       string `json:"severity"`               // "critical", "major", "minor", "informational"
+	Issue          string `json:"issue"`                  // Description of the issue
+	Impact         string `json:"impact"`                 // Impact on quality/workflow
+	Recommendation string `json:"recommendation"`         // How to fix it
+	FrameRange     string `json:"frame_range,omitempty"`  // If applicable
+	StreamIndex    int    `json:"stream_index,omitempty"` // If applicable
 }
 
 // WorkflowRecommendation represents workflow optimization suggestions
 type WorkflowRecommendation struct {
-	Category     string `json:"category"`     // "encoding", "delivery", "archival", "editing"
+	Category       string `json:"category"`       // "encoding", "delivery", "archival", "editing"
 	Recommendation string `json:"recommendation"` // The recommendation
-	Benefit      string `json:"benefit"`      // Expected benefit
-	Complexity   string `json:"complexity"`   // "low", "medium", "high"
-	Priority     string `json:"priority"`     // "high", "medium", "low"
+	Benefit        string `json:"benefit"`        // Expected benefit
+	Complexity     string `json:"complexity"`     // "low", "medium", "high"
+	Priority       string `json:"priority"`       // "high", "medium", "low"
 }
 
 // OllamaRequest represents a request to Ollama API
@@ -139,10 +139,10 @@ func (lla *LLMEnhancedAnalyzer) GenerateEnhancedReport(ctx context.Context, resu
 	}
 
 	start := time.Now()
-	
+
 	// Build comprehensive analysis prompt
 	prompt := lla.buildComprehensivePrompt(result)
-	
+
 	// Try primary model first, fallback if needed
 	response, modelUsed, err := lla.generateWithFallback(ctx, prompt)
 	if err != nil {
@@ -157,16 +157,16 @@ func (lla *LLMEnhancedAnalyzer) GenerateEnhancedReport(ctx context.Context, resu
 
 	// Parse the structured response
 	report := lla.parseEnhancedResponse(response)
-	
+
 	// Generate advanced QC insights
 	report.AdvancedQCInsights = lla.generateAdvancedQCInsights(result)
-	
+
 	// Generate risk assessment
 	report.RiskAssessment = lla.generateRiskAssessment(result)
-	
+
 	// Generate integration recommendations
 	report.IntegrationRecommendations = lla.generateIntegrationRecommendations(result)
-	
+
 	report.ProcessingTime = time.Since(start)
 	report.ModelUsed = modelUsed
 	report.Confidence = lla.calculateConfidence(result, response)
@@ -384,21 +384,21 @@ func (lla *LLMEnhancedAnalyzer) parseEnhancedResponse(response string) *LLMEnhan
 // parseTextResponse parses non-JSON response into structured format
 func (lla *LLMEnhancedAnalyzer) parseTextResponse(response string) *LLMEnhancedReport {
 	lines := strings.Split(response, "\n")
-	
+
 	report := &LLMEnhancedReport{
-		TechnicalSummary:        "AI analysis completed (text format)",
-		QualityAssessment:       "",
-		ComplianceAnalysis:      "",
+		TechnicalSummary:            "AI analysis completed (text format)",
+		QualityAssessment:           "",
+		ComplianceAnalysis:          "",
 		OptimizationRecommendations: "",
-		ExecutiveSummary:        "",
-		IssueIdentification:     []QualityIssue{},
-		WorkflowRecommendations: []WorkflowRecommendation{},
+		ExecutiveSummary:            "",
+		IssueIdentification:         []QualityIssue{},
+		WorkflowRecommendations:     []WorkflowRecommendation{},
 	}
 
 	// Simple text parsing - extract key insights
 	currentSection := ""
 	content := []string{}
-	
+
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" {
@@ -468,7 +468,7 @@ func (lla *LLMEnhancedAnalyzer) calculateConfidence(result *FFprobeResult, respo
 	if len(response) > 500 {
 		confidence += 0.1
 	}
-	
+
 	// Check if response contains structured analysis
 	if strings.Contains(response, "technical") && strings.Contains(response, "quality") {
 		confidence += 0.1
@@ -558,8 +558,8 @@ func (lla *LLMEnhancedAnalyzer) generateAdvancedQCInsights(result *FFprobeResult
 				totalPIDs = result.EnhancedAnalysis.TransportStreamAnalysis.PIDStatistics.TotalPIDs
 			}
 			insights.TransportStreamInsights = fmt.Sprintf("MPEG Transport Stream with %d PIDs", totalPIDs)
-			if result.EnhancedAnalysis.TransportStreamAnalysis.TransportValidation != nil && 
-			   len(result.EnhancedAnalysis.TransportStreamAnalysis.TransportValidation.Errors) > 0 {
+			if result.EnhancedAnalysis.TransportStreamAnalysis.TransportValidation != nil &&
+				len(result.EnhancedAnalysis.TransportStreamAnalysis.TransportValidation.Errors) > 0 {
 				insights.CriticalFindings = append(insights.CriticalFindings, "Transport stream errors detected")
 				insights.OverallQCScore -= 10.0
 			}
@@ -570,7 +570,7 @@ func (lla *LLMEnhancedAnalyzer) generateAdvancedQCInsights(result *FFprobeResult
 
 	// Analyze endianness results
 	if result.EnhancedAnalysis.EndiannessAnalysis != nil {
-		insights.EndiannessInsights = fmt.Sprintf("Container endianness: %s", 
+		insights.EndiannessInsights = fmt.Sprintf("Container endianness: %s",
 			result.EnhancedAnalysis.EndiannessAnalysis.ContainerEndianness)
 		if result.EnhancedAnalysis.EndiannessAnalysis.PlatformCompatibility != nil {
 			if len(result.EnhancedAnalysis.EndiannessAnalysis.PlatformCompatibility.Issues) > 0 {
@@ -609,9 +609,9 @@ func (lla *LLMEnhancedAnalyzer) generateAdvancedQCInsights(result *FFprobeResult
 	// Analyze MXF results
 	if result.EnhancedAnalysis.MXFAnalysis != nil {
 		if result.EnhancedAnalysis.MXFAnalysis.IsMXFFile {
-			insights.MXFInsights = fmt.Sprintf("MXF file with %s operational pattern", 
+			insights.MXFInsights = fmt.Sprintf("MXF file with %s operational pattern",
 				result.EnhancedAnalysis.MXFAnalysis.MXFProfile)
-			if result.EnhancedAnalysis.MXFAnalysis.ValidationResults != nil && 
+			if result.EnhancedAnalysis.MXFAnalysis.ValidationResults != nil &&
 				!result.EnhancedAnalysis.MXFAnalysis.ValidationResults.OverallCompliance {
 				insights.CriticalFindings = append(insights.CriticalFindings, "MXF compliance issues detected")
 				insights.OverallQCScore -= 12.0
@@ -623,8 +623,8 @@ func (lla *LLMEnhancedAnalyzer) generateAdvancedQCInsights(result *FFprobeResult
 
 	// Analyze dead pixel results
 	if result.EnhancedAnalysis.DeadPixelAnalysis != nil {
-		totalDefects := result.EnhancedAnalysis.DeadPixelAnalysis.DeadPixelCount + 
-			result.EnhancedAnalysis.DeadPixelAnalysis.StuckPixelCount + 
+		totalDefects := result.EnhancedAnalysis.DeadPixelAnalysis.DeadPixelCount +
+			result.EnhancedAnalysis.DeadPixelAnalysis.StuckPixelCount +
 			result.EnhancedAnalysis.DeadPixelAnalysis.HotPixelCount
 		if totalDefects > 0 {
 			insights.DeadPixelInsights = fmt.Sprintf("%d pixel defects detected", totalDefects)
@@ -642,7 +642,7 @@ func (lla *LLMEnhancedAnalyzer) generateAdvancedQCInsights(result *FFprobeResult
 	// Analyze PSE results
 	if result.EnhancedAnalysis.PSEAnalysis != nil {
 		insights.PSEInsights = fmt.Sprintf("PSE risk level: %s", result.EnhancedAnalysis.PSEAnalysis.PSERiskLevel)
-		if result.EnhancedAnalysis.PSEAnalysis.PSERiskLevel == "high" || 
+		if result.EnhancedAnalysis.PSEAnalysis.PSERiskLevel == "high" ||
 			result.EnhancedAnalysis.PSEAnalysis.PSERiskLevel == "extreme" {
 			insights.CriticalFindings = append(insights.CriticalFindings, "High photosensitive epilepsy risk detected")
 			insights.OverallQCScore -= 20.0
@@ -683,14 +683,14 @@ func (lla *LLMEnhancedAnalyzer) generateRiskAssessment(result *FFprobeResult) *R
 
 	// Assess technical risks
 	technicalRiskScore := 0
-	if result.EnhancedAnalysis.TransportStreamAnalysis != nil && 
+	if result.EnhancedAnalysis.TransportStreamAnalysis != nil &&
 		result.EnhancedAnalysis.TransportStreamAnalysis.TransportValidation != nil &&
 		len(result.EnhancedAnalysis.TransportStreamAnalysis.TransportValidation.Errors) > 0 {
 		technicalRiskScore += 2
 		assessment.RiskFactors = append(assessment.RiskFactors, "Transport stream errors")
 	}
 	if result.EnhancedAnalysis.DeadPixelAnalysis != nil {
-		totalDefects := result.EnhancedAnalysis.DeadPixelAnalysis.DeadPixelCount + 
+		totalDefects := result.EnhancedAnalysis.DeadPixelAnalysis.DeadPixelCount +
 			result.EnhancedAnalysis.DeadPixelAnalysis.StuckPixelCount
 		if totalDefects > 10 {
 			technicalRiskScore += 2
@@ -739,20 +739,20 @@ func (lla *LLMEnhancedAnalyzer) generateRiskAssessment(result *FFprobeResult) *R
 	if safetyRiskScore > maxRiskScore {
 		maxRiskScore = safetyRiskScore
 	}
-	
+
 	assessment.OverallRiskLevel = lla.scoreToRiskLevel(maxRiskScore)
 
 	// Generate mitigation strategies
 	if technicalRiskScore > 0 {
-		assessment.MitigationStrategies = append(assessment.MitigationStrategies, 
+		assessment.MitigationStrategies = append(assessment.MitigationStrategies,
 			"Implement comprehensive QC testing before distribution")
 	}
 	if complianceRiskScore > 0 {
-		assessment.MitigationStrategies = append(assessment.MitigationStrategies, 
+		assessment.MitigationStrategies = append(assessment.MitigationStrategies,
 			"Review content against relevant compliance standards")
 	}
 	if safetyRiskScore > 0 {
-		assessment.MitigationStrategies = append(assessment.MitigationStrategies, 
+		assessment.MitigationStrategies = append(assessment.MitigationStrategies,
 			"Add appropriate viewer warnings and consider content modification")
 	}
 
@@ -782,7 +782,7 @@ func (lla *LLMEnhancedAnalyzer) generateIntegrationRecommendations(result *FFpro
 
 	if result.EnhancedAnalysis != nil {
 		// PSE monitoring recommendation
-		if result.EnhancedAnalysis.PSEAnalysis != nil && 
+		if result.EnhancedAnalysis.PSEAnalysis != nil &&
 			result.EnhancedAnalysis.PSEAnalysis.PSERiskLevel != "safe" {
 			recommendations = append(recommendations, IntegrationRecommendation{
 				Category:        "technology",
@@ -798,9 +798,9 @@ func (lla *LLMEnhancedAnalyzer) generateIntegrationRecommendations(result *FFpro
 		}
 
 		// Dead pixel monitoring for acquisition
-		if result.EnhancedAnalysis.DeadPixelAnalysis != nil && 
-			(result.EnhancedAnalysis.DeadPixelAnalysis.DeadPixelCount > 0 || 
-			 result.EnhancedAnalysis.DeadPixelAnalysis.StuckPixelCount > 0) {
+		if result.EnhancedAnalysis.DeadPixelAnalysis != nil &&
+			(result.EnhancedAnalysis.DeadPixelAnalysis.DeadPixelCount > 0 ||
+				result.EnhancedAnalysis.DeadPixelAnalysis.StuckPixelCount > 0) {
 			recommendations = append(recommendations, IntegrationRecommendation{
 				Category:        "process",
 				Priority:        "medium",

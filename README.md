@@ -8,11 +8,11 @@
 - 🎯 **GenAI Analysis**: AI-powered interpretation of technical data into professional insights
 - 🔍 **Intelligent Risk Assessment**: AI identifies safety, compliance, and technical risks
 - 📊 **Smart Recommendations**: GenAI suggests specific FFmpeg commands and workflow improvements
-- 🏆 **Professional QC**: 20+ advanced quality control categories beyond basic FFprobe
+- 🏆 **Professional QC**: 19 advanced quality control categories beyond basic FFprobe
 - 💡 **Executive Summaries**: AI translates technical data for non-technical stakeholders
 
 [![Production Ready](https://img.shields.io/badge/production-ready-green.svg)](docs/PRODUCTION_READINESS_REPORT.md)
-[![QC Analysis](https://img.shields.io/badge/QC-20%20Categories-blue.svg)](#advanced-quality-control-features)
+[![QC Analysis](https://img.shields.io/badge/QC-19%20Categories-blue.svg)](#advanced-quality-control-features)
 [![Docker](https://img.shields.io/badge/docker-ready--to--deploy-blue.svg)](#quick-start)
 
 ## 🧠 Core GenAI Differentiators
@@ -38,7 +38,7 @@
 
 ### **🛠️ Advanced Technical Features**
 
-- **Advanced Quality Control**: 20+ professional QC analysis categories including timecode, AFD, MXF validation, dead pixel detection, PSE analysis
+- **Advanced Quality Control**: 19 professional QC analysis categories including timecode, AFD, MXF validation, dead pixel detection, PSE analysis, data integrity validation, and stream disposition analysis
 - **Latest FFmpeg**: Always uses latest stable BtbN builds with all codecs
 - **Professional Reports**: Comprehensive technical analysis with quality metrics and compliance validation
 - **Multiple Formats**: Supports all video/audio formats that FFmpeg supports
@@ -204,27 +204,30 @@ make prod
 
 The FFprobe API provides **comprehensive professional QC analysis** with industry-standard compliance checking.
 
-📋 **[Complete QC Analysis List](docs/QC_ANALYSIS_LIST.md)** - Detailed breakdown of all 20+ QC categories
+📋 **[Complete QC Analysis List](docs/QC_ANALYSIS_LIST.md)** - Detailed breakdown of all 19 QC categories
 
 ### QC Analysis Categories Overview
 
-#### Standard Technical Analysis (11 Categories)
-- Stream analysis and counting
-- Video/audio technical validation  
-- Codec and container compliance
-- Frame and GOP structure analysis
-- Bit depth and resolution validation
-
-#### Advanced Professional QC (9 Categories)
-- **Timecode Analysis**: SMPTE timecode parsing, drop frame detection
-- **Active Format Description (AFD)**: Broadcast signaling compliance
-- **Transport Stream Analysis**: MPEG-TS PID analysis and error detection
-- **Endianness Detection**: Binary format analysis and platform compatibility
-- **Audio Wrapping**: Professional audio format detection and validation
+#### Core QC Analysis (19 Categories)
+- **AFD Analysis**: Active Format Description broadcast signaling compliance
+- **Dead Pixel Detection**: Computer vision-based pixel defect analysis  
+- **PSE Flash Analysis**: Photosensitive epilepsy safety analysis
+- **HDR Analysis**: High Dynamic Range content validation
+- **Audio Wrapping Analysis**: Professional audio format detection
+- **Endianness Detection**: Binary format and platform compatibility
+- **Codec Analysis**: Codec validation and profile analysis
+- **Container Validation**: Container format compliance checking
+- **Resolution Analysis**: Resolution and aspect ratio validation
+- **Frame Rate Analysis**: Frame rate accuracy and consistency validation
+- **Bitdepth Analysis**: Bit depth validation and HDR compatibility
+- **Timecode Analysis**: SMPTE timecode parsing and validation
+- **MXF Analysis**: Material Exchange Format compliance
 - **IMF Compliance**: Interoperable Master Format validation (Netflix standard)
-- **MXF Format Validation**: Material Exchange Format compliance checking
-- **Dead Pixel Detection**: Computer vision-based pixel defect analysis
-- **Photosensitive Epilepsy (PSE) Risk**: Automated PSE safety analysis
+- **Transport Stream Analysis**: MPEG-TS structure and error detection
+- **Content Analysis**: Scene change detection and motion analysis
+- **Enhanced Analysis**: Advanced quality metrics and recommendations
+- **Stream Disposition Analysis**: Accessibility and stream role validation
+- **Data Integrity Analysis**: Error detection and hash-based integrity verification
 
 ### AI-Enhanced Analysis (Optional)
 - **Risk Assessment**: Automated technical, compliance, and safety risk evaluation

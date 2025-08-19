@@ -26,12 +26,12 @@ type DownloadOptions struct {
 }
 
 type Config struct {
-	Provider   string
-	Region     string
-	Bucket     string
-	AccessKey  string
-	SecretKey  string
-	Endpoint   string
-	UseSSL     bool
-	BaseURL    string
+	Provider  string
+	Region    string
+	Bucket    string
+	AccessKey string
+	SecretKey string
+	Endpoint  string
+	UseSSL    bool
+	BaseURL   string
 }

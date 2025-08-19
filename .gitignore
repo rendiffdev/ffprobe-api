@@ -103,6 +103,9 @@ docker-compose.override.yml
 compose.override.yml
 compose.override.yaml
 
+# Docker image build directory (contains large files and build contexts)
+docker-image/
+
 # Docker volumes and data
 data/
 volumes/
@@ -274,9 +277,8 @@ venv/
 !migrations/
 !migrations/*.sql
 
-# Keep Docker configs
+# Keep Docker configs (but not docker-image build directory)
 !docker/
-!docker-image/
 !Dockerfile*
 !compose*.yml
 !compose*.yaml

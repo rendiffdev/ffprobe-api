@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/rs/zerolog"
 	"github.com/rendiffdev/ffprobe-api/internal/services"
+	"github.com/rs/zerolog"
 )
 
 // FFmpegVersionHandler handles FFmpeg version management endpoints
@@ -42,7 +42,7 @@ func (h *FFmpegVersionHandler) GetCurrentVersion(w http.ResponseWriter, r *http.
 // CheckForUpdates checks for available FFmpeg updates
 func (h *FFmpegVersionHandler) CheckForUpdates(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	
+
 	updateInfo, err := h.updater.CheckForUpdates(ctx)
 	if err != nil {
 		h.logger.Error().Err(err).Msg("Failed to check for updates")
@@ -52,14 +52,14 @@ func (h *FFmpegVersionHandler) CheckForUpdates(w http.ResponseWriter, r *http.Re
 
 	// Add user action required flag for major updates
 	response := map[string]interface{}{
-		"current":             updateInfo.Current,
-		"available":           updateInfo.Available,
-		"update_available":    updateInfo.Available != nil && h.updater.CompareVersions(updateInfo.Available, updateInfo.Current) > 0,
-		"is_major_upgrade":    updateInfo.IsMajor,
-		"is_minor_upgrade":    updateInfo.IsMinor,
-		"is_patch_upgrade":    updateInfo.IsPatch,
-		"stability":           updateInfo.Stability,
-		"recommendation":      updateInfo.Recommendation,
+		"current":                updateInfo.Current,
+		"available":              updateInfo.Available,
+		"update_available":       updateInfo.Available != nil && h.updater.CompareVersions(updateInfo.Available, updateInfo.Current) > 0,
+		"is_major_upgrade":       updateInfo.IsMajor,
+		"is_minor_upgrade":       updateInfo.IsMinor,
+		"is_patch_upgrade":       updateInfo.IsPatch,
+		"stability":              updateInfo.Stability,
+		"recommendation":         updateInfo.Recommendation,
 		"user_approval_required": updateInfo.IsMajor, // Require approval for major updates
 	}
 
@@ -111,16 +111,16 @@ func (h *FFmpegVersionHandler) UpdateFFmpeg(w http.ResponseWriter, r *http.Reque
 			Interface("current", updateInfo.Current).
 			Interface("new", updateInfo.Available).
 			Msg("Major FFmpeg update requested")
-		
+
 		// Send warning about major update
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"status":  "major_update_warning",
-			"message": "This is a major version upgrade that may contain breaking changes",
-			"current": updateInfo.Current,
-			"new":     updateInfo.Available,
+			"status":          "major_update_warning",
+			"message":         "This is a major version upgrade that may contain breaking changes",
+			"current":         updateInfo.Current,
+			"new":             updateInfo.Available,
 			"action_required": "Please review the changelog and test in a non-production environment first",
-			"changelog_url": "https://github.com/FFmpeg/FFmpeg/blob/master/Changelog",
+			"changelog_url":   "https://github.com/FFmpeg/FFmpeg/blob/master/Changelog",
 		})
 		return
 	}
@@ -167,14 +167,14 @@ func (h *FFmpegVersionHandler) UpdateFFmpeg(w http.ResponseWriter, r *http.Reque
 				}
 				return
 			}
-			
+
 			// Send progress update
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"event":   "progress",
 				"percent": progress,
 			})
 			flusher.Flush()
-			
+
 		case <-r.Context().Done():
 			// Client disconnected
 			return
@@ -197,7 +197,7 @@ func (h *FFmpegVersionHandler) RollbackFFmpeg(w http.ResponseWriter, r *http.Req
 func (h *FFmpegVersionHandler) RegisterRoutes(router *mux.Router) {
 	// Admin routes for FFmpeg version management
 	adminRouter := router.PathPrefix("/api/v1/admin/ffmpeg").Subrouter()
-	
+
 	adminRouter.HandleFunc("/version", h.GetCurrentVersion).Methods("GET")
 	adminRouter.HandleFunc("/check-updates", h.CheckForUpdates).Methods("GET")
 	adminRouter.HandleFunc("/update", h.UpdateFFmpeg).Methods("POST")

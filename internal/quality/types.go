@@ -11,48 +11,48 @@ import (
 type QualityMetricType string
 
 const (
-	MetricVMAF    QualityMetricType = "vmaf"
-	MetricPSNR    QualityMetricType = "psnr"
-	MetricSSIM    QualityMetricType = "ssim"
-	MetricMSE     QualityMetricType = "mse"
-	MetricMSSSIM  QualityMetricType = "ms_ssim"  // Multi-Scale SSIM
-	MetricLPIPS   QualityMetricType = "lpips"    // Learned Perceptual Image Patch Similarity
+	MetricVMAF   QualityMetricType = "vmaf"
+	MetricPSNR   QualityMetricType = "psnr"
+	MetricSSIM   QualityMetricType = "ssim"
+	MetricMSE    QualityMetricType = "mse"
+	MetricMSSSIM QualityMetricType = "ms_ssim" // Multi-Scale SSIM
+	MetricLPIPS  QualityMetricType = "lpips"   // Learned Perceptual Image Patch Similarity
 )
 
 // QualityAnalysis represents a complete quality analysis
 type QualityAnalysis struct {
-	ID             uuid.UUID              `json:"id" db:"id"`
-	AnalysisID     uuid.UUID              `json:"analysis_id" db:"analysis_id"`
-	ReferenceFile  string                 `json:"reference_file" db:"reference_file"`
-	DistortedFile  string                 `json:"distorted_file" db:"distorted_file"`
-	MetricType     QualityMetricType      `json:"metric_type" db:"metric_type"`
-	OverallScore   float64                `json:"overall_score" db:"overall_score"`
-	MinScore       float64                `json:"min_score" db:"min_score"`
-	MaxScore       float64                `json:"max_score" db:"max_score"`
-	MeanScore      float64                `json:"mean_score" db:"mean_score"`
-	MedianScore    float64                `json:"median_score" db:"median_score"`
-	StdDevScore    float64                `json:"std_dev_score" db:"std_dev_score"`
-	Percentile1    float64                `json:"percentile_1" db:"percentile_1"`
-	Percentile5    float64                `json:"percentile_5" db:"percentile_5"`
-	Percentile10   float64                `json:"percentile_10" db:"percentile_10"`
-	Percentile25   float64                `json:"percentile_25" db:"percentile_25"`
-	Percentile75   float64                `json:"percentile_75" db:"percentile_75"`
-	Percentile90   float64                `json:"percentile_90" db:"percentile_90"`
-	Percentile95   float64                `json:"percentile_95" db:"percentile_95"`
-	Percentile99   float64                `json:"percentile_99" db:"percentile_99"`
-	FrameCount     int                    `json:"frame_count" db:"frame_count"`
-	Duration       float64                `json:"duration" db:"duration"`
-	Width          int                    `json:"width" db:"width"`
-	Height         int                    `json:"height" db:"height"`
-	FrameRate      float64                `json:"frame_rate" db:"frame_rate"`
-	BitRate        int64                  `json:"bit_rate" db:"bit_rate"`
-	Configuration  json.RawMessage        `json:"configuration" db:"configuration"`
-	ProcessingTime time.Duration          `json:"processing_time" db:"processing_time"`
-	Status         QualityAnalysisStatus  `json:"status" db:"status"`
-	ErrorMessage   string                 `json:"error_message,omitempty" db:"error_message"`
-	CreatedAt      time.Time              `json:"created_at" db:"created_at"`
-	UpdatedAt      time.Time              `json:"updated_at" db:"updated_at"`
-	CompletedAt    *time.Time             `json:"completed_at,omitempty" db:"completed_at"`
+	ID             uuid.UUID             `json:"id" db:"id"`
+	AnalysisID     uuid.UUID             `json:"analysis_id" db:"analysis_id"`
+	ReferenceFile  string                `json:"reference_file" db:"reference_file"`
+	DistortedFile  string                `json:"distorted_file" db:"distorted_file"`
+	MetricType     QualityMetricType     `json:"metric_type" db:"metric_type"`
+	OverallScore   float64               `json:"overall_score" db:"overall_score"`
+	MinScore       float64               `json:"min_score" db:"min_score"`
+	MaxScore       float64               `json:"max_score" db:"max_score"`
+	MeanScore      float64               `json:"mean_score" db:"mean_score"`
+	MedianScore    float64               `json:"median_score" db:"median_score"`
+	StdDevScore    float64               `json:"std_dev_score" db:"std_dev_score"`
+	Percentile1    float64               `json:"percentile_1" db:"percentile_1"`
+	Percentile5    float64               `json:"percentile_5" db:"percentile_5"`
+	Percentile10   float64               `json:"percentile_10" db:"percentile_10"`
+	Percentile25   float64               `json:"percentile_25" db:"percentile_25"`
+	Percentile75   float64               `json:"percentile_75" db:"percentile_75"`
+	Percentile90   float64               `json:"percentile_90" db:"percentile_90"`
+	Percentile95   float64               `json:"percentile_95" db:"percentile_95"`
+	Percentile99   float64               `json:"percentile_99" db:"percentile_99"`
+	FrameCount     int                   `json:"frame_count" db:"frame_count"`
+	Duration       float64               `json:"duration" db:"duration"`
+	Width          int                   `json:"width" db:"width"`
+	Height         int                   `json:"height" db:"height"`
+	FrameRate      float64               `json:"frame_rate" db:"frame_rate"`
+	BitRate        int64                 `json:"bit_rate" db:"bit_rate"`
+	Configuration  json.RawMessage       `json:"configuration" db:"configuration"`
+	ProcessingTime time.Duration         `json:"processing_time" db:"processing_time"`
+	Status         QualityAnalysisStatus `json:"status" db:"status"`
+	ErrorMessage   string                `json:"error_message,omitempty" db:"error_message"`
+	CreatedAt      time.Time             `json:"created_at" db:"created_at"`
+	UpdatedAt      time.Time             `json:"updated_at" db:"updated_at"`
+	CompletedAt    *time.Time            `json:"completed_at,omitempty" db:"completed_at"`
 }
 
 // QualityAnalysisStatus represents the status of a quality analysis
@@ -71,31 +71,31 @@ type QualityStatus = QualityAnalysisStatus
 
 // QualityFrameMetric represents per-frame quality metrics
 type QualityFrameMetric struct {
-	ID            uuid.UUID         `json:"id" db:"id"`
-	QualityID     uuid.UUID         `json:"quality_id" db:"quality_id"`
-	FrameNumber   int               `json:"frame_number" db:"frame_number"`
-	Timestamp     float64           `json:"timestamp" db:"timestamp"`
-	Score         float64           `json:"score" db:"score"`
-	ComponentY    float64           `json:"component_y,omitempty" db:"component_y"`
-	ComponentU    float64           `json:"component_u,omitempty" db:"component_u"`
-	ComponentV    float64           `json:"component_v,omitempty" db:"component_v"`
-	AdditionalData json.RawMessage  `json:"additional_data,omitempty" db:"additional_data"`
-	CreatedAt     time.Time         `json:"created_at" db:"created_at"`
+	ID             uuid.UUID       `json:"id" db:"id"`
+	QualityID      uuid.UUID       `json:"quality_id" db:"quality_id"`
+	FrameNumber    int             `json:"frame_number" db:"frame_number"`
+	Timestamp      float64         `json:"timestamp" db:"timestamp"`
+	Score          float64         `json:"score" db:"score"`
+	ComponentY     float64         `json:"component_y,omitempty" db:"component_y"`
+	ComponentU     float64         `json:"component_u,omitempty" db:"component_u"`
+	ComponentV     float64         `json:"component_v,omitempty" db:"component_v"`
+	AdditionalData json.RawMessage `json:"additional_data,omitempty" db:"additional_data"`
+	CreatedAt      time.Time       `json:"created_at" db:"created_at"`
 }
 
 // VMAFConfiguration represents VMAF-specific configuration
 type VMAFConfiguration struct {
-	Model            string   `json:"model"`             // VMAF model version
-	CustomModelPath  string   `json:"custom_model_path"` // Path to custom VMAF model
-	CustomModelID    string   `json:"custom_model_id"`   // ID of custom model from database
-	SubSampling      int      `json:"sub_sampling"`      // Frame subsampling rate
-	PoolingMethod    string   `json:"pooling_method"`    // mean, harmonic_mean, min
-	NThreads         int      `json:"n_threads"`         // Number of threads
-	Features         []string `json:"features"`          // Additional features to compute
-	OutputFormat     string   `json:"output_format"`     // json, xml, csv
-	LogLevel         string   `json:"log_level"`         // info, warning, error
-	EnableTransform  bool     `json:"enable_transform"`  // Enable score transformation
-	PhoneModel       bool     `json:"phone_model"`       // Use phone model
+	Model           string   `json:"model"`             // VMAF model version
+	CustomModelPath string   `json:"custom_model_path"` // Path to custom VMAF model
+	CustomModelID   string   `json:"custom_model_id"`   // ID of custom model from database
+	SubSampling     int      `json:"sub_sampling"`      // Frame subsampling rate
+	PoolingMethod   string   `json:"pooling_method"`    // mean, harmonic_mean, min
+	NThreads        int      `json:"n_threads"`         // Number of threads
+	Features        []string `json:"features"`          // Additional features to compute
+	OutputFormat    string   `json:"output_format"`     // json, xml, csv
+	LogLevel        string   `json:"log_level"`         // info, warning, error
+	EnableTransform bool     `json:"enable_transform"`  // Enable score transformation
+	PhoneModel      bool     `json:"phone_model"`       // Use phone model
 }
 
 // PSNRConfiguration represents PSNR-specific configuration
@@ -107,11 +107,11 @@ type PSNRConfiguration struct {
 
 // SSIMConfiguration represents SSIM-specific configuration
 type SSIMConfiguration struct {
-	WindowSize   int    `json:"window_size"`   // Sliding window size
-	K1           float64 `json:"k1"`           // Algorithm parameter
-	K2           float64 `json:"k2"`           // Algorithm parameter
-	Stats        bool   `json:"stats"`        // Output additional statistics
-	OutputFormat string `json:"output_format"` // json, csv
+	WindowSize   int     `json:"window_size"`   // Sliding window size
+	K1           float64 `json:"k1"`            // Algorithm parameter
+	K2           float64 `json:"k2"`            // Algorithm parameter
+	Stats        bool    `json:"stats"`         // Output additional statistics
+	OutputFormat string  `json:"output_format"` // json, csv
 }
 
 // QualityComparisonRequest represents a request to compare video quality
@@ -121,8 +121,8 @@ type QualityComparisonRequest struct {
 	Metrics       []QualityMetricType `json:"metrics" binding:"required"`
 	Configuration QualityConfig       `json:"configuration,omitempty"`
 	Async         bool                `json:"async,omitempty"`
-	FrameLevel    bool                `json:"frame_level,omitempty"`  // Include per-frame metrics
-	SaveFrames    bool                `json:"save_frames,omitempty"`  // Save frame-level data to DB
+	FrameLevel    bool                `json:"frame_level,omitempty"` // Include per-frame metrics
+	SaveFrames    bool                `json:"save_frames,omitempty"` // Save frame-level data to DB
 }
 
 // QualityConfig contains configuration for all quality metrics
@@ -135,48 +135,48 @@ type QualityConfig struct {
 
 // QualityResult represents the result of a quality analysis
 type QualityResult struct {
-	ID           uuid.UUID              `json:"id"`
-	Status       QualityAnalysisStatus  `json:"status"`
-	Analysis     []*QualityAnalysis     `json:"analysis"`
-	FrameMetrics []*QualityFrameMetric  `json:"frame_metrics,omitempty"`
-	Summary      *QualitySummary        `json:"summary"`
-	Visualization *QualityVisualization `json:"visualization,omitempty"`
-	ProcessingTime time.Duration        `json:"processing_time"`
-	Message      string                 `json:"message,omitempty"`
-	Error        string                 `json:"error,omitempty"`
+	ID             uuid.UUID             `json:"id"`
+	Status         QualityAnalysisStatus `json:"status"`
+	Analysis       []*QualityAnalysis    `json:"analysis"`
+	FrameMetrics   []*QualityFrameMetric `json:"frame_metrics,omitempty"`
+	Summary        *QualitySummary       `json:"summary"`
+	Visualization  *QualityVisualization `json:"visualization,omitempty"`
+	ProcessingTime time.Duration         `json:"processing_time"`
+	Message        string                `json:"message,omitempty"`
+	Error          string                `json:"error,omitempty"`
 }
 
 // QualitySummary provides a human-readable summary of quality metrics
 type QualitySummary struct {
-	ReferenceFile     string                         `json:"reference_file"`
-	DistortedFile     string                         `json:"distorted_file"`
-	OverallRating     QualityRating                  `json:"overall_rating"`
-	MetricSummaries   map[QualityMetricType]*MetricSummary `json:"metric_summaries"`
-	Recommendations   []string                       `json:"recommendations"`
-	QualityIssues     []QualityIssue                 `json:"quality_issues"`
-	ComparisonInsights string                        `json:"comparison_insights"`
+	ReferenceFile      string                               `json:"reference_file"`
+	DistortedFile      string                               `json:"distorted_file"`
+	OverallRating      QualityRating                        `json:"overall_rating"`
+	MetricSummaries    map[QualityMetricType]*MetricSummary `json:"metric_summaries"`
+	Recommendations    []string                             `json:"recommendations"`
+	QualityIssues      []QualityIssue                       `json:"quality_issues"`
+	ComparisonInsights string                               `json:"comparison_insights"`
 }
 
 // MetricSummary provides summary for a specific metric
 type MetricSummary struct {
-	MetricType    QualityMetricType `json:"metric_type"`
-	Score         float64           `json:"score"`
-	Rating        QualityRating     `json:"rating"`
-	Description   string            `json:"description"`
-	Interpretation string           `json:"interpretation"`
-	FrameStats    *FrameStatistics  `json:"frame_stats,omitempty"`
+	MetricType     QualityMetricType `json:"metric_type"`
+	Score          float64           `json:"score"`
+	Rating         QualityRating     `json:"rating"`
+	Description    string            `json:"description"`
+	Interpretation string            `json:"interpretation"`
+	FrameStats     *FrameStatistics  `json:"frame_stats,omitempty"`
 }
 
 // FrameStatistics provides frame-level statistics
 type FrameStatistics struct {
-	TotalFrames    int     `json:"total_frames"`
-	HighQuality    int     `json:"high_quality_frames"`    // Frames above threshold
-	MediumQuality  int     `json:"medium_quality_frames"`  // Frames in medium range
-	LowQuality     int     `json:"low_quality_frames"`     // Frames below threshold
-	WorstFrame     int     `json:"worst_frame_number"`
-	WorstScore     float64 `json:"worst_frame_score"`
-	BestFrame      int     `json:"best_frame_number"`
-	BestScore      float64 `json:"best_frame_score"`
+	TotalFrames   int     `json:"total_frames"`
+	HighQuality   int     `json:"high_quality_frames"`   // Frames above threshold
+	MediumQuality int     `json:"medium_quality_frames"` // Frames in medium range
+	LowQuality    int     `json:"low_quality_frames"`    // Frames below threshold
+	WorstFrame    int     `json:"worst_frame_number"`
+	WorstScore    float64 `json:"worst_frame_score"`
+	BestFrame     int     `json:"best_frame_number"`
+	BestScore     float64 `json:"best_frame_score"`
 }
 
 // QualityRating represents overall quality rating
@@ -193,8 +193,8 @@ const (
 // QualityIssue represents a detected quality issue
 type QualityIssue struct {
 	QualityID   uuid.UUID   `json:"quality_id,omitempty"`
-	Type        string      `json:"type"`        // "blocking", "blurring", "noise", etc.
-	Severity    string      `json:"severity"`    // "high", "medium", "low"
+	Type        string      `json:"type"`     // "blocking", "blurring", "noise", etc.
+	Severity    string      `json:"severity"` // "high", "medium", "low"
 	Description string      `json:"description"`
 	FrameRange  *FrameRange `json:"frame_range,omitempty"`
 	Timestamp   *TimeRange  `json:"timestamp,omitempty"`
@@ -282,7 +282,7 @@ func DefaultQualityThresholds() QualityThresholds {
 // GetRating returns the quality rating based on score and metric type
 func (qt QualityThresholds) GetRating(metricType QualityMetricType, score float64) QualityRating {
 	var thresholds interface{}
-	
+
 	switch metricType {
 	case MetricVMAF:
 		thresholds = qt.VMAF
@@ -338,7 +338,7 @@ func (qt QualityThresholds) GetRating(metricType QualityMetricType, score float6
 type QualityProgressUpdate struct {
 	ID              uuid.UUID             `json:"id"`
 	Status          QualityAnalysisStatus `json:"status"`
-	Progress        float64               `json:"progress"`        // 0.0 to 1.0
+	Progress        float64               `json:"progress"` // 0.0 to 1.0
 	CurrentMetric   QualityMetricType     `json:"current_metric"`
 	ProcessedFrames int                   `json:"processed_frames"`
 	TotalFrames     int                   `json:"total_frames"`
@@ -355,21 +355,21 @@ type BatchQualityRequest struct {
 
 // BatchQualityResult represents results from batch quality analysis
 type BatchQualityResult struct {
-	BatchID     uuid.UUID              `json:"batch_id"`
-	Status      string                 `json:"status"`
-	Total       int                    `json:"total"`
-	Completed   int                    `json:"completed"`
-	Failed      int                    `json:"failed"`
-	Results     []*QualityResult       `json:"results"`
-	Summary     *BatchQualitySummary   `json:"summary,omitempty"`
+	BatchID   uuid.UUID            `json:"batch_id"`
+	Status    string               `json:"status"`
+	Total     int                  `json:"total"`
+	Completed int                  `json:"completed"`
+	Failed    int                  `json:"failed"`
+	Results   []*QualityResult     `json:"results"`
+	Summary   *BatchQualitySummary `json:"summary,omitempty"`
 }
 
 // BatchQualitySummary provides summary of batch analysis
 type BatchQualitySummary struct {
-	OverallRating     QualityRating                    `json:"overall_rating"`
-	AverageScores     map[QualityMetricType]float64   `json:"average_scores"`
-	BestPerforming    string                          `json:"best_performing"`
-	WorstPerforming   string                          `json:"worst_performing"`
-	Recommendations   []string                        `json:"recommendations"`
-	ProcessingTime    time.Duration                   `json:"processing_time"`
+	OverallRating   QualityRating                 `json:"overall_rating"`
+	AverageScores   map[QualityMetricType]float64 `json:"average_scores"`
+	BestPerforming  string                        `json:"best_performing"`
+	WorstPerforming string                        `json:"worst_performing"`
+	Recommendations []string                      `json:"recommendations"`
+	ProcessingTime  time.Duration                 `json:"processing_time"`
 }

@@ -135,7 +135,7 @@ func NewMonitoringMiddleware(logger zerolog.Logger) *MonitoringMiddleware {
 func (mm *MonitoringMiddleware) Metrics() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
-		
+
 		// Increment active connections
 		activeConnections.Inc()
 		defer activeConnections.Dec()
@@ -151,7 +151,7 @@ func (mm *MonitoringMiddleware) Metrics() gin.HandlerFunc {
 
 		// Calculate duration
 		duration := time.Since(start).Seconds()
-		
+
 		// Get normalized endpoint for metrics (remove IDs)
 		endpoint := normalizeEndpoint(c.FullPath())
 		method := c.Request.Method
@@ -160,11 +160,11 @@ func (mm *MonitoringMiddleware) Metrics() gin.HandlerFunc {
 		// Record metrics
 		httpRequestsTotal.WithLabelValues(method, endpoint, status).Inc()
 		httpRequestDuration.WithLabelValues(method, endpoint).Observe(duration)
-		
+
 		if requestSize > 0 {
 			httpRequestSize.WithLabelValues(method, endpoint).Observe(requestSize)
 		}
-		
+
 		responseSize := float64(c.Writer.Size())
 		if responseSize > 0 {
 			httpResponseSize.WithLabelValues(method, endpoint).Observe(responseSize)
@@ -224,7 +224,7 @@ func (mm *MonitoringMiddleware) UploadMetrics() gin.HandlerFunc {
 		status := "unknown"
 		if c.Writer.Status() >= 200 && c.Writer.Status() < 300 {
 			status = "success"
-			
+
 			// Try to get file size from context (set by upload handler)
 			if fileSize, exists := c.Get("upload_file_size"); exists {
 				if size, ok := fileSize.(int64); ok {
@@ -279,24 +279,24 @@ func normalizeEndpoint(path string) string {
 	// This is a simple implementation - in production you might want
 	// to use regex for more sophisticated ID detection
 	normalized := path
-	
+
 	// Common patterns to normalize
 	patterns := map[string]string{
-		"/api/v1/probe/status/":   "/api/v1/probe/status/:id",
-		"/api/v1/batch/status/":   "/api/v1/batch/status/:id",
-		"/api/v1/upload/status/":  "/api/v1/upload/status/:id",
+		"/api/v1/probe/status/":    "/api/v1/probe/status/:id",
+		"/api/v1/batch/status/":    "/api/v1/batch/status/:id",
+		"/api/v1/upload/status/":   "/api/v1/upload/status/:id",
 		"/api/v1/stream/progress/": "/api/v1/stream/progress/:id",
-		"/api/v1/probe/analyses/": "/api/v1/probe/analyses/:id",
-		"/api/v1/batch/":          "/api/v1/batch/:id",
+		"/api/v1/probe/analyses/":  "/api/v1/probe/analyses/:id",
+		"/api/v1/batch/":           "/api/v1/batch/:id",
 	}
-	
+
 	for pattern, replacement := range patterns {
 		if len(normalized) > len(pattern) && normalized[:len(pattern)] == pattern {
 			normalized = replacement
 			break
 		}
 	}
-	
+
 	return normalized
 }
 
@@ -308,7 +308,7 @@ func isFFprobeEndpoint(path string) bool {
 		"/api/v1/stream/live",
 		"/api/v1/batch/analyze",
 	}
-	
+
 	for _, endpoint := range ffprobeEndpoints {
 		if path == endpoint {
 			return true
@@ -322,7 +322,7 @@ func isUploadEndpoint(path string) bool {
 		"/api/v1/upload",
 		"/api/v1/upload/chunk",
 	}
-	
+
 	for _, endpoint := range uploadEndpoints {
 		if path == endpoint {
 			return true
@@ -362,10 +362,10 @@ func RecordCustomMetric(name string, value float64, labels map[string]string) {
 	logEvent := logger.Info().
 		Str("metric_name", name).
 		Float64("value", value)
-	
+
 	for key, val := range labels {
 		logEvent.Str(key, val)
 	}
-	
+
 	logEvent.Msg("Custom metric recorded")
 }

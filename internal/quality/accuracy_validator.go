@@ -119,24 +119,24 @@ func (av *AccuracyValidator) runTestSuite(ctx context.Context, suite QualityTest
 				Err(err).
 				Str("test", testCase.Name).
 				Msg("Test case failed to run")
-			
+
 			testResult = &AccuracyTestResult{
-				TestName:      testCase.Name,
-				Expected:      testCase.ExpectedScore,
-				Actual:        0,
-				Error:         math.Inf(1),
-				Passed:        false,
-				ErrorMessage:  err.Error(),
+				TestName:       testCase.Name,
+				Expected:       testCase.ExpectedScore,
+				Actual:         0,
+				Error:          math.Inf(1),
+				Passed:         false,
+				ErrorMessage:   err.Error(),
 				ProcessingTime: 0,
 			}
 		}
 
 		result.Tests = append(result.Tests, testResult)
-		
+
 		if testResult.Passed {
 			result.PassedTests++
 		}
-		
+
 		result.TotalError += math.Abs(testResult.Error)
 		if math.Abs(testResult.Error) > result.MaxError {
 			result.MaxError = math.Abs(testResult.Error)
@@ -185,7 +185,7 @@ func (av *AccuracyValidator) runTestCase(ctx context.Context, testCase QualityTe
 	if tolerance == 0 {
 		tolerance = getDefaultTolerance(metric)
 	}
-	
+
 	passed := math.Abs(error) <= tolerance
 
 	result := &AccuracyTestResult{
@@ -213,7 +213,7 @@ func (av *AccuracyValidator) runTestCase(ctx context.Context, testCase QualityTe
 // getRelevantTestSuites returns test suites relevant to the given metric
 func (av *AccuracyValidator) getRelevantTestSuites(metric QualityMetricType) []QualityTestSuite {
 	var relevant []QualityTestSuite
-	
+
 	for _, suite := range av.testSuites {
 		for _, supportedMetric := range suite.SupportedMetrics {
 			if supportedMetric == metric {
@@ -222,7 +222,7 @@ func (av *AccuracyValidator) getRelevantTestSuites(metric QualityMetricType) []Q
 			}
 		}
 	}
-	
+
 	return relevant
 }
 
@@ -255,25 +255,25 @@ func (av *AccuracyValidator) generateRecommendations(result *AccuracyValidationR
 	switch result.Status {
 	case ValidationStatusExcellent:
 		recommendations = append(recommendations, "Metric accuracy is excellent. No immediate action required.")
-	
+
 	case ValidationStatusGood:
 		recommendations = append(recommendations, "Metric accuracy is good. Consider monitoring for consistency.")
 		if result.MaxError > getDefaultTolerance(result.Metric)*2 {
 			recommendations = append(recommendations, "Some tests show higher than expected error. Review outlier cases.")
 		}
-	
+
 	case ValidationStatusAcceptable:
 		recommendations = append(recommendations, "Metric accuracy is acceptable but could be improved.")
 		recommendations = append(recommendations, "Consider calibrating metric parameters or updating reference data.")
 		if result.AverageError > getDefaultTolerance(result.Metric) {
 			recommendations = append(recommendations, "Average error exceeds tolerance. Review calculation methodology.")
 		}
-	
+
 	case ValidationStatusPoor:
 		recommendations = append(recommendations, "Metric accuracy is poor. Immediate investigation required.")
 		recommendations = append(recommendations, "Review metric implementation and test data quality.")
 		recommendations = append(recommendations, "Consider updating metric algorithms or reference standards.")
-	
+
 	case ValidationStatusFailed:
 		recommendations = append(recommendations, "Validation failed to complete. Check system configuration and test data availability.")
 	}
@@ -285,13 +285,13 @@ func (av *AccuracyValidator) generateRecommendations(result *AccuracyValidationR
 			recommendations = append(recommendations, "For VMAF: Ensure model version matches reference implementation.")
 			recommendations = append(recommendations, "For VMAF: Verify frame rate and resolution alignment.")
 		}
-	
+
 	case MetricPSNR:
 		if result.AccuracyScore < 95 {
 			recommendations = append(recommendations, "For PSNR: Check bit depth and color space handling.")
 			recommendations = append(recommendations, "For PSNR: Verify numerical precision in calculations.")
 		}
-	
+
 	case MetricSSIM:
 		if result.AccuracyScore < 90 {
 			recommendations = append(recommendations, "For SSIM: Review window size and gaussian weights.")
@@ -322,8 +322,8 @@ func getDefaultTolerance(metric QualityMetricType) float64 {
 func loadDefaultTestSuites() []QualityTestSuite {
 	return []QualityTestSuite{
 		{
-			Name:        "Basic VMAF Tests",
-			Description: "Basic VMAF accuracy validation tests",
+			Name:             "Basic VMAF Tests",
+			Description:      "Basic VMAF accuracy validation tests",
 			SupportedMetrics: []QualityMetricType{MetricVMAF},
 			TestCases: []QualityTestCase{
 				// These would be replaced with actual test files and expected scores
@@ -336,7 +336,7 @@ func loadDefaultTestSuites() []QualityTestSuite {
 					Tolerance:     0.5,
 				},
 				{
-					Name:          "VMAF_Test_2", 
+					Name:          "VMAF_Test_2",
 					Description:   "High quality reference vs medium degradation",
 					ReferenceFile: "/test/reference/high_quality.mp4",
 					DistortedFile: "/test/distorted/medium_degradation.mp4",
@@ -346,8 +346,8 @@ func loadDefaultTestSuites() []QualityTestSuite {
 			},
 		},
 		{
-			Name:        "Basic PSNR Tests",
-			Description: "Basic PSNR accuracy validation tests",
+			Name:             "Basic PSNR Tests",
+			Description:      "Basic PSNR accuracy validation tests",
 			SupportedMetrics: []QualityMetricType{MetricPSNR},
 			TestCases: []QualityTestCase{
 				{
@@ -361,8 +361,8 @@ func loadDefaultTestSuites() []QualityTestSuite {
 			},
 		},
 		{
-			Name:        "Basic SSIM Tests", 
-			Description: "Basic SSIM accuracy validation tests",
+			Name:             "Basic SSIM Tests",
+			Description:      "Basic SSIM accuracy validation tests",
 			SupportedMetrics: []QualityMetricType{MetricSSIM},
 			TestCases: []QualityTestCase{
 				{
@@ -380,19 +380,19 @@ func loadDefaultTestSuites() []QualityTestSuite {
 
 // Validation types
 type AccuracyValidationResult struct {
-	ID              uuid.UUID                `json:"id"`
-	Metric          QualityMetricType        `json:"metric"`
-	Status          ValidationStatus         `json:"status"`
-	AccuracyScore   float64                  `json:"accuracy_score"`
-	PassedTests     int                      `json:"passed_tests"`
-	TotalTests      int                      `json:"total_tests"`
-	AverageError    float64                  `json:"average_error"`
-	MaxError        float64                  `json:"max_error"`
-	Tests           []*AccuracyTestResult    `json:"tests"`
-	Recommendations []string                 `json:"recommendations"`
-	StartedAt       time.Time                `json:"started_at"`
-	CompletedAt     time.Time                `json:"completed_at"`
-	Duration        time.Duration            `json:"duration"`
+	ID              uuid.UUID             `json:"id"`
+	Metric          QualityMetricType     `json:"metric"`
+	Status          ValidationStatus      `json:"status"`
+	AccuracyScore   float64               `json:"accuracy_score"`
+	PassedTests     int                   `json:"passed_tests"`
+	TotalTests      int                   `json:"total_tests"`
+	AverageError    float64               `json:"average_error"`
+	MaxError        float64               `json:"max_error"`
+	Tests           []*AccuracyTestResult `json:"tests"`
+	Recommendations []string              `json:"recommendations"`
+	StartedAt       time.Time             `json:"started_at"`
+	CompletedAt     time.Time             `json:"completed_at"`
+	Duration        time.Duration         `json:"duration"`
 }
 
 type ValidationStatus string
@@ -418,26 +418,26 @@ type AccuracyTestResult struct {
 }
 
 type TestSuiteResult struct {
-	SuiteName   string                 `json:"suite_name"`
-	Tests       []*AccuracyTestResult  `json:"tests"`
-	PassedTests int                    `json:"passed_tests"`
-	TotalError  float64                `json:"total_error"`
-	MaxError    float64                `json:"max_error"`
+	SuiteName   string                `json:"suite_name"`
+	Tests       []*AccuracyTestResult `json:"tests"`
+	PassedTests int                   `json:"passed_tests"`
+	TotalError  float64               `json:"total_error"`
+	MaxError    float64               `json:"max_error"`
 }
 
 type QualityTestSuite struct {
-	Name             string                `json:"name"`
-	Description      string                `json:"description"`
-	SupportedMetrics []QualityMetricType   `json:"supported_metrics"`
-	TestCases        []QualityTestCase     `json:"test_cases"`
+	Name             string              `json:"name"`
+	Description      string              `json:"description"`
+	SupportedMetrics []QualityMetricType `json:"supported_metrics"`
+	TestCases        []QualityTestCase   `json:"test_cases"`
 }
 
 type QualityTestCase struct {
-	Name          string                 `json:"name"`
-	Description   string                 `json:"description"`
-	ReferenceFile string                 `json:"reference_file"`
-	DistortedFile string                 `json:"distorted_file"`
-	ExpectedScore float64                `json:"expected_score"`
-	Tolerance     float64                `json:"tolerance"`
-	Configuration QualityConfig          `json:"configuration,omitempty"`
+	Name          string        `json:"name"`
+	Description   string        `json:"description"`
+	ReferenceFile string        `json:"reference_file"`
+	DistortedFile string        `json:"distorted_file"`
+	ExpectedScore float64       `json:"expected_score"`
+	Tolerance     float64       `json:"tolerance"`
+	Configuration QualityConfig `json:"configuration,omitempty"`
 }

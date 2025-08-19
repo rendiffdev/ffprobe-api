@@ -309,12 +309,12 @@ func validateScoreRanges(metric QualityMetricType, analysis *QualityAnalysis) er
 
 	// Validate min/max consistency
 	if analysis.MinScore > analysis.MaxScore {
-		return fmt.Errorf("minimum score (%.2f) cannot be greater than maximum score (%.2f)", 
+		return fmt.Errorf("minimum score (%.2f) cannot be greater than maximum score (%.2f)",
 			analysis.MinScore, analysis.MaxScore)
 	}
 
 	if analysis.OverallScore < analysis.MinScore || analysis.OverallScore > analysis.MaxScore {
-		return fmt.Errorf("overall score (%.2f) must be within min/max range [%.2f-%.2f]", 
+		return fmt.Errorf("overall score (%.2f) must be within min/max range [%.2f-%.2f]",
 			analysis.OverallScore, analysis.MinScore, analysis.MaxScore)
 	}
 

@@ -57,7 +57,7 @@ func (ha *HDRAnalyzer) AnalyzeHDR(ctx context.Context, filePath string) (*HDRAna
 		if analysis.IsHDR {
 			// Determine HDR format
 			analysis.HDRFormat = ha.determineHDRFormat(stream)
-			
+
 			// Check for HLG compatibility
 			analysis.HLGCompatible = ha.isHLGCompatible(stream.ColorTransfer)
 		}
@@ -153,10 +153,10 @@ func (ha *HDRAnalyzer) isHDRContent(colorPrimaries, colorTransfer, colorSpace st
 	}
 
 	hdrTransfers := map[string]bool{
-		"smpte2084":     true, // HDR10/HDR10+
-		"arib-std-b67":  true, // HLG
-		"smpte2094-40":  true, // HDR10+
-		"smpte2094-10":  true, // HDR10+
+		"smpte2084":    true, // HDR10/HDR10+
+		"arib-std-b67": true, // HLG
+		"smpte2094-40": true, // HDR10+
+		"smpte2094-10": true, // HDR10+
 	}
 
 	hdrColorSpaces := map[string]bool{
@@ -164,9 +164,9 @@ func (ha *HDRAnalyzer) isHDRContent(colorPrimaries, colorTransfer, colorSpace st
 		"bt2020c":  true,
 	}
 
-	return hdrPrimaries[colorPrimaries] && 
-		   hdrTransfers[colorTransfer] && 
-		   hdrColorSpaces[colorSpace]
+	return hdrPrimaries[colorPrimaries] &&
+		hdrTransfers[colorTransfer] &&
+		hdrColorSpaces[colorSpace]
 }
 
 // determineHDRFormat determines the specific HDR format
@@ -194,25 +194,25 @@ func (ha *HDRAnalyzer) isHLGCompatible(colorTransfer string) bool {
 // parseSideDataMetadata parses side data for advanced HDR metadata
 func (ha *HDRAnalyzer) parseSideDataMetadata(sideData string, analysis *HDRAnalysis) {
 	lines := strings.Split(sideData, "\n")
-	
+
 	var currentSideData string
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		
+
 		// Detect side data types
 		if strings.Contains(line, "side_data_type=Mastering display metadata") {
 			currentSideData = "mastering"
 			analysis.MasteringDisplay = &MasteringDisplayMetadata{HasMasteringDisplay: true}
 			continue
 		}
-		
+
 		if strings.Contains(line, "side_data_type=Content light level metadata") {
 			currentSideData = "content_light"
 			analysis.ContentLightLevel = &ContentLightLevelData{HasContentLightLevel: true}
 			continue
 		}
-		
+
 		if strings.Contains(line, "side_data_type=HDR10+") {
 			currentSideData = "hdr10plus"
 			analysis.HDR10Plus = &HDR10PlusMetadata{Present: true}
@@ -221,7 +221,7 @@ func (ha *HDRAnalyzer) parseSideDataMetadata(sideData string, analysis *HDRAnaly
 			}
 			continue
 		}
-		
+
 		if strings.Contains(line, "side_data_type=DOVI") || strings.Contains(line, "Dolby Vision") {
 			currentSideData = "dolby_vision"
 			analysis.DolbyVision = &DolbyVisionMetadata{}
@@ -403,8 +403,8 @@ func (ha *HDRAnalyzer) parseDolbyVisionData(line string, metadata *DolbyVisionMe
 // validateHDRCompliance validates HDR compliance and provides recommendations
 func (ha *HDRAnalyzer) validateHDRCompliance(analysis *HDRAnalysis) *HDRValidation {
 	validation := &HDRValidation{
-		Standard: analysis.HDRFormat,
-		Issues:   []string{},
+		Standard:        analysis.HDRFormat,
+		Issues:          []string{},
 		Recommendations: []string{},
 	}
 

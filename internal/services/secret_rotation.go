@@ -55,15 +55,15 @@ type APIKey struct {
 
 // JWTSecret represents a JWT signing secret with versioning
 type JWTSecret struct {
-	ID         string    `db:"id" json:"id"`
-	Version    int       `db:"version" json:"version"`
-	Secret     string    `db:"secret" json:"-"`
-	Algorithm  string    `db:"algorithm" json:"algorithm"`
-	Status     string    `db:"status" json:"status"`
-	CreatedAt  time.Time `db:"created_at" json:"created_at"`
-	ExpiresAt  time.Time `db:"expires_at" json:"expires_at"`
-	RotatedAt  time.Time `db:"rotated_at" json:"rotated_at"`
-	IsActive   bool      `db:"is_active" json:"is_active"`
+	ID        string    `db:"id" json:"id"`
+	Version   int       `db:"version" json:"version"`
+	Secret    string    `db:"secret" json:"-"`
+	Algorithm string    `db:"algorithm" json:"algorithm"`
+	Status    string    `db:"status" json:"status"`
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	ExpiresAt time.Time `db:"expires_at" json:"expires_at"`
+	RotatedAt time.Time `db:"rotated_at" json:"rotated_at"`
+	IsActive  bool      `db:"is_active" json:"is_active"`
 }
 
 // NewSecretRotationService creates a new secret rotation service
@@ -99,11 +99,11 @@ func (s *SecretRotationService) GenerateAPIKey(ctx context.Context, userID, tena
 	if _, err := rand.Read(rawKey); err != nil {
 		return nil, "", fmt.Errorf("failed to generate random key: %w", err)
 	}
-	
+
 	keyString := hex.EncodeToString(rawKey)
 	keyPrefix := keyString[:8]
 	fullKey := fmt.Sprintf("ffprobe_%s_sk_%s", getEnvironment(), keyString)
-	
+
 	// Hash the key for storage
 	hashedKey, err := bcrypt.GenerateFromPassword([]byte(fullKey), bcrypt.DefaultCost)
 	if err != nil {
@@ -112,7 +112,7 @@ func (s *SecretRotationService) GenerateAPIKey(ctx context.Context, userID, tena
 
 	// Check active key count for user
 	var activeCount int
-	err = s.db.GetContext(ctx, &activeCount, 
+	err = s.db.GetContext(ctx, &activeCount,
 		"SELECT COUNT(*) FROM api_keys WHERE user_id = $1 AND status = 'active'", userID)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to check active keys: %w", err)
@@ -137,7 +137,7 @@ func (s *SecretRotationService) GenerateAPIKey(ctx context.Context, userID, tena
 		LastRotated:  time.Now(),
 		RotationDue:  time.Now().Add(s.config.RotationInterval),
 		UsageCount:   0,
-		RateLimitRPM: 60,  // Default rate limits
+		RateLimitRPM: 60, // Default rate limits
 		RateLimitRPH: 1000,
 		RateLimitRPD: 10000,
 	}
@@ -188,7 +188,7 @@ func (s *SecretRotationService) RotateAPIKey(ctx context.Context, keyID string) 
 	}
 
 	// Generate new key
-	newKey, rawKey, err := s.GenerateAPIKey(ctx, oldKey.UserID, oldKey.TenantID, 
+	newKey, rawKey, err := s.GenerateAPIKey(ctx, oldKey.UserID, oldKey.TenantID,
 		oldKey.Name+" (rotated)", oldKey.Permissions)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to generate new key: %w", err)
@@ -196,7 +196,7 @@ func (s *SecretRotationService) RotateAPIKey(ctx context.Context, keyID string) 
 
 	// Mark old key for expiration (with grace period)
 	gracePeriodEnd := time.Now().Add(s.config.GracePeriod)
-	_, err = s.db.ExecContext(ctx, 
+	_, err = s.db.ExecContext(ctx,
 		"UPDATE api_keys SET status = 'rotating', expires_at = $1 WHERE id = $2",
 		gracePeriodEnd, keyID)
 	if err != nil {
@@ -223,12 +223,12 @@ func (s *SecretRotationService) RotateJWTSecret(ctx context.Context) (*JWTSecret
 	if _, err := rand.Read(secretBytes); err != nil {
 		return nil, fmt.Errorf("failed to generate JWT secret: %w", err)
 	}
-	
+
 	newSecret := hex.EncodeToString(secretBytes)
 
 	// Get current version
 	var currentVersion int
-	err := s.db.GetContext(ctx, &currentVersion, 
+	err := s.db.GetContext(ctx, &currentVersion,
 		"SELECT COALESCE(MAX(version), 0) FROM jwt_secrets")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get current version: %w", err)
@@ -255,7 +255,7 @@ func (s *SecretRotationService) RotateJWTSecret(ctx context.Context) (*JWTSecret
 	defer tx.Rollback()
 
 	// Deactivate old secrets (keep for verification during grace period)
-	_, err = tx.ExecContext(ctx, 
+	_, err = tx.ExecContext(ctx,
 		"UPDATE jwt_secrets SET is_active = false, status = 'rotating' WHERE is_active = true")
 	if err != nil {
 		return nil, fmt.Errorf("failed to deactivate old secrets: %w", err)
@@ -298,25 +298,25 @@ func (s *SecretRotationService) ValidateAPIKey(ctx context.Context, apiKey strin
 	if len(apiKey) < 8 {
 		return nil, fmt.Errorf("invalid API key format")
 	}
-	
+
 	prefix := apiKey[8:16] // Extract prefix from standard format
 
 	// Check cache first
 	cacheKey := fmt.Sprintf("apikey:%s:meta", prefix)
 	cached, _ := s.cache.HGetAll(ctx, cacheKey)
-	
+
 	var keyRecord APIKey
 	if len(cached) > 0 && cached["status"] == "active" {
 		// Use cached metadata for initial validation
 		keyID := cached["key_id"]
-		err := s.db.GetContext(ctx, &keyRecord, 
+		err := s.db.GetContext(ctx, &keyRecord,
 			"SELECT * FROM api_keys WHERE id = $1 AND status IN ('active', 'rotating')", keyID)
 		if err != nil {
 			return nil, fmt.Errorf("invalid API key")
 		}
 	} else {
 		// Fallback to database lookup
-		err := s.db.GetContext(ctx, &keyRecord, 
+		err := s.db.GetContext(ctx, &keyRecord,
 			"SELECT * FROM api_keys WHERE key_prefix = $1 AND status IN ('active', 'rotating')", prefix)
 		if err != nil {
 			return nil, fmt.Errorf("invalid API key")
@@ -352,7 +352,7 @@ func (s *SecretRotationService) updateKeyUsage(ctx context.Context, keyID string
 // CheckRotationDue checks if any secrets are due for rotation
 func (s *SecretRotationService) CheckRotationDue(ctx context.Context) ([]string, error) {
 	var dueKeys []string
-	
+
 	// Check API keys
 	rows, err := s.db.QueryContext(ctx,
 		"SELECT id FROM api_keys WHERE status = 'active' AND rotation_due < NOW()")

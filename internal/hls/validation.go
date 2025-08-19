@@ -267,12 +267,12 @@ func validateCodecs(codecs string) error {
 
 	// Basic validation for common codec formats
 	validCodecPatterns := []string{
-		`^avc1\.`,   // H.264
-		`^hev1\.`,   // H.265
-		`^mp4a\.`,   // AAC
-		`^opus`,     // Opus
-		`^vp9`,      // VP9
-		`^av01\.`,   // AV1
+		`^avc1\.`, // H.264
+		`^hev1\.`, // H.265
+		`^mp4a\.`, // AAC
+		`^opus`,   // Opus
+		`^vp9`,    // VP9
+		`^av01\.`, // AV1
 	}
 
 	codecParts := strings.Split(codecs, ",")
@@ -400,4 +400,3 @@ func parseInt(s string) int {
 	}
 	return val
 }
-

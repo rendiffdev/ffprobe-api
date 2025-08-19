@@ -10,15 +10,15 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/rs/zerolog"
 	"github.com/rendiffdev/ffprobe-api/internal/repositories"
+	"github.com/rs/zerolog"
 )
 
 // VMAFModelService handles VMAF model operations
 type VMAFModelService struct {
-	repo       *repositories.VMAFModelRepository
-	modelsDir  string
-	logger     zerolog.Logger
+	repo      *repositories.VMAFModelRepository
+	modelsDir string
+	logger    zerolog.Logger
 }
 
 // NewVMAFModelService creates a new VMAF model service
@@ -37,10 +37,10 @@ func NewVMAFModelService(repo *repositories.VMAFModelRepository, modelsDir strin
 
 // VMAFModelRequest represents a request to create or update a VMAF model
 type VMAFModelRequest struct {
-	Name        string            `json:"name" binding:"required"`
-	Description string            `json:"description"`
-	Version     string            `json:"version" binding:"required"`
-	IsPublic    bool              `json:"is_public"`
+	Name        string                 `json:"name" binding:"required"`
+	Description string                 `json:"description"`
+	Version     string                 `json:"version" binding:"required"`
+	IsPublic    bool                   `json:"is_public"`
 	Metadata    map[string]interface{} `json:"metadata"`
 }
 
@@ -76,7 +76,7 @@ func (s *VMAFModelService) UploadModel(ctx context.Context, userID uuid.UUID, re
 	// Copy model file and calculate hash
 	hasher := sha256.New()
 	writer := io.MultiWriter(tempFile, hasher)
-	
+
 	written, err := io.Copy(writer, modelFile)
 	if err != nil {
 		tempFile.Close()
@@ -277,15 +277,15 @@ func (s *VMAFModelService) CleanupOrphanedFiles(ctx context.Context) error {
 		}
 
 		filePath := filepath.Join(s.modelsDir, file.Name())
-		
+
 		// Check if file has a corresponding database record
 		// This is a simple implementation - in production you might want to
 		// query all models and check against the file list for efficiency
 		orphaned := true
-		
+
 		// For now, we'll skip this check
 		// TODO: Implement proper orphaned file detection
-		
+
 		if orphaned {
 			s.logger.Debug().Str("file", filePath).Msg("Found orphaned model file")
 			// os.Remove(filePath)
