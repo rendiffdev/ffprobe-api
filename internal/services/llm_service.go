@@ -446,8 +446,8 @@ func (s *LLMService) buildAnalysisPrompt(analysis *models.Analysis) string {
 	prompt.WriteString(fmt.Sprintf("Size: %d bytes\n", analysis.FileSize))
 	prompt.WriteString(fmt.Sprintf("Source: %s\n\n", analysis.SourceType))
 	
-	// Add ffprobe data if available
-	if analysis.FFprobeData != nil {
+	// Add ffprobe data if available  
+	if len(analysis.FFprobeData.Format) > 0 || len(analysis.FFprobeData.Streams) > 0 {
 		prompt.WriteString("Technical Data:\n")
 		jsonData, _ := json.MarshalIndent(analysis.FFprobeData, "", "  ")
 		prompt.Write(jsonData)
@@ -469,8 +469,8 @@ func (s *LLMService) buildQAPrompt(analysis *models.Analysis, question string) s
 	prompt.WriteString(fmt.Sprintf("Size: %d bytes\n", analysis.FileSize))
 	prompt.WriteString(fmt.Sprintf("Source: %s\n\n", analysis.SourceType))
 	
-	// Add ffprobe data if available
-	if analysis.FFprobeData != nil {
+	// Add ffprobe data if available  
+	if len(analysis.FFprobeData.Format) > 0 || len(analysis.FFprobeData.Streams) > 0 {
 		prompt.WriteString("Technical Data:\n")
 		jsonData, _ := json.MarshalIndent(analysis.FFprobeData, "", "  ")
 		prompt.Write(jsonData)
@@ -484,7 +484,7 @@ func (s *LLMService) buildQAPrompt(analysis *models.Analysis, question string) s
 }
 
 // GenerateQualityInsights generates insights about video quality metrics
-func (s *LLMService) GenerateQualityInsights(ctx context.Context, analysis *models.Analysis, metrics []*models.QualityMetric) (string, error) {
+func (s *LLMService) GenerateQualityInsights(ctx context.Context, analysis *models.Analysis, metrics []models.QualityMetrics) (string, error) {
 	prompt := s.buildQualityInsightsPrompt(analysis, metrics)
 	
 	// Try local LLM first, then fallback to OpenRouter
@@ -516,7 +516,7 @@ func (s *LLMService) GenerateResponse(ctx context.Context, prompt string) (strin
 }
 
 // buildQualityInsightsPrompt creates a prompt for quality metrics analysis
-func (s *LLMService) buildQualityInsightsPrompt(analysis *models.Analysis, metrics []*models.QualityMetric) string {
+func (s *LLMService) buildQualityInsightsPrompt(analysis *models.Analysis, metrics []models.QualityMetrics) string {
 	var prompt strings.Builder
 	
 	prompt.WriteString("You are an expert video quality analyst. Analyze the following quality metrics and provide insights.\n\n")

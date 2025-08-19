@@ -3,9 +3,9 @@ package services
 import (
 	"context"
 	"crypto/rand"
-	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/google/uuid"
@@ -86,7 +86,7 @@ func NewSecretRotationService(db *sqlx.DB, cacheClient cache.Client, logger zero
 
 	return &SecretRotationService{
 		db:     db,
-		redis:  redis,
+		cache:  cacheClient,
 		logger: logger,
 		config: config,
 	}
@@ -303,7 +303,7 @@ func (s *SecretRotationService) ValidateAPIKey(ctx context.Context, apiKey strin
 
 	// Check cache first
 	cacheKey := fmt.Sprintf("apikey:%s:meta", prefix)
-	cached := s.cache.HGetAll(ctx, cacheKey).Val()
+	cached, _ := s.cache.HGetAll(ctx, cacheKey)
 	
 	var keyRecord APIKey
 	if len(cached) > 0 && cached["status"] == "active" {

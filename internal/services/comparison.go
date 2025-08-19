@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rendiffdev/ffprobe-api/internal/database"
 	"github.com/rendiffdev/ffprobe-api/internal/models"
 	"github.com/rendiffdev/ffprobe-api/internal/repositories"
 )
@@ -17,14 +18,14 @@ import (
 // ComparisonService handles video comparison operations
 type ComparisonService struct {
 	comparisonRepo repositories.ComparisonRepository
-	analysisRepo   repositories.AnalysisRepository
+	analysisRepo   database.Repository
 	llmService     *LLMService
 }
 
 // NewComparisonService creates a new comparison service
 func NewComparisonService(
 	comparisonRepo repositories.ComparisonRepository,
-	analysisRepo repositories.AnalysisRepository,
+	analysisRepo database.Repository,
 	llmService *LLMService,
 ) *ComparisonService {
 	return &ComparisonService{
@@ -37,12 +38,12 @@ func NewComparisonService(
 // CreateComparison creates a new video comparison
 func (s *ComparisonService) CreateComparison(ctx context.Context, req *models.CreateComparisonRequest) (*models.ComparisonResponse, error) {
 	// Validate that both analyses exist
-	originalAnalysis, err := s.analysisRepo.GetByID(ctx, req.OriginalAnalysisID)
+	originalAnalysis, err := s.analysisRepo.GetAnalysis(ctx, req.OriginalAnalysisID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get original analysis: %w", err)
 	}
 
-	modifiedAnalysis, err := s.analysisRepo.GetByID(ctx, req.ModifiedAnalysisID)
+	modifiedAnalysis, err := s.analysisRepo.GetAnalysis(ctx, req.ModifiedAnalysisID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get modified analysis: %w", err)
 	}

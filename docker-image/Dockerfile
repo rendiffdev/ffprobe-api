@@ -65,7 +65,7 @@ RUN ARCH=$(uname -m) && \
 # =============================================================================
 FROM alpine:3.19 AS production
 
-# Install runtime dependencies
+# Install runtime dependencies including FFmpeg
 RUN apk add --no-cache \
     ca-certificates \
     tzdata \
@@ -73,7 +73,8 @@ RUN apk add --no-cache \
     sqlite \
     dumb-init \
     su-exec \
-    shadow
+    shadow \
+    ffmpeg
 
 # Create app user and group
 RUN addgroup -g 1001 -S appgroup && \
@@ -82,18 +83,14 @@ RUN addgroup -g 1001 -S appgroup && \
 # Set working directory
 WORKDIR /app
 
-# Copy FFmpeg binaries from ffmpeg stage
-COPY --from=ffmpeg /tmp/bin/ffmpeg /usr/local/bin/
-COPY --from=ffmpeg /tmp/bin/ffprobe /usr/local/bin/
-
-# Make FFmpeg binaries executable
-RUN chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe
+# FFmpeg is installed from Alpine packages above
+# No need to copy custom binaries
 
 # Copy application binary from builder stage
 COPY --from=builder /build/ffprobe-api /app/
 
-# Copy migration files
-COPY --from=builder /build/migrations /app/migrations/
+# Copy migration files (if they exist)
+# COPY --from=builder /build/migrations /app/migrations/
 
 # Create required directories
 RUN mkdir -p \
@@ -125,8 +122,8 @@ ENV GO_ENV=production \
     DB_PATH=/app/data/ffprobe.db \
     UPLOAD_DIR=/app/uploads \
     REPORTS_DIR=/app/reports \
-    FFMPEG_PATH=/usr/local/bin/ffmpeg \
-    FFPROBE_PATH=/usr/local/bin/ffprobe
+    FFMPEG_PATH=/usr/bin/ffmpeg \
+    FFPROBE_PATH=/usr/bin/ffprobe
 
 # Security settings (can be overridden at runtime)
 ENV ENABLE_AUTH=true \

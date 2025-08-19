@@ -144,8 +144,8 @@ const (
 	// PSE analysis is CPU intensive and should be limited.
 	MaxConcurrentAnalysis = 2
 	
-	// MemoryLimitPerAnalysis is the estimated memory limit per analysis in MB.
-	MemoryLimitPerAnalysis = 512 // 512MB per analysis
+	// PSEMemoryLimitPerAnalysis is the estimated memory limit per PSE analysis in MB.
+	PSEMemoryLimitPerAnalysis = 512 // 512MB per PSE analysis
 )
 
 // Compliance Standards Versions

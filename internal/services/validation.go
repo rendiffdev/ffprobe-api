@@ -163,7 +163,7 @@ func ValidateAnalysisUpdate(analysis *models.Analysis) error {
 	}
 
 	// Validate FFprobe data if present
-	if analysis.FFprobeData != nil {
+	if len(analysis.FFprobeData.Format) > 0 || len(analysis.FFprobeData.Streams) > 0 {
 		if err := validateFFprobeData(analysis.FFprobeData); err != nil {
 			return fmt.Errorf("invalid FFprobe data: %w", err)
 		}
