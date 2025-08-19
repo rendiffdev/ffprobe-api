@@ -25,14 +25,14 @@ type TenantRateLimitConfig struct {
 	DefaultRPM int // Requests per minute
 	DefaultRPH int // Requests per hour
 	DefaultRPD int // Requests per day
-	
+
 	// Tenant-specific overrides
 	EnableTenantLimits bool
 	EnableUserLimits   bool
-	
+
 	// Burst allowance
 	BurstMultiplier float64
-	
+
 	// Response headers
 	IncludeHeaders bool
 }
@@ -132,8 +132,8 @@ func (rl *TenantRateLimiter) RateLimitMiddleware() gin.HandlerFunc {
 				Msg("Rate limit exceeded")
 
 			c.JSON(http.StatusTooManyRequests, gin.H{
-				"error": "Rate limit exceeded",
-				"message": fmt.Sprintf("Too many requests. Limit: %d req/min", info.LimitRPM),
+				"error":       "Rate limit exceeded",
+				"message":     fmt.Sprintf("Too many requests. Limit: %d req/min", info.LimitRPM),
 				"retry_after": info.ResetMinute.Unix(),
 				"limits": gin.H{
 					"per_minute": info.LimitRPM,
@@ -152,7 +152,7 @@ func (rl *TenantRateLimiter) RateLimitMiddleware() gin.HandlerFunc {
 
 		// Store rate limit info in context for logging
 		c.Set("rate_limit_info", info)
-		
+
 		c.Next()
 	}
 }
@@ -215,7 +215,7 @@ type APIKeyLimits struct {
 func (rl *TenantRateLimiter) getAPIKeyLimits(ctx context.Context, apiKeyID string) *APIKeyLimits {
 	cacheKey := fmt.Sprintf("apikey:%s:limits", apiKeyID)
 	result, _ := rl.cache.HGetAll(ctx, cacheKey)
-	
+
 	if len(result) == 0 {
 		return nil
 	}
@@ -243,7 +243,7 @@ func (rl *TenantRateLimiter) getAPIKeyLimits(ctx context.Context, apiKeyID strin
 func (rl *TenantRateLimiter) getUserLimits(ctx context.Context, userID string) *APIKeyLimits {
 	cacheKey := fmt.Sprintf("user:%s:limits", userID)
 	result, _ := rl.cache.HGetAll(ctx, cacheKey)
-	
+
 	if len(result) == 0 {
 		return nil
 	}
@@ -271,7 +271,7 @@ func (rl *TenantRateLimiter) getUserLimits(ctx context.Context, userID string) *
 func (rl *TenantRateLimiter) getTenantLimits(ctx context.Context, tenantID string) *APIKeyLimits {
 	cacheKey := fmt.Sprintf("tenant:%s:limits", tenantID)
 	result, _ := rl.cache.HGetAll(ctx, cacheKey)
-	
+
 	if len(result) == 0 {
 		return nil
 	}
@@ -298,7 +298,7 @@ func (rl *TenantRateLimiter) getTenantLimits(ctx context.Context, tenantID strin
 // checkRateLimit checks if a request is within rate limits
 func (rl *TenantRateLimiter) checkRateLimit(ctx context.Context, userID, tenantID string, limits *RateLimitInfo) (bool, *RateLimitInfo, error) {
 	now := time.Now()
-	
+
 	// Create keys for different time windows
 	minuteKey := fmt.Sprintf("ratelimit:%s:%s:minute:%d", tenantID, userID, now.Unix()/60)
 	hourKey := fmt.Sprintf("ratelimit:%s:%s:hour:%d", tenantID, userID, now.Unix()/3600)
@@ -308,7 +308,7 @@ func (rl *TenantRateLimiter) checkRateLimit(ctx context.Context, userID, tenantI
 	minuteIncr, _ := rl.cache.Incr(ctx, minuteKey)
 	hourIncr, _ := rl.cache.Incr(ctx, hourKey)
 	dayIncr, _ := rl.cache.Incr(ctx, dayKey)
-	
+
 	// Set expiration
 	rl.cache.Expire(ctx, minuteKey, time.Minute)
 	rl.cache.Expire(ctx, hourKey, time.Hour)
@@ -318,15 +318,15 @@ func (rl *TenantRateLimiter) checkRateLimit(ctx context.Context, userID, tenantI
 	limits.CurrentRPM = int(minuteIncr)
 	limits.CurrentRPH = int(hourIncr)
 	limits.CurrentRPD = int(dayIncr)
-	
+
 	// Calculate reset times
 	limits.ResetMinute = now.Truncate(time.Minute).Add(time.Minute)
 	limits.ResetHour = now.Truncate(time.Hour).Add(time.Hour)
-	limits.ResetDay = now.Truncate(24*time.Hour).Add(24*time.Hour)
+	limits.ResetDay = now.Truncate(24 * time.Hour).Add(24 * time.Hour)
 
 	// Check limits with burst allowance
 	burstRPM := int(float64(limits.LimitRPM) * rl.config.BurstMultiplier)
-	
+
 	// Check if any limit is exceeded
 	if limits.CurrentRPM > burstRPM {
 		return false, limits, nil
@@ -346,11 +346,11 @@ func (rl *TenantRateLimiter) addRateLimitHeaders(c *gin.Context, info *RateLimit
 	c.Header("X-RateLimit-Limit-Minute", strconv.Itoa(info.LimitRPM))
 	c.Header("X-RateLimit-Limit-Hour", strconv.Itoa(info.LimitRPH))
 	c.Header("X-RateLimit-Limit-Day", strconv.Itoa(info.LimitRPD))
-	
+
 	c.Header("X-RateLimit-Remaining-Minute", strconv.Itoa(max(0, info.LimitRPM-info.CurrentRPM)))
 	c.Header("X-RateLimit-Remaining-Hour", strconv.Itoa(max(0, info.LimitRPH-info.CurrentRPH)))
 	c.Header("X-RateLimit-Remaining-Day", strconv.Itoa(max(0, info.LimitRPD-info.CurrentRPD)))
-	
+
 	c.Header("X-RateLimit-Reset-Minute", strconv.FormatInt(info.ResetMinute.Unix(), 10))
 	c.Header("X-RateLimit-Reset-Hour", strconv.FormatInt(info.ResetHour.Unix(), 10))
 	c.Header("X-RateLimit-Reset-Day", strconv.FormatInt(info.ResetDay.Unix(), 10))
@@ -368,85 +368,85 @@ func (rl *TenantRateLimiter) getDefaultLimits() *RateLimitInfo {
 // SetUserLimits sets custom rate limits for a user
 func (rl *TenantRateLimiter) SetUserLimits(ctx context.Context, userID string, rpm, rph, rpd int) error {
 	cacheKey := fmt.Sprintf("user:%s:limits", userID)
-	
+
 	err := rl.cache.HSet(ctx, cacheKey, map[string]interface{}{
 		"rpm": rpm,
 		"rph": rph,
 		"rpd": rpd,
 	})
-	
+
 	if err != nil {
 		return fmt.Errorf("failed to set user limits: %w", err)
 	}
-	
+
 	// Set expiration to 30 days
 	rl.cache.Expire(ctx, cacheKey, 30*24*time.Hour)
-	
+
 	rl.logger.Info().
 		Str("user_id", userID).
 		Int("rpm", rpm).
 		Int("rph", rph).
 		Int("rpd", rpd).
 		Msg("Updated user rate limits")
-	
+
 	return nil
 }
 
 // SetTenantLimits sets custom rate limits for a tenant
 func (rl *TenantRateLimiter) SetTenantLimits(ctx context.Context, tenantID string, rpm, rph, rpd int) error {
 	cacheKey := fmt.Sprintf("tenant:%s:limits", tenantID)
-	
+
 	err := rl.cache.HSet(ctx, cacheKey, map[string]interface{}{
 		"rpm": rpm,
 		"rph": rph,
 		"rpd": rpd,
 	})
-	
+
 	if err != nil {
 		return fmt.Errorf("failed to set tenant limits: %w", err)
 	}
-	
+
 	// Set expiration to 30 days
 	rl.cache.Expire(ctx, cacheKey, 30*24*time.Hour)
-	
+
 	rl.logger.Info().
 		Str("tenant_id", tenantID).
 		Int("rpm", rpm).
 		Int("rph", rph).
 		Int("rpd", rpd).
 		Msg("Updated tenant rate limits")
-	
+
 	return nil
 }
 
 // GetCurrentUsage returns current usage for a user/tenant
 func (rl *TenantRateLimiter) GetCurrentUsage(ctx context.Context, userID, tenantID string) (*RateLimitInfo, error) {
 	now := time.Now()
-	
+
 	minuteKey := fmt.Sprintf("ratelimit:%s:%s:minute:%d", tenantID, userID, now.Unix()/60)
 	hourKey := fmt.Sprintf("ratelimit:%s:%s:hour:%d", tenantID, userID, now.Unix()/3600)
 	dayKey := fmt.Sprintf("ratelimit:%s:%s:day:%s", tenantID, userID, now.Format("20060102"))
-	
+
 	// Get current counts
 	minuteStr, _ := rl.cache.Get(ctx, minuteKey)
 	hourStr, _ := rl.cache.Get(ctx, hourKey)
 	dayStr, _ := rl.cache.Get(ctx, dayKey)
-	
+
 	minuteCount, _ := strconv.Atoi(minuteStr)
-	hourCount, _ := strconv.Atoi(hourStr)  
+	hourCount, _ := strconv.Atoi(hourStr)
 	dayCount, _ := strconv.Atoi(dayStr)
-	
+
 	// Get limits
 	limits, _ := rl.getRateLimits(ctx, userID, tenantID, "")
-	
+
 	limits.CurrentRPM = minuteCount
 	limits.CurrentRPH = hourCount
 	limits.CurrentRPD = dayCount
-	
+
 	limits.ResetMinute = now.Truncate(time.Minute).Add(time.Minute)
 	limits.ResetHour = now.Truncate(time.Hour).Add(time.Hour)
-	limits.ResetDay = now.Truncate(24*time.Hour).Add(24*time.Hour)
-	
+	limits.ResetDay = now.Truncate(24 * time.Hour).Add(24 * time.Hour)
+
 	return limits, nil
 }
 

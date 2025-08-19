@@ -352,7 +352,7 @@ func (s *ComparisonService) compareBitrate(
 	// Compare overall bitrate
 	originalBitrate := s.getFloatValue(originalFormat, "bit_rate")
 	modifiedBitrate := s.getFloatValue(modifiedFormat, "bit_rate")
-	
+
 	if originalBitrate > 0 && modifiedBitrate > 0 {
 		comparison.Overall = s.compareMetric(originalBitrate, modifiedBitrate, false) // Lower bitrate can be better if quality is maintained
 	}
@@ -729,7 +729,7 @@ func (s *ComparisonService) compareResolution(originalVideo, modifiedVideo map[s
 	}
 
 	scalingFactor := math.Sqrt(float64(modifiedWidth*modifiedHeight) / float64(originalWidth*originalHeight))
-	
+
 	originalAspectRatio := float64(originalWidth) / float64(originalHeight)
 	modifiedAspectRatio := float64(modifiedWidth) / float64(modifiedHeight)
 	aspectRatioChange := math.Abs(originalAspectRatio-modifiedAspectRatio) > 0.01
@@ -782,7 +782,7 @@ func (s *ComparisonService) generateLLMAssessment(
 	comparisonData *models.ComparisonData,
 ) (string, error) {
 	prompt := s.buildComparisonPrompt(original, modified, comparisonData)
-	
+
 	if s.llmService == nil {
 		return "", fmt.Errorf("LLM service not available")
 	}
@@ -810,9 +810,15 @@ COMPARISON RESULTS:
 `, original.FileName, float64(original.FileSize)/(1024*1024), modified.FileName, float64(modified.FileSize)/(1024*1024))
 
 	if comparisonData.FileSize != nil {
-		prompt += fmt.Sprintf("File Size Change: %.1f%% (%s %.2f MB)\n", 
+		prompt += fmt.Sprintf("File Size Change: %.1f%% (%s %.2f MB)\n",
 			comparisonData.FileSize.PercentageChange,
-			func() string { if comparisonData.FileSize.SizeChange > 0 { return "increased by" } else { return "reduced by" } }(),
+			func() string {
+				if comparisonData.FileSize.SizeChange > 0 {
+					return "increased by"
+				} else {
+					return "reduced by"
+				}
+			}(),
 			math.Abs(float64(comparisonData.FileSize.SizeChange))/(1024*1024))
 	}
 
@@ -893,14 +899,14 @@ func (s *ComparisonService) ListComparisons(ctx context.Context, userID *uuid.UU
 	responses := make([]*models.ComparisonSummaryResponse, len(comparisons))
 	for i, comparison := range comparisons {
 		processingTime := comparison.UpdatedAt.Sub(comparison.CreatedAt)
-		
+
 		summary := &models.ComparisonSummaryResponse{
-			ID:                comparison.ID,
-			IssuesFixed:       len(comparison.ComparisonData.IssuesFixed),
-			NewIssues:         len(comparison.ComparisonData.NewIssues),
-			QualityScore:      comparison.QualityScore,
-			ProcessingTime:    processingTime,
-			CreatedAt:         comparison.CreatedAt,
+			ID:             comparison.ID,
+			IssuesFixed:    len(comparison.ComparisonData.IssuesFixed),
+			NewIssues:      len(comparison.ComparisonData.NewIssues),
+			QualityScore:   comparison.QualityScore,
+			ProcessingTime: processingTime,
+			CreatedAt:      comparison.CreatedAt,
 		}
 
 		if comparison.ComparisonData.Summary != nil {

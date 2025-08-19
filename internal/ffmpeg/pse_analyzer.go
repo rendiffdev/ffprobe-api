@@ -28,401 +28,401 @@ func NewPSEAnalyzer(ffprobePath string, logger zerolog.Logger) *PSEAnalyzer {
 
 // PSEAnalysis contains comprehensive photosensitive epilepsy risk analysis
 type PSEAnalysis struct {
-	PSERiskLevel            string                  `json:"pse_risk_level"`           // "safe", "low", "medium", "high", "extreme"
-	FlashRiskLevel          string                  `json:"flash_risk_level"`         // "safe", "caution", "danger"
-	RedFlashRiskLevel       string                  `json:"red_flash_risk_level"`     // "safe", "caution", "danger"
-	PatternRiskLevel        string                  `json:"pattern_risk_level"`       // "safe", "caution", "danger"
-	OverallRiskScore        float64                 `json:"overall_risk_score"`       // 0-100 (100 = extreme risk)
-	BroadcastCompliance     *BroadcastPSECompliance `json:"broadcast_compliance,omitempty"`
-	FlashAnalysis           *FlashAnalysis          `json:"flash_analysis,omitempty"`
-	RedFlashAnalysis        *RedFlashAnalysis       `json:"red_flash_analysis,omitempty"`
-	PatternAnalysis         *PatternAnalysis        `json:"pattern_analysis,omitempty"`
-	LuminanceAnalysis       *LuminanceAnalysis      `json:"luminance_analysis,omitempty"`
-	TemporalAnalysis        *TemporalPSEAnalysis    `json:"temporal_analysis,omitempty"`
-	SpatialAnalysis         *SpatialPSEAnalysis     `json:"spatial_analysis,omitempty"`
-	SceneAnalysis           *SceneAnalysis          `json:"scene_analysis,omitempty"`
-	ViolationInstances      []PSEViolation          `json:"violation_instances,omitempty"`
-	SafetyRecommendations   []SafetyRecommendation  `json:"safety_recommendations,omitempty"`
-	ComplianceReport        *ComplianceReport       `json:"compliance_report,omitempty"`
-	AnalysisMetadata        *PSEAnalysisMetadata    `json:"analysis_metadata,omitempty"`
+	PSERiskLevel          string                  `json:"pse_risk_level"`       // "safe", "low", "medium", "high", "extreme"
+	FlashRiskLevel        string                  `json:"flash_risk_level"`     // "safe", "caution", "danger"
+	RedFlashRiskLevel     string                  `json:"red_flash_risk_level"` // "safe", "caution", "danger"
+	PatternRiskLevel      string                  `json:"pattern_risk_level"`   // "safe", "caution", "danger"
+	OverallRiskScore      float64                 `json:"overall_risk_score"`   // 0-100 (100 = extreme risk)
+	BroadcastCompliance   *BroadcastPSECompliance `json:"broadcast_compliance,omitempty"`
+	FlashAnalysis         *FlashAnalysis          `json:"flash_analysis,omitempty"`
+	RedFlashAnalysis      *RedFlashAnalysis       `json:"red_flash_analysis,omitempty"`
+	PatternAnalysis       *PatternAnalysis        `json:"pattern_analysis,omitempty"`
+	LuminanceAnalysis     *LuminanceAnalysis      `json:"luminance_analysis,omitempty"`
+	TemporalAnalysis      *TemporalPSEAnalysis    `json:"temporal_analysis,omitempty"`
+	SpatialAnalysis       *SpatialPSEAnalysis     `json:"spatial_analysis,omitempty"`
+	SceneAnalysis         *SceneAnalysis          `json:"scene_analysis,omitempty"`
+	ViolationInstances    []PSEViolation          `json:"violation_instances,omitempty"`
+	SafetyRecommendations []SafetyRecommendation  `json:"safety_recommendations,omitempty"`
+	ComplianceReport      *ComplianceReport       `json:"compliance_report,omitempty"`
+	AnalysisMetadata      *PSEAnalysisMetadata    `json:"analysis_metadata,omitempty"`
 }
 
 // BroadcastPSECompliance contains compliance with broadcast standards
 type BroadcastPSECompliance struct {
-	ITU709Compliant         bool    `json:"itu_709_compliant"`        // ITU-R BT.709
-	FCCCompliant            bool    `json:"fcc_compliant"`            // FCC PSE guidelines
-	OfcomCompliant          bool    `json:"ofcom_compliant"`          // UK Ofcom guidelines
-	EBUCompliant            bool    `json:"ebu_compliant"`            // EBU R 102 guidelines
-	ATSCCompliant           bool    `json:"atsc_compliant"`           // ATSC PSE guidelines
-	ARIBCompliant           bool    `json:"arib_compliant"`           // Japan ARIB guidelines
-	IBACompliant            bool    `json:"iba_compliant"`            // IBA guidelines
-	ComplianceScore         float64 `json:"compliance_score"`         // 0-100
-	NonCompliantReasons     []string `json:"non_compliant_reasons,omitempty"`
-	ComplianceLevel         string  `json:"compliance_level"`         // "full", "partial", "non-compliant"
+	ITU709Compliant     bool     `json:"itu_709_compliant"` // ITU-R BT.709
+	FCCCompliant        bool     `json:"fcc_compliant"`     // FCC PSE guidelines
+	OfcomCompliant      bool     `json:"ofcom_compliant"`   // UK Ofcom guidelines
+	EBUCompliant        bool     `json:"ebu_compliant"`     // EBU R 102 guidelines
+	ATSCCompliant       bool     `json:"atsc_compliant"`    // ATSC PSE guidelines
+	ARIBCompliant       bool     `json:"arib_compliant"`    // Japan ARIB guidelines
+	IBACompliant        bool     `json:"iba_compliant"`     // IBA guidelines
+	ComplianceScore     float64  `json:"compliance_score"`  // 0-100
+	NonCompliantReasons []string `json:"non_compliant_reasons,omitempty"`
+	ComplianceLevel     string   `json:"compliance_level"` // "full", "partial", "non-compliant"
 }
 
 // FlashAnalysis analyzes general flash patterns
 type FlashAnalysis struct {
-	FlashCount              int                     `json:"flash_count"`
-	FlashRate               float64                 `json:"flash_rate"`               // flashes per second
-	MaxFlashRate            float64                 `json:"max_flash_rate"`           // highest flash rate in any 1-second window
-	FlashDuration           []FlashDuration         `json:"flash_duration,omitempty"`
-	FlashIntensity          []FlashIntensity        `json:"flash_intensity,omitempty"`
-	FlashSequences          []FlashSequence         `json:"flash_sequences,omitempty"`
-	ExceedsThreshold        bool                    `json:"exceeds_threshold"`        // > 3 flashes per second
-	CriticalPeriods         []TimePeriod            `json:"critical_periods,omitempty"`
-	FlashCharacteristics    *FlashCharacteristics   `json:"flash_characteristics,omitempty"`
+	FlashCount           int                   `json:"flash_count"`
+	FlashRate            float64               `json:"flash_rate"`     // flashes per second
+	MaxFlashRate         float64               `json:"max_flash_rate"` // highest flash rate in any 1-second window
+	FlashDuration        []FlashDuration       `json:"flash_duration,omitempty"`
+	FlashIntensity       []FlashIntensity      `json:"flash_intensity,omitempty"`
+	FlashSequences       []FlashSequence       `json:"flash_sequences,omitempty"`
+	ExceedsThreshold     bool                  `json:"exceeds_threshold"` // > 3 flashes per second
+	CriticalPeriods      []TimePeriod          `json:"critical_periods,omitempty"`
+	FlashCharacteristics *FlashCharacteristics `json:"flash_characteristics,omitempty"`
 }
 
 // RedFlashAnalysis analyzes red flash patterns specifically
 type RedFlashAnalysis struct {
-	RedFlashCount           int                     `json:"red_flash_count"`
-	RedFlashRate            float64                 `json:"red_flash_rate"`
-	MaxRedFlashRate         float64                 `json:"max_red_flash_rate"`
-	RedFlashArea            []RedFlashArea          `json:"red_flash_area,omitempty"`
-	ExceedsRedThreshold     bool                    `json:"exceeds_red_threshold"`    // Red flash guidelines
-	RedFlashSequences       []RedFlashSequence      `json:"red_flash_sequences,omitempty"`
-	RedSaturationLevels     []SaturationLevel       `json:"red_saturation_levels,omitempty"`
-	CriticalRedPeriods      []TimePeriod            `json:"critical_red_periods,omitempty"`
+	RedFlashCount       int                `json:"red_flash_count"`
+	RedFlashRate        float64            `json:"red_flash_rate"`
+	MaxRedFlashRate     float64            `json:"max_red_flash_rate"`
+	RedFlashArea        []RedFlashArea     `json:"red_flash_area,omitempty"`
+	ExceedsRedThreshold bool               `json:"exceeds_red_threshold"` // Red flash guidelines
+	RedFlashSequences   []RedFlashSequence `json:"red_flash_sequences,omitempty"`
+	RedSaturationLevels []SaturationLevel  `json:"red_saturation_levels,omitempty"`
+	CriticalRedPeriods  []TimePeriod       `json:"critical_red_periods,omitempty"`
 }
 
 // PatternAnalysis analyzes spatial patterns that may trigger seizures
 type PatternAnalysis struct {
-	HasStripedPatterns      bool                    `json:"has_striped_patterns"`
-	HasCheckerboardPatterns bool                    `json:"has_checkerboard_patterns"`
-	HasSpiralPatterns       bool                    `json:"has_spiral_patterns"`
-	HasRadialPatterns       bool                    `json:"has_radial_patterns"`
-	PatternFrequency        float64                 `json:"pattern_frequency"`        // cycles per degree
-	PatternContrast         float64                 `json:"pattern_contrast"`         // 0-1
-	PatternInstances        []PatternInstance       `json:"pattern_instances,omitempty"`
-	ExceedsPatternThreshold bool                    `json:"exceeds_pattern_threshold"`
-	HighRiskPatterns        []HighRiskPattern       `json:"high_risk_patterns,omitempty"`
+	HasStripedPatterns      bool              `json:"has_striped_patterns"`
+	HasCheckerboardPatterns bool              `json:"has_checkerboard_patterns"`
+	HasSpiralPatterns       bool              `json:"has_spiral_patterns"`
+	HasRadialPatterns       bool              `json:"has_radial_patterns"`
+	PatternFrequency        float64           `json:"pattern_frequency"` // cycles per degree
+	PatternContrast         float64           `json:"pattern_contrast"`  // 0-1
+	PatternInstances        []PatternInstance `json:"pattern_instances,omitempty"`
+	ExceedsPatternThreshold bool              `json:"exceeds_pattern_threshold"`
+	HighRiskPatterns        []HighRiskPattern `json:"high_risk_patterns,omitempty"`
 }
 
 // LuminanceAnalysis analyzes luminance changes
 type LuminanceAnalysis struct {
-	LuminanceFlashes        int                     `json:"luminance_flashes"`
-	MaxLuminanceChange      float64                 `json:"max_luminance_change"`     // cd/m²
-	LuminanceChangeRate     float64                 `json:"luminance_change_rate"`    // changes per second
-	LuminanceTransitions    []LuminanceTransition   `json:"luminance_transitions,omitempty"`
-	BrightnessVariation     *BrightnessVariation    `json:"brightness_variation,omitempty"`
-	ContrastAnalysis        *ContrastAnalysis       `json:"contrast_analysis,omitempty"`
+	LuminanceFlashes     int                   `json:"luminance_flashes"`
+	MaxLuminanceChange   float64               `json:"max_luminance_change"`  // cd/m²
+	LuminanceChangeRate  float64               `json:"luminance_change_rate"` // changes per second
+	LuminanceTransitions []LuminanceTransition `json:"luminance_transitions,omitempty"`
+	BrightnessVariation  *BrightnessVariation  `json:"brightness_variation,omitempty"`
+	ContrastAnalysis     *ContrastAnalysis     `json:"contrast_analysis,omitempty"`
 }
 
 // TemporalPSEAnalysis analyzes temporal aspects of PSE risk
 type TemporalPSEAnalysis struct {
-	AnalysisDuration        float64                 `json:"analysis_duration"`        // seconds
-	SamplingRate            float64                 `json:"sampling_rate"`            // samples per second
-	TemporalWindows         []TemporalWindow        `json:"temporal_windows,omitempty"`
-	FrequencyAnalysis       *FrequencyAnalysis      `json:"frequency_analysis,omitempty"`
-	RhythmAnalysis          *RhythmAnalysis         `json:"rhythm_analysis,omitempty"`
-	CriticalTimeWindows     []CriticalTimeWindow    `json:"critical_time_windows,omitempty"`
+	AnalysisDuration    float64              `json:"analysis_duration"` // seconds
+	SamplingRate        float64              `json:"sampling_rate"`     // samples per second
+	TemporalWindows     []TemporalWindow     `json:"temporal_windows,omitempty"`
+	FrequencyAnalysis   *FrequencyAnalysis   `json:"frequency_analysis,omitempty"`
+	RhythmAnalysis      *RhythmAnalysis      `json:"rhythm_analysis,omitempty"`
+	CriticalTimeWindows []CriticalTimeWindow `json:"critical_time_windows,omitempty"`
 }
 
 // SpatialPSEAnalysis analyzes spatial aspects of PSE risk
 type SpatialPSEAnalysis struct {
-	ScreenCoverage          float64                 `json:"screen_coverage"`          // 0-1, portion of screen with risky content
-	CentralVisionImpact     float64                 `json:"central_vision_impact"`    // 0-1, impact on central vision
-	PeripheralVisionImpact  float64                 `json:"peripheral_vision_impact"` // 0-1, impact on peripheral vision
-	SpatialExtent           *SpatialExtent          `json:"spatial_extent,omitempty"`
-	ViewingAngleAnalysis    *ViewingAngleAnalysis   `json:"viewing_angle_analysis,omitempty"`
-	RegionAnalysis          []RegionRiskAnalysis    `json:"region_analysis,omitempty"`
+	ScreenCoverage         float64               `json:"screen_coverage"`          // 0-1, portion of screen with risky content
+	CentralVisionImpact    float64               `json:"central_vision_impact"`    // 0-1, impact on central vision
+	PeripheralVisionImpact float64               `json:"peripheral_vision_impact"` // 0-1, impact on peripheral vision
+	SpatialExtent          *SpatialExtent        `json:"spatial_extent,omitempty"`
+	ViewingAngleAnalysis   *ViewingAngleAnalysis `json:"viewing_angle_analysis,omitempty"`
+	RegionAnalysis         []RegionRiskAnalysis  `json:"region_analysis,omitempty"`
 }
 
 // SceneAnalysis analyzes scene types and their PSE risk
 type SceneAnalysis struct {
-	SceneTypes              []SceneType             `json:"scene_types,omitempty"`
-	HighRiskScenes          []HighRiskScene         `json:"high_risk_scenes,omitempty"`
-	SceneTransitions        []SceneTransition       `json:"scene_transitions,omitempty"`
-	ContentClassification   *ContentClassification  `json:"content_classification,omitempty"`
-	MotionAnalysis          *MotionAnalysis         `json:"motion_analysis,omitempty"`
+	SceneTypes            []SceneType            `json:"scene_types,omitempty"`
+	HighRiskScenes        []HighRiskScene        `json:"high_risk_scenes,omitempty"`
+	SceneTransitions      []SceneTransition      `json:"scene_transitions,omitempty"`
+	ContentClassification *ContentClassification `json:"content_classification,omitempty"`
+	MotionAnalysis        *MotionAnalysis        `json:"motion_analysis,omitempty"`
 }
 
 // Supporting structures for detailed PSE analysis
 
 type FlashDuration struct {
-	StartTime               float64                 `json:"start_time"`
-	EndTime                 float64                 `json:"end_time"`
-	Duration                float64                 `json:"duration"`               // milliseconds
-	Intensity               float64                 `json:"intensity"`              // 0-1
+	StartTime float64 `json:"start_time"`
+	EndTime   float64 `json:"end_time"`
+	Duration  float64 `json:"duration"`  // milliseconds
+	Intensity float64 `json:"intensity"` // 0-1
 }
 
 type FlashIntensity struct {
-	Timestamp               float64                 `json:"timestamp"`
-	LuminanceBefore         float64                 `json:"luminance_before"`
-	LuminanceAfter          float64                 `json:"luminance_after"`
-	IntensityChange         float64                 `json:"intensity_change"`       // 0-1
-	ScreenArea              float64                 `json:"screen_area"`            // 0-1
+	Timestamp       float64 `json:"timestamp"`
+	LuminanceBefore float64 `json:"luminance_before"`
+	LuminanceAfter  float64 `json:"luminance_after"`
+	IntensityChange float64 `json:"intensity_change"` // 0-1
+	ScreenArea      float64 `json:"screen_area"`      // 0-1
 }
 
 type FlashSequence struct {
-	StartTime               float64                 `json:"start_time"`
-	EndTime                 float64                 `json:"end_time"`
-	FlashCount              int                     `json:"flash_count"`
-	AverageRate             float64                 `json:"average_rate"`
-	PeakRate                float64                 `json:"peak_rate"`
-	RiskLevel               string                  `json:"risk_level"`
+	StartTime   float64 `json:"start_time"`
+	EndTime     float64 `json:"end_time"`
+	FlashCount  int     `json:"flash_count"`
+	AverageRate float64 `json:"average_rate"`
+	PeakRate    float64 `json:"peak_rate"`
+	RiskLevel   string  `json:"risk_level"`
 }
 
 type FlashCharacteristics struct {
-	DominantFrequency       float64                 `json:"dominant_frequency"`     // Hz
-	FrequencySpread         float64                 `json:"frequency_spread"`       // Hz
-	RegularityIndex         float64                 `json:"regularity_index"`       // 0-1, higher = more regular
-	Predictability          float64                 `json:"predictability"`         // 0-1, higher = more predictable
+	DominantFrequency float64 `json:"dominant_frequency"` // Hz
+	FrequencySpread   float64 `json:"frequency_spread"`   // Hz
+	RegularityIndex   float64 `json:"regularity_index"`   // 0-1, higher = more regular
+	Predictability    float64 `json:"predictability"`     // 0-1, higher = more predictable
 }
 
 type RedFlashArea struct {
-	Timestamp               float64                 `json:"timestamp"`
-	AreaPercentage          float64                 `json:"area_percentage"`        // 0-100
-	RedIntensity            float64                 `json:"red_intensity"`          // 0-1
-	SaturationLevel         float64                 `json:"saturation_level"`       // 0-1
+	Timestamp       float64 `json:"timestamp"`
+	AreaPercentage  float64 `json:"area_percentage"`  // 0-100
+	RedIntensity    float64 `json:"red_intensity"`    // 0-1
+	SaturationLevel float64 `json:"saturation_level"` // 0-1
 }
 
 type RedFlashSequence struct {
-	StartTime               float64                 `json:"start_time"`
-	EndTime                 float64                 `json:"end_time"`
-	RedFlashCount           int                     `json:"red_flash_count"`
-	MaxAreaCoverage         float64                 `json:"max_area_coverage"`      // 0-100
-	AverageIntensity        float64                 `json:"average_intensity"`      // 0-1
-	RiskLevel               string                  `json:"risk_level"`
+	StartTime        float64 `json:"start_time"`
+	EndTime          float64 `json:"end_time"`
+	RedFlashCount    int     `json:"red_flash_count"`
+	MaxAreaCoverage  float64 `json:"max_area_coverage"` // 0-100
+	AverageIntensity float64 `json:"average_intensity"` // 0-1
+	RiskLevel        string  `json:"risk_level"`
 }
 
 type SaturationLevel struct {
-	Timestamp               float64                 `json:"timestamp"`
-	RedSaturation           float64                 `json:"red_saturation"`         // 0-1
-	Chroma                  float64                 `json:"chroma"`                 // 0-1
-	ColorPurity             float64                 `json:"color_purity"`           // 0-1
+	Timestamp     float64 `json:"timestamp"`
+	RedSaturation float64 `json:"red_saturation"` // 0-1
+	Chroma        float64 `json:"chroma"`         // 0-1
+	ColorPurity   float64 `json:"color_purity"`   // 0-1
 }
 
 type PatternInstance struct {
-	StartTime               float64                 `json:"start_time"`
-	EndTime                 float64                 `json:"end_time"`
-	PatternType             string                  `json:"pattern_type"`
-	SpatialFrequency        float64                 `json:"spatial_frequency"`      // cycles per degree
-	Contrast                float64                 `json:"contrast"`               // 0-1
-	ScreenCoverage          float64                 `json:"screen_coverage"`        // 0-1
-	RiskLevel               string                  `json:"risk_level"`
+	StartTime        float64 `json:"start_time"`
+	EndTime          float64 `json:"end_time"`
+	PatternType      string  `json:"pattern_type"`
+	SpatialFrequency float64 `json:"spatial_frequency"` // cycles per degree
+	Contrast         float64 `json:"contrast"`          // 0-1
+	ScreenCoverage   float64 `json:"screen_coverage"`   // 0-1
+	RiskLevel        string  `json:"risk_level"`
 }
 
 type HighRiskPattern struct {
-	PatternType             string                  `json:"pattern_type"`
-	RiskScore               float64                 `json:"risk_score"`             // 0-100
-	Characteristics         map[string]interface{}  `json:"characteristics,omitempty"`
-	Mitigation              []string                `json:"mitigation,omitempty"`
+	PatternType     string                 `json:"pattern_type"`
+	RiskScore       float64                `json:"risk_score"` // 0-100
+	Characteristics map[string]interface{} `json:"characteristics,omitempty"`
+	Mitigation      []string               `json:"mitigation,omitempty"`
 }
 
 type LuminanceTransition struct {
-	Timestamp               float64                 `json:"timestamp"`
-	FromLuminance           float64                 `json:"from_luminance"`         // cd/m²
-	ToLuminance             float64                 `json:"to_luminance"`           // cd/m²
-	TransitionSpeed         float64                 `json:"transition_speed"`       // cd/m²/s
-	ScreenArea              float64                 `json:"screen_area"`            // 0-1
+	Timestamp       float64 `json:"timestamp"`
+	FromLuminance   float64 `json:"from_luminance"`   // cd/m²
+	ToLuminance     float64 `json:"to_luminance"`     // cd/m²
+	TransitionSpeed float64 `json:"transition_speed"` // cd/m²/s
+	ScreenArea      float64 `json:"screen_area"`      // 0-1
 }
 
 type BrightnessVariation struct {
-	MeanBrightness          float64                 `json:"mean_brightness"`
-	BrightnessStdDev        float64                 `json:"brightness_std_dev"`
-	BrightnessRange         float64                 `json:"brightness_range"`
-	VariationCoefficient    float64                 `json:"variation_coefficient"`
+	MeanBrightness       float64 `json:"mean_brightness"`
+	BrightnessStdDev     float64 `json:"brightness_std_dev"`
+	BrightnessRange      float64 `json:"brightness_range"`
+	VariationCoefficient float64 `json:"variation_coefficient"`
 }
 
 type ContrastAnalysis struct {
-	MeanContrast            float64                 `json:"mean_contrast"`
-	MaxContrast             float64                 `json:"max_contrast"`
-	ContrastVariation       float64                 `json:"contrast_variation"`
-	HighContrastRegions     int                     `json:"high_contrast_regions"`
+	MeanContrast        float64 `json:"mean_contrast"`
+	MaxContrast         float64 `json:"max_contrast"`
+	ContrastVariation   float64 `json:"contrast_variation"`
+	HighContrastRegions int     `json:"high_contrast_regions"`
 }
 
 type TemporalWindow struct {
-	StartTime               float64                 `json:"start_time"`
-	EndTime                 float64                 `json:"end_time"`
-	FlashCount              int                     `json:"flash_count"`
-	RedFlashCount           int                     `json:"red_flash_count"`
-	PatternCount            int                     `json:"pattern_count"`
-	RiskScore               float64                 `json:"risk_score"`
+	StartTime     float64 `json:"start_time"`
+	EndTime       float64 `json:"end_time"`
+	FlashCount    int     `json:"flash_count"`
+	RedFlashCount int     `json:"red_flash_count"`
+	PatternCount  int     `json:"pattern_count"`
+	RiskScore     float64 `json:"risk_score"`
 }
 
 type FrequencyAnalysis struct {
-	DominantFrequencies     []float64               `json:"dominant_frequencies"`   // Hz
-	PowerSpectrum           []PowerSpectrumBin      `json:"power_spectrum,omitempty"`
-	SpectralCentroid        float64                 `json:"spectral_centroid"`      // Hz
-	SpectralSpread          float64                 `json:"spectral_spread"`        // Hz
+	DominantFrequencies []float64          `json:"dominant_frequencies"` // Hz
+	PowerSpectrum       []PowerSpectrumBin `json:"power_spectrum,omitempty"`
+	SpectralCentroid    float64            `json:"spectral_centroid"` // Hz
+	SpectralSpread      float64            `json:"spectral_spread"`   // Hz
 }
 
 type PowerSpectrumBin struct {
-	Frequency               float64                 `json:"frequency"`              // Hz
-	Power                   float64                 `json:"power"`                  // dB
+	Frequency float64 `json:"frequency"` // Hz
+	Power     float64 `json:"power"`     // dB
 }
 
 type RhythmAnalysis struct {
-	HasRegularRhythm        bool                    `json:"has_regular_rhythm"`
-	RhythmFrequency         float64                 `json:"rhythm_frequency"`       // Hz
-	RhythmStability         float64                 `json:"rhythm_stability"`       // 0-1
-	Syncopation             float64                 `json:"syncopation"`            // 0-1
+	HasRegularRhythm bool    `json:"has_regular_rhythm"`
+	RhythmFrequency  float64 `json:"rhythm_frequency"` // Hz
+	RhythmStability  float64 `json:"rhythm_stability"` // 0-1
+	Syncopation      float64 `json:"syncopation"`      // 0-1
 }
 
 type CriticalTimeWindow struct {
-	StartTime               float64                 `json:"start_time"`
-	EndTime                 float64                 `json:"end_time"`
-	ViolationType           string                  `json:"violation_type"`
-	Severity                string                  `json:"severity"`
-	Description             string                  `json:"description"`
+	StartTime     float64 `json:"start_time"`
+	EndTime       float64 `json:"end_time"`
+	ViolationType string  `json:"violation_type"`
+	Severity      string  `json:"severity"`
+	Description   string  `json:"description"`
 }
 
 type SpatialExtent struct {
-	CenterX                 float64                 `json:"center_x"`               // 0-1
-	CenterY                 float64                 `json:"center_y"`               // 0-1
-	Width                   float64                 `json:"width"`                  // 0-1
-	Height                  float64                 `json:"height"`                 // 0-1
-	EccentricityAngle       float64                 `json:"eccentricity_angle"`     // degrees from center
+	CenterX           float64 `json:"center_x"`           // 0-1
+	CenterY           float64 `json:"center_y"`           // 0-1
+	Width             float64 `json:"width"`              // 0-1
+	Height            float64 `json:"height"`             // 0-1
+	EccentricityAngle float64 `json:"eccentricity_angle"` // degrees from center
 }
 
 type ViewingAngleAnalysis struct {
-	OptimalViewingDistance  float64                 `json:"optimal_viewing_distance"` // screen heights
-	CriticalViewingAngle    float64                 `json:"critical_viewing_angle"`   // degrees
-	SafeViewingDistance     float64                 `json:"safe_viewing_distance"`    // screen heights
-	ViewingRecommendations  []string                `json:"viewing_recommendations,omitempty"`
+	OptimalViewingDistance float64  `json:"optimal_viewing_distance"` // screen heights
+	CriticalViewingAngle   float64  `json:"critical_viewing_angle"`   // degrees
+	SafeViewingDistance    float64  `json:"safe_viewing_distance"`    // screen heights
+	ViewingRecommendations []string `json:"viewing_recommendations,omitempty"`
 }
 
 type RegionRiskAnalysis struct {
-	Region                  Region                  `json:"region"`
-	RiskScore               float64                 `json:"risk_score"`
-	RiskFactors             []string                `json:"risk_factors,omitempty"`
-	Mitigation              []string                `json:"mitigation,omitempty"`
+	Region      Region   `json:"region"`
+	RiskScore   float64  `json:"risk_score"`
+	RiskFactors []string `json:"risk_factors,omitempty"`
+	Mitigation  []string `json:"mitigation,omitempty"`
 }
 
 type SceneType struct {
-	Type                    string                  `json:"type"`                   // "action", "static", "transition", etc.
-	StartTime               float64                 `json:"start_time"`
-	EndTime                 float64                 `json:"end_time"`
-	RiskLevel               string                  `json:"risk_level"`
-	Characteristics         []string                `json:"characteristics,omitempty"`
+	Type            string   `json:"type"` // "action", "static", "transition", etc.
+	StartTime       float64  `json:"start_time"`
+	EndTime         float64  `json:"end_time"`
+	RiskLevel       string   `json:"risk_level"`
+	Characteristics []string `json:"characteristics,omitempty"`
 }
 
 type HighRiskScene struct {
-	StartTime               float64                 `json:"start_time"`
-	EndTime                 float64                 `json:"end_time"`
-	SceneType               string                  `json:"scene_type"`
-	RiskFactors             []string                `json:"risk_factors,omitempty"`
-	RiskScore               float64                 `json:"risk_score"`
-	Mitigation              []string                `json:"mitigation,omitempty"`
+	StartTime   float64  `json:"start_time"`
+	EndTime     float64  `json:"end_time"`
+	SceneType   string   `json:"scene_type"`
+	RiskFactors []string `json:"risk_factors,omitempty"`
+	RiskScore   float64  `json:"risk_score"`
+	Mitigation  []string `json:"mitigation,omitempty"`
 }
 
 type SceneTransition struct {
-	Timestamp               float64                 `json:"timestamp"`
-	TransitionType          string                  `json:"transition_type"`        // "cut", "fade", "dissolve", etc.
-	TransitionSpeed         string                  `json:"transition_speed"`       // "instant", "fast", "slow"
-	RiskLevel               string                  `json:"risk_level"`
+	Timestamp       float64 `json:"timestamp"`
+	TransitionType  string  `json:"transition_type"`  // "cut", "fade", "dissolve", etc.
+	TransitionSpeed string  `json:"transition_speed"` // "instant", "fast", "slow"
+	RiskLevel       string  `json:"risk_level"`
 }
 
 type ContentClassification struct {
-	ContentType             string                  `json:"content_type"`           // "live_action", "animation", "graphics", etc.
-	Genre                   string                  `json:"genre,omitempty"`
-	TargetAudience          string                  `json:"target_audience,omitempty"`
-	PSESensitivity          string                  `json:"pse_sensitivity"`        // "low", "medium", "high"
+	ContentType    string `json:"content_type"` // "live_action", "animation", "graphics", etc.
+	Genre          string `json:"genre,omitempty"`
+	TargetAudience string `json:"target_audience,omitempty"`
+	PSESensitivity string `json:"pse_sensitivity"` // "low", "medium", "high"
 }
 
 type MotionAnalysis struct {
-	HasFastMotion           bool                    `json:"has_fast_motion"`
-	HasCameraFlash          bool                    `json:"has_camera_flash"`
-	HasStrobeEffect         bool                    `json:"has_strobe_effect"`
-	HasZoomEffect           bool                    `json:"has_zoom_effect"`
-	MotionVectors           []MotionVector          `json:"motion_vectors,omitempty"`
-	MotionIntensity         float64                 `json:"motion_intensity"`       // 0-1
+	HasFastMotion   bool           `json:"has_fast_motion"`
+	HasCameraFlash  bool           `json:"has_camera_flash"`
+	HasStrobeEffect bool           `json:"has_strobe_effect"`
+	HasZoomEffect   bool           `json:"has_zoom_effect"`
+	MotionVectors   []MotionVector `json:"motion_vectors,omitempty"`
+	MotionIntensity float64        `json:"motion_intensity"` // 0-1
 }
 
 type MotionVector struct {
-	Timestamp               float64                 `json:"timestamp"`
-	Magnitude               float64                 `json:"magnitude"`              // pixels per frame
-	Direction               float64                 `json:"direction"`              // degrees
-	Coherence               float64                 `json:"coherence"`              // 0-1
+	Timestamp float64 `json:"timestamp"`
+	Magnitude float64 `json:"magnitude"` // pixels per frame
+	Direction float64 `json:"direction"` // degrees
+	Coherence float64 `json:"coherence"` // 0-1
 }
 
 type TimePeriod struct {
-	StartTime               float64                 `json:"start_time"`
-	EndTime                 float64                 `json:"end_time"`
-	Duration                float64                 `json:"duration"`
+	StartTime float64 `json:"start_time"`
+	EndTime   float64 `json:"end_time"`
+	Duration  float64 `json:"duration"`
 }
 
 type PSEViolation struct {
-	Timestamp               float64                 `json:"timestamp"`
-	ViolationType           string                  `json:"violation_type"`         // "flash", "red_flash", "pattern"
-	Severity                string                  `json:"severity"`               // "low", "medium", "high", "extreme"
-	Description             string                  `json:"description"`
-	AffectedArea            float64                 `json:"affected_area"`          // 0-1
-	Duration                float64                 `json:"duration"`               // seconds
-	RiskScore               float64                 `json:"risk_score"`             // 0-100
-	ComplianceStandards     []string                `json:"compliance_standards,omitempty"`
+	Timestamp           float64  `json:"timestamp"`
+	ViolationType       string   `json:"violation_type"` // "flash", "red_flash", "pattern"
+	Severity            string   `json:"severity"`       // "low", "medium", "high", "extreme"
+	Description         string   `json:"description"`
+	AffectedArea        float64  `json:"affected_area"` // 0-1
+	Duration            float64  `json:"duration"`      // seconds
+	RiskScore           float64  `json:"risk_score"`    // 0-100
+	ComplianceStandards []string `json:"compliance_standards,omitempty"`
 }
 
 type SafetyRecommendation struct {
-	Priority                string                  `json:"priority"`               // "low", "medium", "high", "critical"
-	Category                string                  `json:"category"`               // "warning", "modification", "removal"
-	Description             string                  `json:"description"`
-	Implementation          string                  `json:"implementation"`
-	EstimatedEffectiveness  float64                 `json:"estimated_effectiveness"` // 0-1
-	TechnicalFeasibility    string                  `json:"technical_feasibility"`   // "easy", "moderate", "difficult"
+	Priority               string  `json:"priority"` // "low", "medium", "high", "critical"
+	Category               string  `json:"category"` // "warning", "modification", "removal"
+	Description            string  `json:"description"`
+	Implementation         string  `json:"implementation"`
+	EstimatedEffectiveness float64 `json:"estimated_effectiveness"` // 0-1
+	TechnicalFeasibility   string  `json:"technical_feasibility"`   // "easy", "moderate", "difficult"
 }
 
 type ComplianceReport struct {
-	OverallCompliance       bool                    `json:"overall_compliance"`
-	CompliancePercentage    float64                 `json:"compliance_percentage"`  // 0-100
-	StandardsChecked        []string                `json:"standards_checked,omitempty"`
-	ViolationSummary        *ViolationSummary       `json:"violation_summary,omitempty"`
-	ComplianceHistory       []ComplianceDataPoint   `json:"compliance_history,omitempty"`
-	CertificationStatus     string                  `json:"certification_status"`   // "certified", "conditional", "rejected"
+	OverallCompliance    bool                  `json:"overall_compliance"`
+	CompliancePercentage float64               `json:"compliance_percentage"` // 0-100
+	StandardsChecked     []string              `json:"standards_checked,omitempty"`
+	ViolationSummary     *ViolationSummary     `json:"violation_summary,omitempty"`
+	ComplianceHistory    []ComplianceDataPoint `json:"compliance_history,omitempty"`
+	CertificationStatus  string                `json:"certification_status"` // "certified", "conditional", "rejected"
 }
 
 type ViolationSummary struct {
-	TotalViolations         int                     `json:"total_violations"`
-	FlashViolations         int                     `json:"flash_violations"`
-	RedFlashViolations      int                     `json:"red_flash_violations"`
-	PatternViolations       int                     `json:"pattern_violations"`
-	SeverityDistribution    map[string]int          `json:"severity_distribution,omitempty"`
+	TotalViolations      int            `json:"total_violations"`
+	FlashViolations      int            `json:"flash_violations"`
+	RedFlashViolations   int            `json:"red_flash_violations"`
+	PatternViolations    int            `json:"pattern_violations"`
+	SeverityDistribution map[string]int `json:"severity_distribution,omitempty"`
 }
 
 type ComplianceDataPoint struct {
-	Timestamp               float64                 `json:"timestamp"`
-	ComplianceScore         float64                 `json:"compliance_score"`       // 0-100
-	ViolationCount          int                     `json:"violation_count"`
+	Timestamp       float64 `json:"timestamp"`
+	ComplianceScore float64 `json:"compliance_score"` // 0-100
+	ViolationCount  int     `json:"violation_count"`
 }
 
 type PSEAnalysisMetadata struct {
-	AnalysisVersion         string                  `json:"analysis_version"`
-	AnalysisDate            string                  `json:"analysis_date"`
-	StandardsVersion        map[string]string       `json:"standards_version,omitempty"`
-	AnalysisParameters      *AnalysisParameters     `json:"analysis_parameters,omitempty"`
-	QualityMetrics          *QualityMetrics         `json:"quality_metrics,omitempty"`
-	ProcessingTime          float64                 `json:"processing_time"`        // seconds
+	AnalysisVersion    string              `json:"analysis_version"`
+	AnalysisDate       string              `json:"analysis_date"`
+	StandardsVersion   map[string]string   `json:"standards_version,omitempty"`
+	AnalysisParameters *AnalysisParameters `json:"analysis_parameters,omitempty"`
+	QualityMetrics     *QualityMetrics     `json:"quality_metrics,omitempty"`
+	ProcessingTime     float64             `json:"processing_time"` // seconds
 }
 
 type AnalysisParameters struct {
-	FlashThreshold          float64                 `json:"flash_threshold"`        // flashes per second
-	RedFlashThreshold       float64                 `json:"red_flash_threshold"`    // red flashes per second
-	PatternThreshold        float64                 `json:"pattern_threshold"`      // cycles per degree
-	LuminanceThreshold      float64                 `json:"luminance_threshold"`    // cd/m²
-	TemporalResolution      float64                 `json:"temporal_resolution"`    // samples per second
-	SpatialResolution       float64                 `json:"spatial_resolution"`     // pixels
+	FlashThreshold     float64 `json:"flash_threshold"`     // flashes per second
+	RedFlashThreshold  float64 `json:"red_flash_threshold"` // red flashes per second
+	PatternThreshold   float64 `json:"pattern_threshold"`   // cycles per degree
+	LuminanceThreshold float64 `json:"luminance_threshold"` // cd/m²
+	TemporalResolution float64 `json:"temporal_resolution"` // samples per second
+	SpatialResolution  float64 `json:"spatial_resolution"`  // pixels
 }
 
 type QualityMetrics struct {
-	AnalysisAccuracy        float64                 `json:"analysis_accuracy"`      // 0-1
-	AnalysisConfidence      float64                 `json:"analysis_confidence"`    // 0-1
-	FalsePositiveRate       float64                 `json:"false_positive_rate"`    // 0-1
-	FalseNegativeRate       float64                 `json:"false_negative_rate"`    // 0-1
-	AnalysisCoverage        float64                 `json:"analysis_coverage"`      // 0-1
+	AnalysisAccuracy   float64 `json:"analysis_accuracy"`   // 0-1
+	AnalysisConfidence float64 `json:"analysis_confidence"` // 0-1
+	FalsePositiveRate  float64 `json:"false_positive_rate"` // 0-1
+	FalseNegativeRate  float64 `json:"false_negative_rate"` // 0-1
+	AnalysisCoverage   float64 `json:"analysis_coverage"`   // 0-1
 }
 
 // AnalyzePSERisk performs comprehensive photosensitive epilepsy risk analysis
 func (pse *PSEAnalyzer) AnalyzePSERisk(ctx context.Context, filePath string) (*PSEAnalysis, error) {
 	analysis := &PSEAnalysis{
-		PSERiskLevel:           "safe",
-		FlashRiskLevel:         "safe",
-		RedFlashRiskLevel:      "safe",
-		PatternRiskLevel:       "safe",
-		OverallRiskScore:       0.0,
-		ViolationInstances:     []PSEViolation{},
-		SafetyRecommendations:  []SafetyRecommendation{},
+		PSERiskLevel:          "safe",
+		FlashRiskLevel:        "safe",
+		RedFlashRiskLevel:     "safe",
+		PatternRiskLevel:      "safe",
+		OverallRiskScore:      0.0,
+		ViolationInstances:    []PSEViolation{},
+		SafetyRecommendations: []SafetyRecommendation{},
 	}
 
 	// Initialize analysis metadata
@@ -430,17 +430,17 @@ func (pse *PSEAnalyzer) AnalyzePSERisk(ctx context.Context, filePath string) (*P
 		AnalysisVersion: "1.0",
 		AnalysisDate:    time.Now().Format("2006-01-02T15:04:05Z"),
 		StandardsVersion: map[string]string{
-			"ITU-R BT.709":  "2015",
-			"FCC PSE":       "2016",
-			"Ofcom":         "2018",
-			"EBU R 102":     "2014",
+			"ITU-R BT.709": "2015",
+			"FCC PSE":      "2016",
+			"Ofcom":        "2018",
+			"EBU R 102":    "2014",
 		},
 		AnalysisParameters: &AnalysisParameters{
-			FlashThreshold:     3.0,  // flashes per second
-			RedFlashThreshold:  3.0,  // red flashes per second
-			PatternThreshold:   20.0, // cycles per degree
-			LuminanceThreshold: 160.0, // cd/m²
-			TemporalResolution: 25.0,  // fps
+			FlashThreshold:     3.0,    // flashes per second
+			RedFlashThreshold:  3.0,    // red flashes per second
+			PatternThreshold:   20.0,   // cycles per degree
+			LuminanceThreshold: 160.0,  // cd/m²
+			TemporalResolution: 25.0,   // fps
 			SpatialResolution:  1920.0, // pixels
 		},
 	}
@@ -509,13 +509,13 @@ func (pse *PSEAnalyzer) AnalyzePSERisk(ctx context.Context, filePath string) (*P
 
 // VideoInfo contains basic video information needed for PSE analysis
 type VideoInfo struct {
-	Width          int     `json:"width"`
-	Height         int     `json:"height"`
-	FrameRate      float64 `json:"frame_rate"`
-	Duration       float64 `json:"duration"`
-	PixelFormat    string  `json:"pixel_format"`
-	ColorSpace     string  `json:"color_space"`
-	FrameCount     int     `json:"frame_count"`
+	Width       int     `json:"width"`
+	Height      int     `json:"height"`
+	FrameRate   float64 `json:"frame_rate"`
+	Duration    float64 `json:"duration"`
+	PixelFormat string  `json:"pixel_format"`
+	ColorSpace  string  `json:"color_space"`
+	FrameCount  int     `json:"frame_count"`
 }
 
 // extractVideoInfo extracts basic video information
@@ -547,7 +547,7 @@ func (pse *PSEAnalyzer) extractVideoInfo(ctx context.Context, filePath string) (
 	}
 
 	stream := result.Streams[0]
-	
+
 	// Parse frame rate
 	frameRate := 25.0 // default
 	if stream.RFrameRate != "" {
@@ -581,7 +581,7 @@ func (pse *PSEAnalyzer) extractVideoInfo(ctx context.Context, filePath string) (
 func (pse *PSEAnalyzer) analyzeFlashPatterns(ctx context.Context, filePath string, videoInfo *VideoInfo, analysis *PSEAnalysis) error {
 	// Since we can't directly access pixel data with ffprobe, we'll simulate flash analysis
 	// based on scene changes and frame characteristics
-	
+
 	// Extract frame information for scene change analysis
 	cmd := []string{
 		pse.ffprobePath,
@@ -637,16 +637,16 @@ func (pse *PSEAnalyzer) analyzeFlashPatterns(ctx context.Context, filePath strin
 	// Check if exceeds threshold (3 flashes per second)
 	if flashAnalysis.FlashRate > 3.0 {
 		flashAnalysis.ExceedsThreshold = true
-		
+
 		// Create a violation
 		violation := PSEViolation{
-			Timestamp:          0.0,
-			ViolationType:      "flash",
-			Severity:           "medium",
-			Description:        fmt.Sprintf("Flash rate of %.2f Hz exceeds 3 Hz threshold", flashAnalysis.FlashRate),
-			AffectedArea:       1.0,
-			Duration:           videoInfo.Duration,
-			RiskScore:          50.0,
+			Timestamp:           0.0,
+			ViolationType:       "flash",
+			Severity:            "medium",
+			Description:         fmt.Sprintf("Flash rate of %.2f Hz exceeds 3 Hz threshold", flashAnalysis.FlashRate),
+			AffectedArea:        1.0,
+			Duration:            videoInfo.Duration,
+			RiskScore:           50.0,
 			ComplianceStandards: []string{"FCC PSE", "ITU-R BT.709"},
 		}
 		analysis.ViolationInstances = append(analysis.ViolationInstances, violation)
@@ -682,7 +682,7 @@ func (pse *PSEAnalyzer) analyzeRedFlashPatterns(ctx context.Context, filePath st
 	if analysis.FlashAnalysis != nil {
 		estimatedRedFlashes := analysis.FlashAnalysis.FlashCount / 4 // Assume 25% are red-dominant
 		redFlashAnalysis.RedFlashCount = estimatedRedFlashes
-		
+
 		if videoInfo.Duration > 0 {
 			redFlashAnalysis.RedFlashRate = float64(estimatedRedFlashes) / videoInfo.Duration
 			redFlashAnalysis.MaxRedFlashRate = redFlashAnalysis.RedFlashRate * 1.2
@@ -691,15 +691,15 @@ func (pse *PSEAnalyzer) analyzeRedFlashPatterns(ctx context.Context, filePath st
 		// Check red flash threshold
 		if redFlashAnalysis.RedFlashRate > 3.0 {
 			redFlashAnalysis.ExceedsRedThreshold = true
-			
+
 			violation := PSEViolation{
-				Timestamp:          0.0,
-				ViolationType:      "red_flash",
-				Severity:           "high",
-				Description:        fmt.Sprintf("Red flash rate of %.2f Hz exceeds 3 Hz threshold", redFlashAnalysis.RedFlashRate),
-				AffectedArea:       0.8,
-				Duration:           videoInfo.Duration,
-				RiskScore:          70.0,
+				Timestamp:           0.0,
+				ViolationType:       "red_flash",
+				Severity:            "high",
+				Description:         fmt.Sprintf("Red flash rate of %.2f Hz exceeds 3 Hz threshold", redFlashAnalysis.RedFlashRate),
+				AffectedArea:        0.8,
+				Duration:            videoInfo.Duration,
+				RiskScore:           70.0,
 				ComplianceStandards: []string{"FCC PSE", "Ofcom"},
 			}
 			analysis.ViolationInstances = append(analysis.ViolationInstances, violation)
@@ -731,18 +731,18 @@ func (pse *PSEAnalyzer) analyzeSpatialPatterns(ctx context.Context, filePath str
 		// High resolution content more likely to have fine patterns
 		patternAnalysis.PatternFrequency = 15.0 // cycles per degree
 		patternAnalysis.PatternContrast = 0.3
-		
+
 		if patternAnalysis.PatternFrequency > 20.0 {
 			patternAnalysis.ExceedsPatternThreshold = true
-			
+
 			violation := PSEViolation{
-				Timestamp:          0.0,
-				ViolationType:      "pattern",
-				Severity:           "medium",
-				Description:        fmt.Sprintf("Spatial frequency of %.1f cycles/degree may exceed safe thresholds", patternAnalysis.PatternFrequency),
-				AffectedArea:       0.5,
-				Duration:           videoInfo.Duration,
-				RiskScore:          40.0,
+				Timestamp:           0.0,
+				ViolationType:       "pattern",
+				Severity:            "medium",
+				Description:         fmt.Sprintf("Spatial frequency of %.1f cycles/degree may exceed safe thresholds", patternAnalysis.PatternFrequency),
+				AffectedArea:        0.5,
+				Duration:            videoInfo.Duration,
+				RiskScore:           40.0,
 				ComplianceStandards: []string{"EBU R 102"},
 			}
 			analysis.ViolationInstances = append(analysis.ViolationInstances, violation)
@@ -760,17 +760,17 @@ func (pse *PSEAnalyzer) analyzeLuminanceChanges(ctx context.Context, filePath st
 		MaxLuminanceChange:   0.0,
 		LuminanceChangeRate:  0.0,
 		LuminanceTransitions: []LuminanceTransition{},
-		BrightnessVariation:  &BrightnessVariation{
+		BrightnessVariation: &BrightnessVariation{
 			MeanBrightness:       128.0, // Assume mid-range brightness
 			BrightnessStdDev:     32.0,  // Moderate variation
 			BrightnessRange:      200.0, // Range from dark to bright
 			VariationCoefficient: 0.25,  // 25% variation
 		},
 		ContrastAnalysis: &ContrastAnalysis{
-			MeanContrast:         0.5,
-			MaxContrast:          0.8,
-			ContrastVariation:    0.2,
-			HighContrastRegions:  5,
+			MeanContrast:        0.5,
+			MaxContrast:         0.8,
+			ContrastVariation:   0.2,
+			HighContrastRegions: 5,
 		},
 	}
 
@@ -868,7 +868,7 @@ func (pse *PSEAnalyzer) performSpatialAnalysis(analysis *PSEAnalysis) error {
 
 	// Viewing angle analysis
 	spatial.ViewingAngleAnalysis = &ViewingAngleAnalysis{
-		OptimalViewingDistance: 3.0, // 3 screen heights
+		OptimalViewingDistance: 3.0,  // 3 screen heights
 		CriticalViewingAngle:   20.0, // degrees
 		SafeViewingDistance:    4.0,  // 4 screen heights
 		ViewingRecommendations: []string{
@@ -885,8 +885,8 @@ func (pse *PSEAnalyzer) performSpatialAnalysis(analysis *PSEAnalysis) error {
 // analyzeSceneCharacteristics analyzes scene types and motion
 func (pse *PSEAnalyzer) analyzeSceneCharacteristics(ctx context.Context, filePath string, videoInfo *VideoInfo, analysis *PSEAnalysis) error {
 	sceneAnalysis := &SceneAnalysis{
-		SceneTypes:     []SceneType{},
-		HighRiskScenes: []HighRiskScene{},
+		SceneTypes:       []SceneType{},
+		HighRiskScenes:   []HighRiskScene{},
 		SceneTransitions: []SceneTransition{},
 	}
 
@@ -900,12 +900,12 @@ func (pse *PSEAnalyzer) analyzeSceneCharacteristics(ctx context.Context, filePat
 
 	// Motion analysis
 	sceneAnalysis.MotionAnalysis = &MotionAnalysis{
-		HasFastMotion:    false,
-		HasCameraFlash:   false,
-		HasStrobeEffect:  false,
-		HasZoomEffect:    false,
-		MotionVectors:    []MotionVector{},
-		MotionIntensity:  0.3, // Moderate motion
+		HasFastMotion:   false,
+		HasCameraFlash:  false,
+		HasStrobeEffect: false,
+		HasZoomEffect:   false,
+		MotionVectors:   []MotionVector{},
+		MotionIntensity: 0.3, // Moderate motion
 	}
 
 	// If we detected flashes, assume some might be strobe effects
@@ -965,7 +965,7 @@ func (pse *PSEAnalyzer) checkBroadcastCompliance(analysis *PSEAnalysis) *Broadca
 		compliance.FCCCompliant = false
 		compliance.OfcomCompliant = false
 		compliance.ATSCCompliant = false
-		compliance.NonCompliantReasons = append(compliance.NonCompliantReasons, 
+		compliance.NonCompliantReasons = append(compliance.NonCompliantReasons,
 			"Exceeds general flash threshold of 3 Hz")
 		compliance.ComplianceScore -= 20.0
 	}
@@ -975,7 +975,7 @@ func (pse *PSEAnalyzer) checkBroadcastCompliance(analysis *PSEAnalysis) *Broadca
 		compliance.FCCCompliant = false
 		compliance.OfcomCompliant = false
 		compliance.EBUCompliant = false
-		compliance.NonCompliantReasons = append(compliance.NonCompliantReasons, 
+		compliance.NonCompliantReasons = append(compliance.NonCompliantReasons,
 			"Exceeds red flash threshold of 3 Hz")
 		compliance.ComplianceScore -= 30.0
 	}
@@ -984,7 +984,7 @@ func (pse *PSEAnalyzer) checkBroadcastCompliance(analysis *PSEAnalysis) *Broadca
 	if analysis.PatternAnalysis != nil && analysis.PatternAnalysis.ExceedsPatternThreshold {
 		compliance.EBUCompliant = false
 		compliance.ITU709Compliant = false
-		compliance.NonCompliantReasons = append(compliance.NonCompliantReasons, 
+		compliance.NonCompliantReasons = append(compliance.NonCompliantReasons,
 			"Spatial patterns exceed safe frequency thresholds")
 		compliance.ComplianceScore -= 25.0
 	}
@@ -1046,7 +1046,7 @@ func (pse *PSEAnalyzer) calculateRiskScores(analysis *PSEAnalysis) {
 			avgRisk += risk
 		}
 		avgRisk /= float64(len(riskFactors))
-		
+
 		// Overall risk is weighted average of max and average risk
 		analysis.OverallRiskScore = (maxRisk*0.7 + avgRisk*0.3)
 	}
@@ -1133,7 +1133,7 @@ func (pse *PSEAnalyzer) generateComplianceReport(analysis *PSEAnalysis) *Complia
 	if violationCount > 0 {
 		report.CompliancePercentage = math.Max(0.0, 100.0-(float64(violationCount)*20.0))
 		report.OverallCompliance = false
-		
+
 		if report.CompliancePercentage < 50.0 {
 			report.CertificationStatus = "rejected"
 		} else {
@@ -1143,14 +1143,14 @@ func (pse *PSEAnalyzer) generateComplianceReport(analysis *PSEAnalysis) *Complia
 
 	// Violation summary
 	summary := &ViolationSummary{
-		TotalViolations:      violationCount,
-		FlashViolations:      0,
-		RedFlashViolations:   0,
-		PatternViolations:    0,
+		TotalViolations:    violationCount,
+		FlashViolations:    0,
+		RedFlashViolations: 0,
+		PatternViolations:  0,
 		SeverityDistribution: map[string]int{
-			"low":    0,
-			"medium": 0,
-			"high":   0,
+			"low":     0,
+			"medium":  0,
+			"high":    0,
 			"extreme": 0,
 		},
 	}
@@ -1203,11 +1203,11 @@ func (pse *PSEAnalyzer) scoreToRiskLevel(score float64) string {
 func (pse *PSEAnalyzer) executeCommand(ctx context.Context, cmd []string) (string, error) {
 	execCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
-	
+
 	output, err := executeFFprobeCommand(execCtx, cmd)
 	if err != nil {
 		return "", err
 	}
-	
+
 	return string(output), nil
 }

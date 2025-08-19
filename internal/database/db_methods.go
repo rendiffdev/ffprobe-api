@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	
+
 	"github.com/google/uuid"
 	"github.com/rendiffdev/ffprobe-api/internal/models"
 )

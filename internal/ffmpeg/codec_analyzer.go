@@ -17,8 +17,8 @@ func NewCodecAnalyzer() *CodecAnalyzer {
 // AnalyzeCodecs analyzes codec profiles and levels from stream information
 func (ca *CodecAnalyzer) AnalyzeCodecs(streams []StreamInfo) *CodecAnalysis {
 	analysis := &CodecAnalysis{
-		VideoCodecs: make(map[int]*VideoCodecInfo),
-		AudioCodecs: make(map[int]*AudioCodecInfo),
+		VideoCodecs:  make(map[int]*VideoCodecInfo),
+		AudioCodecs:  make(map[int]*AudioCodecInfo),
 		CodecSummary: make(map[string]int),
 	}
 
@@ -60,10 +60,10 @@ func (ca *CodecAnalyzer) AnalyzeCodecs(streams []StreamInfo) *CodecAnalysis {
 // analyzeVideoCodec extracts video codec information
 func (ca *CodecAnalyzer) analyzeVideoCodec(stream StreamInfo) *VideoCodecInfo {
 	codec := &VideoCodecInfo{
-		CodecName:    stream.CodecName,
+		CodecName:     stream.CodecName,
 		CodecLongName: stream.CodecLongName,
-		Profile:      stream.Profile,
-		Level:        stream.Level,
+		Profile:       stream.Profile,
+		Level:         stream.Level,
 	}
 
 	// Determine codec family
@@ -122,23 +122,23 @@ func (ca *CodecAnalyzer) analyzeAudioCodec(stream StreamInfo) *AudioCodecInfo {
 // getVideoCodecFamily determines the codec family
 func (ca *CodecAnalyzer) getVideoCodecFamily(codecName string) string {
 	codecMap := map[string]string{
-		"h264":     "H.264/AVC",
-		"avc":      "H.264/AVC",
-		"h265":     "H.265/HEVC",
-		"hevc":     "H.265/HEVC",
-		"av1":      "AV1",
-		"vp8":      "VP8",
-		"vp9":      "VP9",
+		"h264":       "H.264/AVC",
+		"avc":        "H.264/AVC",
+		"h265":       "H.265/HEVC",
+		"hevc":       "H.265/HEVC",
+		"av1":        "AV1",
+		"vp8":        "VP8",
+		"vp9":        "VP9",
 		"mpeg2video": "MPEG-2",
-		"mpeg4":    "MPEG-4",
-		"xvid":     "MPEG-4",
-		"divx":     "MPEG-4",
-		"prores":   "ProRes",
-		"dnxhd":    "DNxHD",
-		"dnxhr":    "DNxHR",
-		"jpeg2000": "JPEG 2000",
-		"mjpeg":    "MJPEG",
-		"rawvideo": "Raw Video",
+		"mpeg4":      "MPEG-4",
+		"xvid":       "MPEG-4",
+		"divx":       "MPEG-4",
+		"prores":     "ProRes",
+		"dnxhd":      "DNxHD",
+		"dnxhr":      "DNxHR",
+		"jpeg2000":   "JPEG 2000",
+		"mjpeg":      "MJPEG",
+		"rawvideo":   "Raw Video",
 	}
 
 	codecLower := strings.ToLower(codecName)
@@ -368,18 +368,18 @@ func (ca *CodecAnalyzer) validateH264ProfileLevel(profile string, level int) boo
 // getAudioCodecFamily determines audio codec family
 func (ca *CodecAnalyzer) getAudioCodecFamily(codecName string) string {
 	codecMap := map[string]string{
-		"aac":      "AAC",
-		"mp3":      "MP3",
-		"ac3":      "AC-3",
-		"eac3":     "E-AC-3",
-		"dts":      "DTS",
-		"dtshd":    "DTS-HD",
-		"truehd":   "TrueHD",
-		"flac":     "FLAC",
-		"alac":     "ALAC",
-		"opus":     "Opus",
-		"vorbis":   "Vorbis",
-		"pcm":      "PCM",
+		"aac":       "AAC",
+		"mp3":       "MP3",
+		"ac3":       "AC-3",
+		"eac3":      "E-AC-3",
+		"dts":       "DTS",
+		"dtshd":     "DTS-HD",
+		"truehd":    "TrueHD",
+		"flac":      "FLAC",
+		"alac":      "ALAC",
+		"opus":      "Opus",
+		"vorbis":    "Vorbis",
+		"pcm":       "PCM",
 		"pcm_s16le": "PCM",
 		"pcm_s24le": "PCM",
 		"pcm_s32le": "PCM",
@@ -466,8 +466,8 @@ func (ca *CodecAnalyzer) isSurroundAudio(channels int, channelLayout string) boo
 // validateCodecs validates overall codec configuration
 func (ca *CodecAnalyzer) validateCodecs(analysis *CodecAnalysis) *CodecValidation {
 	validation := &CodecValidation{
-		IsValid: true,
-		Issues:  []string{},
+		IsValid:         true,
+		Issues:          []string{},
 		Recommendations: []string{},
 	}
 
@@ -533,7 +533,7 @@ func (ca *CodecAnalyzer) hasLegacyCodecs(videoCodecs map[int]*VideoCodecInfo, au
 	}
 
 	legacyAudioCodecs := map[string]bool{
-		"MP3": true,
+		"MP3":  true,
 		"AC-3": true,
 	}
 
@@ -670,8 +670,8 @@ func (ca *CodecAnalyzer) validateH265ProfileLevel(profile string, level int) boo
 
 func (ca *CodecAnalyzer) getAACProfileDescription(profile string) string {
 	profiles := map[string]string{
-		"lc":  "Low Complexity - Most common AAC profile",
-		"he":  "High Efficiency - AAC+ with SBR",
+		"lc":   "Low Complexity - Most common AAC profile",
+		"he":   "High Efficiency - AAC+ with SBR",
 		"hev2": "High Efficiency v2 - AAC+ with SBR and PS",
 	}
 	if desc, exists := profiles[profile]; exists {
@@ -690,14 +690,14 @@ func (ca *CodecAnalyzer) getDTSProfileDescription(profile string) string {
 
 func (ca *CodecAnalyzer) getAudioHardwareSupport(codecFamily string) []string {
 	support := map[string][]string{
-		"AAC":     {"Universal Support", "Mobile", "Streaming"},
-		"MP3":     {"Universal Support", "Legacy"},
-		"AC-3":    {"Home Theater", "Surround Sound"},
-		"E-AC-3":  {"Advanced Surround", "Streaming"},
-		"DTS":     {"Home Theater", "High Quality"},
-		"TrueHD":  {"High-End Audio", "Lossless"},
-		"FLAC":    {"Audiophile", "Lossless"},
-		"Opus":    {"Low Latency", "VoIP"},
+		"AAC":    {"Universal Support", "Mobile", "Streaming"},
+		"MP3":    {"Universal Support", "Legacy"},
+		"AC-3":   {"Home Theater", "Surround Sound"},
+		"E-AC-3": {"Advanced Surround", "Streaming"},
+		"DTS":    {"Home Theater", "High Quality"},
+		"TrueHD": {"High-End Audio", "Lossless"},
+		"FLAC":   {"Audiophile", "Lossless"},
+		"Opus":   {"Low Latency", "VoIP"},
 	}
 	if sup, exists := support[codecFamily]; exists {
 		return sup

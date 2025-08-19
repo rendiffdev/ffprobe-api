@@ -60,7 +60,7 @@ func (h *APIKeyHandler) CreateAPIKey(c *gin.Context) {
 	// Get user and tenant from context
 	userID := c.GetString("user_id")
 	tenantID := c.GetString("tenant_id")
-	
+
 	if userID == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error":   "Unauthorized",
@@ -87,7 +87,7 @@ func (h *APIKeyHandler) CreateAPIKey(c *gin.Context) {
 			Str("user_id", userID).
 			Str("tenant_id", tenantID).
 			Msg("Failed to create API key")
-		
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to create API key",
 			"message": err.Error(),
@@ -152,7 +152,7 @@ func (h *APIKeyHandler) RotateAPIKey(c *gin.Context) {
 			Str("user_id", userID).
 			Str("key_id", req.KeyID).
 			Msg("Failed to rotate API key")
-		
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to rotate API key",
 			"message": err.Error(),
@@ -169,12 +169,12 @@ func (h *APIKeyHandler) RotateAPIKey(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
-			"old_key_id":   req.KeyID,
-			"new_key_id":   newKey.ID,
-			"new_key":      rawKey, // Only returned once
-			"key_prefix":   newKey.KeyPrefix,
-			"expires_at":   newKey.ExpiresAt,
-			"rotation_due": newKey.RotationDue,
+			"old_key_id":        req.KeyID,
+			"new_key_id":        newKey.ID,
+			"new_key":           rawKey, // Only returned once
+			"key_prefix":        newKey.KeyPrefix,
+			"expires_at":        newKey.ExpiresAt,
+			"rotation_due":      newKey.RotationDue,
 			"grace_period_ends": time.Now().Add(7 * 24 * time.Hour),
 		},
 		"message": "API key rotated successfully. The old key will remain valid for 7 days.",
@@ -205,7 +205,7 @@ func (h *APIKeyHandler) RotateJWTSecret(c *gin.Context) {
 	jwtSecret, err := h.rotationService.RotateJWTSecret(c.Request.Context())
 	if err != nil {
 		h.logger.Error().Err(err).Msg("Failed to rotate JWT secret")
-		
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to rotate JWT secret",
 			"message": err.Error(),
@@ -282,7 +282,7 @@ func (h *APIKeyHandler) UpdateRateLimits(c *gin.Context) {
 			h.logger.Error().Err(err).
 				Str("key_id", req.KeyID).
 				Msg("Failed to update API key rate limits")
-			
+
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error":   "Failed to update rate limits",
 				"message": err.Error(),
@@ -304,9 +304,9 @@ func (h *APIKeyHandler) UpdateRateLimits(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
-			"key_id":     req.KeyID,
-			"user_id":    req.UserID,
-			"tenant_id":  req.TenantID,
+			"key_id":    req.KeyID,
+			"user_id":   req.UserID,
+			"tenant_id": req.TenantID,
 			"rate_limits": gin.H{
 				"per_minute": req.RateLimitRPM,
 				"per_hour":   req.RateLimitRPH,
@@ -341,7 +341,7 @@ func (h *APIKeyHandler) CheckRotationStatus(c *gin.Context) {
 	dueKeys, err := h.rotationService.CheckRotationDue(c.Request.Context())
 	if err != nil {
 		h.logger.Error().Err(err).Msg("Failed to check rotation status")
-		
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to check rotation status",
 			"message": err.Error(),
@@ -383,7 +383,7 @@ func (h *APIKeyHandler) CleanupExpiredKeys(c *gin.Context) {
 	err := h.rotationService.CleanupExpiredKeys(c.Request.Context())
 	if err != nil {
 		h.logger.Error().Err(err).Msg("Failed to cleanup expired keys")
-		
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to cleanup expired keys",
 			"message": err.Error(),

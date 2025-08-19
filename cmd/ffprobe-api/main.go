@@ -38,10 +38,10 @@ func main() {
 	// CRITICAL: Validate FFmpeg/FFprobe binary at startup
 	logger.Info().Msg("Validating FFmpeg/FFprobe binaries...")
 	ffprobeInstance := ffmpeg.NewFFprobe(cfg.FFprobePath, logger)
-	
+
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	
+
 	if err := ffprobeInstance.ValidateBinaryAtStartup(ctx); err != nil {
 		logger.Fatal().
 			Err(err).
@@ -51,22 +51,23 @@ func main() {
 
 	// QC Analysis functionality is ready through enhanced analyzer
 	logger.Info().Msg("QC Analysis Tools ready and validated")
-	
+
 	// Create a basic Gin router for health checks
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
-	
+
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"status": "healthy",
+			"status":  "healthy",
 			"service": "ffprobe-api-core",
 			"qc_tools": []string{
-				"AFD Analysis", "Dead Pixel Detection", "PSE Flash Analysis", 
+				"AFD Analysis", "Dead Pixel Detection", "PSE Flash Analysis",
 				"HDR Analysis", "Audio Wrapping Analysis", "Endianness Detection",
 				"Codec Analysis", "Container Validation", "Resolution Analysis",
 				"Frame Rate Analysis", "Bitdepth Analysis", "Timecode Analysis",
 				"MXF Analysis", "IMF Compliance", "Transport Stream Analysis",
-				"Content Analysis", "Enhanced Analysis",
+				"Content Analysis", "Enhanced Analysis", "Stream Disposition Analysis",
+				"Data Integrity Analysis",
 			},
 			"ffmpeg_validated": true,
 		})

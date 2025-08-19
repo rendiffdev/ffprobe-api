@@ -135,17 +135,17 @@ func (bda *BitDepthAnalyzer) extractBitDepthFromPixelFormat(pixfmt string) int {
 	// Common pixel format to bit depth mappings
 	bitDepthMap := map[string]int{
 		// 8-bit formats
-		"yuv420p":   8,
-		"yuv422p":   8,
-		"yuv444p":   8,
-		"yuvj420p":  8,
-		"yuvj422p":  8,
-		"yuvj444p":  8,
-		"rgb24":     8,
-		"bgr24":     8,
-		"rgba":      8,
-		"bgra":      8,
-		
+		"yuv420p":  8,
+		"yuv422p":  8,
+		"yuv444p":  8,
+		"yuvj420p": 8,
+		"yuvj422p": 8,
+		"yuvj444p": 8,
+		"rgb24":    8,
+		"bgr24":    8,
+		"rgba":     8,
+		"bgra":     8,
+
 		// 10-bit formats
 		"yuv420p10le": 10,
 		"yuv420p10be": 10,
@@ -158,7 +158,7 @@ func (bda *BitDepthAnalyzer) extractBitDepthFromPixelFormat(pixfmt string) int {
 		"yuv444p10":   10,
 		"p010le":      10,
 		"p010be":      10,
-		
+
 		// 12-bit formats
 		"yuv420p12le": 12,
 		"yuv420p12be": 12,
@@ -169,7 +169,7 @@ func (bda *BitDepthAnalyzer) extractBitDepthFromPixelFormat(pixfmt string) int {
 		"yuv420p12":   12,
 		"yuv422p12":   12,
 		"yuv444p12":   12,
-		
+
 		// 16-bit formats
 		"yuv420p16le": 16,
 		"yuv420p16be": 16,
@@ -195,11 +195,11 @@ func (bda *BitDepthAnalyzer) extractBitDepthFromPixelFormat(pixfmt string) int {
 		regex    string
 		bitDepth int
 	}{
-		{`p(\d+)le$`, 0},   // p010le, p016le etc.
-		{`p(\d+)be$`, 0},   // p010be, p016be etc.
-		{`(\d+)bit`, 0},    // 10bit, 12bit etc.
-		{`(\d+)le$`, 0},    // 10le, 12le etc.
-		{`(\d+)be$`, 0},    // 10be, 12be etc.
+		{`p(\d+)le$`, 0}, // p010le, p016le etc.
+		{`p(\d+)be$`, 0}, // p010be, p016be etc.
+		{`(\d+)bit`, 0},  // 10bit, 12bit etc.
+		{`(\d+)le$`, 0},  // 10le, 12le etc.
+		{`(\d+)be$`, 0},  // 10be, 12be etc.
 	}
 
 	for _, pattern := range patterns {
@@ -219,18 +219,18 @@ func (bda *BitDepthAnalyzer) extractBitDepthFromPixelFormat(pixfmt string) int {
 func (bda *BitDepthAnalyzer) extractBitDepthFromSampleFormat(sampleFmt string) int {
 	// Common sample format to bit depth mappings
 	bitDepthMap := map[string]int{
-		"u8":     8,
-		"u8p":    8,
-		"s16":    16,
-		"s16p":   16,
-		"s32":    32,
-		"s32p":   32,
-		"s64":    64,
-		"s64p":   64,
-		"flt":    32,  // 32-bit float
-		"fltp":   32,  // 32-bit float planar
-		"dbl":    64,  // 64-bit double
-		"dblp":   64,  // 64-bit double planar
+		"u8":   8,
+		"u8p":  8,
+		"s16":  16,
+		"s16p": 16,
+		"s32":  32,
+		"s32p": 32,
+		"s64":  64,
+		"s64p": 64,
+		"flt":  32, // 32-bit float
+		"fltp": 32, // 32-bit float planar
+		"dbl":  64, // 64-bit double
+		"dblp": 64, // 64-bit double planar
 	}
 
 	if depth, exists := bitDepthMap[strings.ToLower(sampleFmt)]; exists {
@@ -252,7 +252,7 @@ func (bda *BitDepthAnalyzer) extractBitDepthFromSampleFormat(sampleFmt string) i
 // extractBitDepthFromProfile extracts bit depth hints from codec profile
 func (bda *BitDepthAnalyzer) extractBitDepthFromProfile(profile string) int {
 	profileLower := strings.ToLower(profile)
-	
+
 	// HEVC profiles
 	if strings.Contains(profileLower, "main 10") || strings.Contains(profileLower, "main10") {
 		return 10
@@ -260,12 +260,12 @@ func (bda *BitDepthAnalyzer) extractBitDepthFromProfile(profile string) int {
 	if strings.Contains(profileLower, "main 12") || strings.Contains(profileLower, "main12") {
 		return 12
 	}
-	
+
 	// AV1 profiles
 	if strings.Contains(profileLower, "professional") {
 		return 12 // AV1 Professional typically uses 12-bit
 	}
-	
+
 	// VP9 profiles
 	if strings.Contains(profileLower, "profile 2") || strings.Contains(profileLower, "profile 3") {
 		return 10 // VP9 Profile 2/3 support 10/12-bit
@@ -354,15 +354,15 @@ func (bda *BitDepthAnalyzer) validateAudioBitDepthConsistency(bitDepth *AudioBit
 // validateBitDepth validates overall bit depth characteristics
 func (bda *BitDepthAnalyzer) validateBitDepth(analysis *BitDepthAnalysis) *BitDepthValidation {
 	validation := &BitDepthValidation{
-		IsValid: true,
-		Issues:  []string{},
+		IsValid:         true,
+		Issues:          []string{},
 		Recommendations: []string{},
 	}
 
 	// Check for inconsistencies in video streams
 	for streamIndex, videoBitDepth := range analysis.VideoStreams {
 		if !videoBitDepth.IsConsistent {
-			validation.Issues = append(validation.Issues, 
+			validation.Issues = append(validation.Issues,
 				fmt.Sprintf("Video stream %d has inconsistent bit depth indicators", streamIndex))
 			validation.IsValid = false
 		}
@@ -371,7 +371,7 @@ func (bda *BitDepthAnalyzer) validateBitDepth(analysis *BitDepthAnalysis) *BitDe
 	// Check for inconsistencies in audio streams
 	for streamIndex, audioBitDepth := range analysis.AudioStreams {
 		if !audioBitDepth.IsConsistent {
-			validation.Issues = append(validation.Issues, 
+			validation.Issues = append(validation.Issues,
 				fmt.Sprintf("Audio stream %d has inconsistent bit depth indicators", streamIndex))
 			validation.IsValid = false
 		}

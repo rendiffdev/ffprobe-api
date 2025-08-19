@@ -26,7 +26,7 @@ func (fra *FrameRateAnalyzer) AnalyzeFrameRate(streams []StreamInfo) *FrameRateA
 			videoFrameRate := fra.analyzeVideoFrameRate(stream)
 			if videoFrameRate != nil {
 				analysis.VideoStreams[stream.Index] = videoFrameRate
-				
+
 				// Update overall analysis
 				if videoFrameRate.EffectiveFrameRate > analysis.MaxFrameRate {
 					analysis.MaxFrameRate = videoFrameRate.EffectiveFrameRate
@@ -57,7 +57,7 @@ func (fra *FrameRateAnalyzer) analyzeVideoFrameRate(stream StreamInfo) *VideoFra
 
 	// Parse real frame rate (r_frame_rate)
 	frameRate.RealFrameRate = fra.parseFrameRate(stream.RFrameRate)
-	
+
 	// Parse average frame rate (avg_frame_rate)
 	frameRate.AverageFrameRate = fra.parseFrameRate(stream.AvgFrameRate)
 
@@ -280,8 +280,8 @@ func (fra *FrameRateAnalyzer) hasInterlacedContent(videoStreams map[int]*VideoFr
 // validateFrameRate validates overall frame rate characteristics
 func (fra *FrameRateAnalyzer) validateFrameRate(analysis *FrameRateAnalysis) *FrameRateValidation {
 	validation := &FrameRateValidation{
-		IsValid: true,
-		Issues:  []string{},
+		IsValid:         true,
+		Issues:          []string{},
 		Recommendations: []string{},
 	}
 

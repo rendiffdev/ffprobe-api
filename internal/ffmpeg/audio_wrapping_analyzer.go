@@ -27,149 +27,149 @@ func NewAudioWrappingAnalyzer(ffprobePath string, logger zerolog.Logger) *AudioW
 
 // AudioWrappingAnalysis contains comprehensive audio wrapping analysis
 type AudioWrappingAnalysis struct {
-	AudioStreams        map[int]*AudioWrappingInfo  `json:"audio_streams,omitempty"`
-	WrappingValidation  *WrappingValidation         `json:"wrapping_validation,omitempty"`
-	ProfessionalFormats *ProfessionalFormats        `json:"professional_formats,omitempty"`
+	AudioStreams        map[int]*AudioWrappingInfo   `json:"audio_streams,omitempty"`
+	WrappingValidation  *WrappingValidation          `json:"wrapping_validation,omitempty"`
+	ProfessionalFormats *ProfessionalFormats         `json:"professional_formats,omitempty"`
 	BroadcastCompliance *BroadcastWrappingCompliance `json:"broadcast_compliance,omitempty"`
 }
 
 // AudioWrappingInfo contains detailed audio wrapping information for a stream
 type AudioWrappingInfo struct {
-	StreamIndex          int                    `json:"stream_index"`
-	CodecName            string                 `json:"codec_name"`
-	WrappingFormat       string                 `json:"wrapping_format"`
-	WrappingType         string                 `json:"wrapping_type"`         // "elementary", "packetized", "framed", "embedded"
-	ContainerWrapping    string                 `json:"container_wrapping"`    // How audio is wrapped in container
-	TransportMechanism   string                 `json:"transport_mechanism"`   // "PES", "raw", "framed", "chunk"
-	Packetization        *PacketizationInfo     `json:"packetization,omitempty"`
-	FramingInfo          *FramingInfo           `json:"framing_info,omitempty"`
-	Synchronization      *SynchronizationInfo   `json:"synchronization,omitempty"`
-	ProfessionalWrapping *ProfessionalWrapping  `json:"professional_wrapping,omitempty"`
-	Issues               []string               `json:"issues,omitempty"`
-	Recommendations      []string               `json:"recommendations,omitempty"`
+	StreamIndex          int                   `json:"stream_index"`
+	CodecName            string                `json:"codec_name"`
+	WrappingFormat       string                `json:"wrapping_format"`
+	WrappingType         string                `json:"wrapping_type"`       // "elementary", "packetized", "framed", "embedded"
+	ContainerWrapping    string                `json:"container_wrapping"`  // How audio is wrapped in container
+	TransportMechanism   string                `json:"transport_mechanism"` // "PES", "raw", "framed", "chunk"
+	Packetization        *PacketizationInfo    `json:"packetization,omitempty"`
+	FramingInfo          *FramingInfo          `json:"framing_info,omitempty"`
+	Synchronization      *SynchronizationInfo  `json:"synchronization,omitempty"`
+	ProfessionalWrapping *ProfessionalWrapping `json:"professional_wrapping,omitempty"`
+	Issues               []string              `json:"issues,omitempty"`
+	Recommendations      []string              `json:"recommendations,omitempty"`
 }
 
 // PacketizationInfo contains information about audio packetization
 type PacketizationInfo struct {
-	PacketSize           int      `json:"packet_size,omitempty"`
-	PacketsPerFrame      int      `json:"packets_per_frame,omitempty"`
-	PacketAlignment      string   `json:"packet_alignment"`      // "byte", "word", "frame"
-	HasPacketHeaders     bool     `json:"has_packet_headers"`
-	PacketHeaderSize     int      `json:"packet_header_size,omitempty"`
-	ErrorCorrection      bool     `json:"error_correction"`
-	PacketBoundaries     string   `json:"packet_boundaries"`     // "fixed", "variable", "implicit"
-	PacketOverhead       float64  `json:"packet_overhead_percent,omitempty"`
+	PacketSize       int     `json:"packet_size,omitempty"`
+	PacketsPerFrame  int     `json:"packets_per_frame,omitempty"`
+	PacketAlignment  string  `json:"packet_alignment"` // "byte", "word", "frame"
+	HasPacketHeaders bool    `json:"has_packet_headers"`
+	PacketHeaderSize int     `json:"packet_header_size,omitempty"`
+	ErrorCorrection  bool    `json:"error_correction"`
+	PacketBoundaries string  `json:"packet_boundaries"` // "fixed", "variable", "implicit"
+	PacketOverhead   float64 `json:"packet_overhead_percent,omitempty"`
 }
 
 // FramingInfo contains information about audio framing
 type FramingInfo struct {
-	FrameSize            int      `json:"frame_size,omitempty"`              // Samples per frame
-	FrameDuration        float64  `json:"frame_duration_ms,omitempty"`       // Duration in milliseconds
-	FrameAlignment       string   `json:"frame_alignment"`                   // "byte", "bit", "sample"
-	HasFrameHeaders      bool     `json:"has_frame_headers"`
-	FrameHeaderSize      int      `json:"frame_header_size,omitempty"`
-	FrameBoundaryMarkers bool     `json:"frame_boundary_markers"`
-	VariableFrameSize    bool     `json:"variable_frame_size"`
-	FrameOverhead        float64  `json:"frame_overhead_percent,omitempty"`
+	FrameSize            int     `json:"frame_size,omitempty"`        // Samples per frame
+	FrameDuration        float64 `json:"frame_duration_ms,omitempty"` // Duration in milliseconds
+	FrameAlignment       string  `json:"frame_alignment"`             // "byte", "bit", "sample"
+	HasFrameHeaders      bool    `json:"has_frame_headers"`
+	FrameHeaderSize      int     `json:"frame_header_size,omitempty"`
+	FrameBoundaryMarkers bool    `json:"frame_boundary_markers"`
+	VariableFrameSize    bool    `json:"variable_frame_size"`
+	FrameOverhead        float64 `json:"frame_overhead_percent,omitempty"`
 }
 
 // SynchronizationInfo contains audio synchronization information
 type SynchronizationInfo struct {
-	SyncMethod           string   `json:"sync_method"`                // "PTS", "DTS", "timestamp", "embedded", "none"
-	HasTimestamps        bool     `json:"has_timestamps"`
-	TimestampResolution  int      `json:"timestamp_resolution,omitempty"`  // Ticks per second
-	SyncAccuracy         string   `json:"sync_accuracy"`              // "sample", "frame", "packet", "approximate"
-	PresentationDelay    float64  `json:"presentation_delay_ms,omitempty"`
+	SyncMethod            string   `json:"sync_method"` // "PTS", "DTS", "timestamp", "embedded", "none"
+	HasTimestamps         bool     `json:"has_timestamps"`
+	TimestampResolution   int      `json:"timestamp_resolution,omitempty"` // Ticks per second
+	SyncAccuracy          string   `json:"sync_accuracy"`                  // "sample", "frame", "packet", "approximate"
+	PresentationDelay     float64  `json:"presentation_delay_ms,omitempty"`
 	SynchronizationIssues []string `json:"synchronization_issues,omitempty"`
 }
 
 // ProfessionalWrapping contains professional audio wrapping information
 type ProfessionalWrapping struct {
-	AESFormat            *AESWrapping         `json:"aes_format,omitempty"`
-	BWFFormat            *BWFWrapping         `json:"bwf_format,omitempty"`
-	MXFWrapping          *MXFWrapping         `json:"mxf_wrapping,omitempty"`
-	PCMWrapping          *PCMWrapping         `json:"pcm_wrapping,omitempty"`
-	DolbyFormat          *DolbyWrapping       `json:"dolby_format,omitempty"`
-	DTSFormat            *DTSWrapping         `json:"dts_format,omitempty"`
+	AESFormat   *AESWrapping   `json:"aes_format,omitempty"`
+	BWFFormat   *BWFWrapping   `json:"bwf_format,omitempty"`
+	MXFWrapping *MXFWrapping   `json:"mxf_wrapping,omitempty"`
+	PCMWrapping *PCMWrapping   `json:"pcm_wrapping,omitempty"`
+	DolbyFormat *DolbyWrapping `json:"dolby_format,omitempty"`
+	DTSFormat   *DTSWrapping   `json:"dts_format,omitempty"`
 }
 
 // AESWrapping contains AES/EBU digital audio wrapping information
 type AESWrapping struct {
-	AESStandard          string   `json:"aes_standard"`            // "AES3", "AES47", "AES67"
-	ChannelStatusData    string   `json:"channel_status_data,omitempty"`
-	UserData             string   `json:"user_data,omitempty"`
-	ValidityBits         bool     `json:"validity_bits"`
-	SubframeStructure    string   `json:"subframe_structure"`      // "32-bit", "24-bit"
-	BlockStructure       string   `json:"block_structure"`         // "192 frames"
-	PreamblePattern      string   `json:"preamble_pattern,omitempty"`
+	AESStandard       string `json:"aes_standard"` // "AES3", "AES47", "AES67"
+	ChannelStatusData string `json:"channel_status_data,omitempty"`
+	UserData          string `json:"user_data,omitempty"`
+	ValidityBits      bool   `json:"validity_bits"`
+	SubframeStructure string `json:"subframe_structure"` // "32-bit", "24-bit"
+	BlockStructure    string `json:"block_structure"`    // "192 frames"
+	PreamblePattern   string `json:"preamble_pattern,omitempty"`
 }
 
 // BWFWrapping contains Broadcast Wave Format wrapping information
 type BWFWrapping struct {
-	BWFVersion           string   `json:"bwf_version"`
-	BextChunk            bool     `json:"has_bext_chunk"`
-	CodingHistory        string   `json:"coding_history,omitempty"`
-	Originator           string   `json:"originator,omitempty"`
-	OriginatorReference  string   `json:"originator_reference,omitempty"`
-	TimeReference        string   `json:"time_reference,omitempty"`
-	UMID                 string   `json:"umid,omitempty"`
-	LoudnessInfo         string   `json:"loudness_info,omitempty"`
+	BWFVersion          string `json:"bwf_version"`
+	BextChunk           bool   `json:"has_bext_chunk"`
+	CodingHistory       string `json:"coding_history,omitempty"`
+	Originator          string `json:"originator,omitempty"`
+	OriginatorReference string `json:"originator_reference,omitempty"`
+	TimeReference       string `json:"time_reference,omitempty"`
+	UMID                string `json:"umid,omitempty"`
+	LoudnessInfo        string `json:"loudness_info,omitempty"`
 }
 
 // MXFWrapping contains MXF audio wrapping information
 type MXFWrapping struct {
-	EssenceContainer     string   `json:"essence_container"`
-	EssenceEncoding      string   `json:"essence_encoding"`
-	WrappingType         string   `json:"wrapping_type"`        // "frame", "clip", "custom"
-	KAGSize              int      `json:"kag_size,omitempty"`   // KLV Alignment Grid
-	EditUnitSize         int      `json:"edit_unit_size,omitempty"`
-	IndexTable           bool     `json:"has_index_table"`
-	PartitionStructure   string   `json:"partition_structure,omitempty"`
+	EssenceContainer   string `json:"essence_container"`
+	EssenceEncoding    string `json:"essence_encoding"`
+	WrappingType       string `json:"wrapping_type"`      // "frame", "clip", "custom"
+	KAGSize            int    `json:"kag_size,omitempty"` // KLV Alignment Grid
+	EditUnitSize       int    `json:"edit_unit_size,omitempty"`
+	IndexTable         bool   `json:"has_index_table"`
+	PartitionStructure string `json:"partition_structure,omitempty"`
 }
 
 // PCMWrapping contains PCM wrapping format information
 type PCMWrapping struct {
-	SampleFormat         string   `json:"sample_format"`
-	Interleaving         string   `json:"interleaving"`         // "interleaved", "planar", "packed"
-	ByteAlignment        string   `json:"byte_alignment"`       // "left", "right", "msb"
-	Endianness           string   `json:"endianness"`           // "little", "big"
-	SignFormat           string   `json:"sign_format"`          // "signed", "unsigned", "offset_binary"
-	PaddingBits          int      `json:"padding_bits,omitempty"`
-	ChannelOrder         []string `json:"channel_order,omitempty"`
+	SampleFormat  string   `json:"sample_format"`
+	Interleaving  string   `json:"interleaving"`   // "interleaved", "planar", "packed"
+	ByteAlignment string   `json:"byte_alignment"` // "left", "right", "msb"
+	Endianness    string   `json:"endianness"`     // "little", "big"
+	SignFormat    string   `json:"sign_format"`    // "signed", "unsigned", "offset_binary"
+	PaddingBits   int      `json:"padding_bits,omitempty"`
+	ChannelOrder  []string `json:"channel_order,omitempty"`
 }
 
 // DolbyWrapping contains Dolby-specific wrapping information
 type DolbyWrapping struct {
-	DolbyFormat          string   `json:"dolby_format"`         // "AC-3", "E-AC-3", "TrueHD", "Atmos"
-	BitstreamMode        int      `json:"bitstream_mode,omitempty"`
-	DialogNormalization  int      `json:"dialog_normalization,omitempty"`
-	ChannelConfiguration string   `json:"channel_configuration,omitempty"`
-	LFEPresent           bool     `json:"lfe_present"`
-	CouplingStrategy     string   `json:"coupling_strategy,omitempty"`
-	DataRate             string   `json:"data_rate,omitempty"`
+	DolbyFormat          string `json:"dolby_format"` // "AC-3", "E-AC-3", "TrueHD", "Atmos"
+	BitstreamMode        int    `json:"bitstream_mode,omitempty"`
+	DialogNormalization  int    `json:"dialog_normalization,omitempty"`
+	ChannelConfiguration string `json:"channel_configuration,omitempty"`
+	LFEPresent           bool   `json:"lfe_present"`
+	CouplingStrategy     string `json:"coupling_strategy,omitempty"`
+	DataRate             string `json:"data_rate,omitempty"`
 }
 
 // DTSWrapping contains DTS-specific wrapping information
 type DTSWrapping struct {
-	DTSFormat            string   `json:"dts_format"`           // "DTS", "DTS-HD", "DTS:X"
-	CoreBitrate          int      `json:"core_bitrate,omitempty"`
-	ExtensionBitrate     int      `json:"extension_bitrate,omitempty"`
-	ChannelLayout        string   `json:"channel_layout,omitempty"`
-	LosslessMode         bool     `json:"lossless_mode"`
-	MultiAssetMode       bool     `json:"multi_asset_mode"`
-	CoreChannels         int      `json:"core_channels,omitempty"`
-	ExtensionChannels    int      `json:"extension_channels,omitempty"`
+	DTSFormat         string `json:"dts_format"` // "DTS", "DTS-HD", "DTS:X"
+	CoreBitrate       int    `json:"core_bitrate,omitempty"`
+	ExtensionBitrate  int    `json:"extension_bitrate,omitempty"`
+	ChannelLayout     string `json:"channel_layout,omitempty"`
+	LosslessMode      bool   `json:"lossless_mode"`
+	MultiAssetMode    bool   `json:"multi_asset_mode"`
+	CoreChannels      int    `json:"core_channels,omitempty"`
+	ExtensionChannels int    `json:"extension_channels,omitempty"`
 }
 
 // WrappingValidation contains wrapping validation results
 type WrappingValidation struct {
-	IsValid              bool     `json:"is_valid"`
-	IsStandardCompliant  bool     `json:"is_standard_compliant"`
-	HasWrappingIssues    bool     `json:"has_wrapping_issues"`
-	Issues               []string `json:"issues,omitempty"`
-	Warnings             []string `json:"warnings,omitempty"`
-	Recommendations      []string `json:"recommendations,omitempty"`
-	CompatibilityLevel   string   `json:"compatibility_level"`    // "high", "medium", "low"
+	IsValid             bool     `json:"is_valid"`
+	IsStandardCompliant bool     `json:"is_standard_compliant"`
+	HasWrappingIssues   bool     `json:"has_wrapping_issues"`
+	Issues              []string `json:"issues,omitempty"`
+	Warnings            []string `json:"warnings,omitempty"`
+	Recommendations     []string `json:"recommendations,omitempty"`
+	CompatibilityLevel  string   `json:"compatibility_level"` // "high", "medium", "low"
 }
 
 // ProfessionalFormats contains information about professional audio formats
@@ -184,38 +184,38 @@ type ProfessionalFormats struct {
 
 // BroadcastWrappingCompliance contains broadcast compliance information
 type BroadcastWrappingCompliance struct {
-	EBUCompliant         bool     `json:"ebu_compliant"`           // EBU R68, R128
-	ATSCCompliant        bool     `json:"atsc_compliant"`          // ATSC A/52, A/85
-	DVBCompliant         bool     `json:"dvb_compliant"`           // DVB standards
-	ARIBCompliant        bool     `json:"arib_compliant"`          // ARIB standards (Japan)
-	ITUCompliant         bool     `json:"itu_compliant"`           // ITU-R BS standards
-	AES67Compliant       bool     `json:"aes67_compliant"`         // AES67 Audio-over-IP
-	ComplianceIssues     []string `json:"compliance_issues,omitempty"`
-	ComplianceLevel      string   `json:"compliance_level"`        // "full", "partial", "non_compliant"
+	EBUCompliant     bool     `json:"ebu_compliant"`   // EBU R68, R128
+	ATSCCompliant    bool     `json:"atsc_compliant"`  // ATSC A/52, A/85
+	DVBCompliant     bool     `json:"dvb_compliant"`   // DVB standards
+	ARIBCompliant    bool     `json:"arib_compliant"`  // ARIB standards (Japan)
+	ITUCompliant     bool     `json:"itu_compliant"`   // ITU-R BS standards
+	AES67Compliant   bool     `json:"aes67_compliant"` // AES67 Audio-over-IP
+	ComplianceIssues []string `json:"compliance_issues,omitempty"`
+	ComplianceLevel  string   `json:"compliance_level"` // "full", "partial", "non_compliant"
 }
 
 // Audio wrapping format definitions
 var audioWrappingFormats = map[string]string{
-	"pcm_s16le":     "PCM Little Endian 16-bit",
-	"pcm_s16be":     "PCM Big Endian 16-bit", 
-	"pcm_s24le":     "PCM Little Endian 24-bit",
-	"pcm_s24be":     "PCM Big Endian 24-bit",
-	"pcm_s32le":     "PCM Little Endian 32-bit",
-	"pcm_s32be":     "PCM Big Endian 32-bit",
-	"pcm_f32le":     "PCM Float 32-bit Little Endian",
-	"pcm_f32be":     "PCM Float 32-bit Big Endian",
-	"pcm_f64le":     "PCM Float 64-bit Little Endian",
-	"pcm_f64be":     "PCM Float 64-bit Big Endian",
-	"aac":           "AAC (Advanced Audio Coding)",
-	"ac3":           "AC-3 (Dolby Digital)",
-	"eac3":          "E-AC-3 (Dolby Digital Plus)",
-	"truehd":        "Dolby TrueHD",
-	"dts":           "DTS (Digital Theater Systems)",
-	"mp3":           "MP3 (MPEG-1 Audio Layer III)",
-	"mp2":           "MP2 (MPEG-1 Audio Layer II)",
-	"opus":          "Opus",
-	"vorbis":        "Vorbis",
-	"flac":          "FLAC (Free Lossless Audio Codec)",
+	"pcm_s16le": "PCM Little Endian 16-bit",
+	"pcm_s16be": "PCM Big Endian 16-bit",
+	"pcm_s24le": "PCM Little Endian 24-bit",
+	"pcm_s24be": "PCM Big Endian 24-bit",
+	"pcm_s32le": "PCM Little Endian 32-bit",
+	"pcm_s32be": "PCM Big Endian 32-bit",
+	"pcm_f32le": "PCM Float 32-bit Little Endian",
+	"pcm_f32be": "PCM Float 32-bit Big Endian",
+	"pcm_f64le": "PCM Float 64-bit Little Endian",
+	"pcm_f64be": "PCM Float 64-bit Big Endian",
+	"aac":       "AAC (Advanced Audio Coding)",
+	"ac3":       "AC-3 (Dolby Digital)",
+	"eac3":      "E-AC-3 (Dolby Digital Plus)",
+	"truehd":    "Dolby TrueHD",
+	"dts":       "DTS (Digital Theater Systems)",
+	"mp3":       "MP3 (MPEG-1 Audio Layer III)",
+	"mp2":       "MP2 (MPEG-1 Audio Layer II)",
+	"opus":      "Opus",
+	"vorbis":    "Vorbis",
+	"flac":      "FLAC (Free Lossless Audio Codec)",
 }
 
 // AnalyzeAudioWrapping performs comprehensive audio wrapping analysis
@@ -251,10 +251,10 @@ func (awa *AudioWrappingAnalyzer) AnalyzeAudioWrapping(ctx context.Context, file
 // analyzeStreamWrapping analyzes wrapping for a specific audio stream
 func (awa *AudioWrappingAnalyzer) analyzeStreamWrapping(ctx context.Context, filePath string, stream StreamInfo, format *FormatInfo) (*AudioWrappingInfo, error) {
 	info := &AudioWrappingInfo{
-		StreamIndex:       stream.Index,
-		CodecName:         stream.CodecName,
-		Issues:            []string{},
-		Recommendations:   []string{},
+		StreamIndex:     stream.Index,
+		CodecName:       stream.CodecName,
+		Issues:          []string{},
+		Recommendations: []string{},
 	}
 
 	// Determine wrapping format from codec and container
@@ -293,22 +293,22 @@ func (awa *AudioWrappingAnalyzer) determineWrappingFormat(codecName string) stri
 // determineWrappingType determines how the audio is wrapped
 func (awa *AudioWrappingAnalyzer) determineWrappingType(codecName string, format *FormatInfo) string {
 	codec := strings.ToLower(codecName)
-	
+
 	// PCM is typically elementary
 	if strings.HasPrefix(codec, "pcm") {
 		return "elementary"
 	}
-	
+
 	// Compressed formats are typically framed
 	if codec == "aac" || codec == "mp3" || codec == "ac3" || codec == "eac3" {
 		return "framed"
 	}
-	
+
 	// Professional formats
 	if codec == "truehd" || codec == "dts" {
 		return "packetized"
 	}
-	
+
 	// Container-dependent
 	if format != nil {
 		formatName := strings.ToLower(format.FormatName)
@@ -319,7 +319,7 @@ func (awa *AudioWrappingAnalyzer) determineWrappingType(codecName string, format
 			return "packetized"
 		}
 	}
-	
+
 	return "unknown"
 }
 
@@ -328,9 +328,9 @@ func (awa *AudioWrappingAnalyzer) determineContainerWrapping(format *FormatInfo)
 	if format == nil {
 		return "unknown"
 	}
-	
+
 	formatName := strings.ToLower(format.FormatName)
-	
+
 	wrappingMap := map[string]string{
 		"mp4":      "MP4 sample-based",
 		"mov":      "QuickTime sample-based",
@@ -344,13 +344,13 @@ func (awa *AudioWrappingAnalyzer) determineContainerWrapping(format *FormatInfo)
 		"asf":      "ASF packet-based",
 		"mxf":      "MXF KLV-based",
 	}
-	
+
 	for container, wrapping := range wrappingMap {
 		if strings.Contains(formatName, container) {
 			return wrapping
 		}
 	}
-	
+
 	return "Unknown container wrapping"
 }
 
@@ -359,9 +359,9 @@ func (awa *AudioWrappingAnalyzer) determineTransportMechanism(format *FormatInfo
 	if format == nil {
 		return "unknown"
 	}
-	
+
 	formatName := strings.ToLower(format.FormatName)
-	
+
 	if strings.Contains(formatName, "mpegts") {
 		return "PES (Packetized Elementary Stream)"
 	}
@@ -380,7 +380,7 @@ func (awa *AudioWrappingAnalyzer) determineTransportMechanism(format *FormatInfo
 	if strings.Contains(formatName, "mxf") {
 		return "KLV packets"
 	}
-	
+
 	return "Container-specific framing"
 }
 
@@ -634,7 +634,7 @@ func (awa *AudioWrappingAnalyzer) validateWrapping(analysis *AudioWrappingAnalys
 
 		// Check for common problems
 		if streamInfo.WrappingFormat == "Unknown" {
-			validation.Issues = append(validation.Issues, 
+			validation.Issues = append(validation.Issues,
 				fmt.Sprintf("Stream %d has unknown wrapping format", streamInfo.StreamIndex))
 			validation.HasWrappingIssues = true
 		}
@@ -736,11 +736,11 @@ func (awa *AudioWrappingAnalyzer) checkBroadcastCompliance(analysis *AudioWrappi
 	for _, streamInfo := range analysis.AudioStreams {
 		// Check codec compliance
 		codec := strings.ToLower(streamInfo.CodecName)
-		
+
 		// ATSC compliance
 		if !awa.isATSCCompliantCodec(codec) {
 			compliance.ATSCCompliant = false
-			compliance.ComplianceIssues = append(compliance.ComplianceIssues, 
+			compliance.ComplianceIssues = append(compliance.ComplianceIssues,
 				fmt.Sprintf("Stream %d codec not ATSC compliant", streamInfo.StreamIndex))
 		}
 
@@ -783,7 +783,7 @@ func (awa *AudioWrappingAnalyzer) analyzePCMWrapping(stream StreamInfo) *PCMWrap
 	}
 
 	sampleFmt := strings.ToLower(stream.SampleFmt)
-	
+
 	// Determine endianness
 	if strings.HasSuffix(sampleFmt, "le") {
 		pcm.Endianness = "little"
@@ -816,14 +816,14 @@ func (awa *AudioWrappingAnalyzer) isAESFormat(stream StreamInfo, format *FormatI
 			return true
 		}
 	}
-	
+
 	// Check for AES-specific sample rates
 	if stream.SampleRate == "48000" || stream.SampleRate == "96000" {
 		if stream.Channels == 2 && strings.Contains(strings.ToLower(stream.SampleFmt), "24") {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -898,8 +898,8 @@ func (awa *AudioWrappingAnalyzer) analyzeMXFWrapping(stream StreamInfo) *MXFWrap
 
 func (awa *AudioWrappingAnalyzer) analyzeDolbyWrapping(stream StreamInfo) *DolbyWrapping {
 	dolby := &DolbyWrapping{
-		DolbyFormat:    stream.CodecName,
-		LFEPresent:     false,
+		DolbyFormat:      stream.CodecName,
+		LFEPresent:       false,
 		CouplingStrategy: "unknown",
 	}
 
@@ -1046,11 +1046,11 @@ func (awa *AudioWrappingAnalyzer) isAES67Compliant(streamInfo *AudioWrappingInfo
 func (awa *AudioWrappingAnalyzer) executeCommand(ctx context.Context, cmd []string) (string, error) {
 	execCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	
+
 	output, err := executeFFprobeCommand(execCtx, cmd)
 	if err != nil {
 		return "", err
 	}
-	
+
 	return string(output), nil
 }

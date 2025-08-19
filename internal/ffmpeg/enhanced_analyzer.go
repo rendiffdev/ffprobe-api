@@ -11,23 +11,25 @@ import (
 
 // EnhancedAnalyzer provides additional quality control analysis
 type EnhancedAnalyzer struct {
-	contentAnalyzer       *ContentAnalyzer
-	hdrAnalyzer           *HDRAnalyzer
-	bitDepthAnalyzer      *BitDepthAnalyzer
-	resolutionAnalyzer    *ResolutionAnalyzer
-	frameRateAnalyzer     *FrameRateAnalyzer
-	codecAnalyzer         *CodecAnalyzer
-	containerAnalyzer     *ContainerAnalyzer
-	llmAnalyzer           *LLMEnhancedAnalyzer
-	timecodeAnalyzer        *TimecodeAnalyzer
-	afdAnalyzer             *AFDAnalyzer
-	transportStreamAnalyzer *TransportStreamAnalyzer
-	endiannessAnalyzer      *EndiannessAnalyzer
-	audioWrappingAnalyzer   *AudioWrappingAnalyzer
-	imfAnalyzer             *IMFAnalyzer
-	mxfAnalyzer             *MXFAnalyzer
-	deadPixelAnalyzer       *DeadPixelAnalyzer
-	pseAnalyzer             *PSEAnalyzer
+	contentAnalyzer           *ContentAnalyzer
+	hdrAnalyzer               *HDRAnalyzer
+	bitDepthAnalyzer          *BitDepthAnalyzer
+	resolutionAnalyzer        *ResolutionAnalyzer
+	frameRateAnalyzer         *FrameRateAnalyzer
+	codecAnalyzer             *CodecAnalyzer
+	containerAnalyzer         *ContainerAnalyzer
+	llmAnalyzer               *LLMEnhancedAnalyzer
+	timecodeAnalyzer          *TimecodeAnalyzer
+	afdAnalyzer               *AFDAnalyzer
+	transportStreamAnalyzer   *TransportStreamAnalyzer
+	endiannessAnalyzer        *EndiannessAnalyzer
+	audioWrappingAnalyzer     *AudioWrappingAnalyzer
+	imfAnalyzer               *IMFAnalyzer
+	mxfAnalyzer               *MXFAnalyzer
+	deadPixelAnalyzer         *DeadPixelAnalyzer
+	pseAnalyzer               *PSEAnalyzer
+	streamDispositionAnalyzer *StreamDispositionAnalyzer
+	dataIntegrityAnalyzer     *DataIntegrityAnalyzer
 }
 
 // NewEnhancedAnalyzer creates a new enhanced analyzer
@@ -49,6 +51,8 @@ func NewEnhancedAnalyzer(ffprobePath string, logger zerolog.Logger) *EnhancedAna
 		mxfAnalyzer:               NewMXFAnalyzer(ffprobePath, logger),
 		deadPixelAnalyzer:         NewDeadPixelAnalyzer(ffprobePath, logger),
 		pseAnalyzer:               NewPSEAnalyzer(ffprobePath, logger),
+		streamDispositionAnalyzer: NewStreamDispositionAnalyzer(ffprobePath, logger),
+		dataIntegrityAnalyzer:     NewDataIntegrityAnalyzer(ffprobePath, logger),
 	}
 }
 
@@ -72,6 +76,8 @@ func NewEnhancedAnalyzerWithContentAnalysis(ffmpegPath string, ffprobePath strin
 		mxfAnalyzer:               NewMXFAnalyzer(ffprobePath, logger),
 		deadPixelAnalyzer:         NewDeadPixelAnalyzer(ffprobePath, logger),
 		pseAnalyzer:               NewPSEAnalyzer(ffprobePath, logger),
+		streamDispositionAnalyzer: NewStreamDispositionAnalyzer(ffprobePath, logger),
+		dataIntegrityAnalyzer:     NewDataIntegrityAnalyzer(ffprobePath, logger),
 	}
 }
 
@@ -246,6 +252,28 @@ func (ea *EnhancedAnalyzer) AnalyzeResultWithAdvancedQC(ctx context.Context, res
 		}
 	}
 
+	// Run stream disposition analysis
+	if ea.streamDispositionAnalyzer != nil && len(result.Streams) > 0 {
+		dispositionAnalysis, err := ea.streamDispositionAnalyzer.AnalyzeStreamDisposition(ctx, filePath, result.Streams)
+		if err != nil {
+			// Log error but don't fail entire analysis
+			fmt.Printf("Warning: stream disposition analysis failed: %v\n", err)
+		} else {
+			result.EnhancedAnalysis.StreamDispositionAnalysis = dispositionAnalysis
+		}
+	}
+
+	// Run data integrity analysis
+	if ea.dataIntegrityAnalyzer != nil {
+		integrityAnalysis, err := ea.dataIntegrityAnalyzer.AnalyzeDataIntegrity(ctx, filePath)
+		if err != nil {
+			// Log error but don't fail entire analysis
+			fmt.Printf("Warning: data integrity analysis failed: %v\n", err)
+		} else {
+			result.EnhancedAnalysis.DataIntegrityAnalysis = integrityAnalysis
+		}
+	}
+
 	return nil
 }
 
@@ -268,7 +296,7 @@ func (ea *EnhancedAnalyzer) AnalyzeResultWithLLM(ctx context.Context, result *FF
 			// Log error but don't fail the entire analysis
 			return fmt.Errorf("LLM analysis failed: %w", err)
 		}
-		
+
 		// Add LLM report to enhanced analysis
 		if result.EnhancedAnalysis == nil {
 			result.EnhancedAnalysis = &EnhancedAnalysis{}
@@ -276,7 +304,7 @@ func (ea *EnhancedAnalyzer) AnalyzeResultWithLLM(ctx context.Context, result *FF
 		if result.EnhancedAnalysis.ContentAnalysis == nil {
 			result.EnhancedAnalysis.ContentAnalysis = &ContentAnalysis{}
 		}
-		
+
 		// Extend ContentAnalysis to include LLM report
 		// This would require adding LLMReport field to ContentAnalysis struct
 		// For now, we'll store it in a new field
@@ -299,12 +327,12 @@ func (ea *EnhancedAnalyzer) AnalyzeResultWithHDR(ctx context.Context, result *FF
 		if err != nil {
 			return fmt.Errorf("HDR analysis failed: %w", err)
 		}
-		
+
 		// Initialize ContentAnalysis if it doesn't exist
 		if result.EnhancedAnalysis.ContentAnalysis == nil {
 			result.EnhancedAnalysis.ContentAnalysis = &ContentAnalysis{}
 		}
-		
+
 		result.EnhancedAnalysis.ContentAnalysis.HDRAnalysis = hdrAnalysis
 	}
 
@@ -336,7 +364,7 @@ func (ea *EnhancedAnalyzer) analyzeStreamCounts(streams []StreamInfo) *StreamCou
 
 	for _, stream := range streams {
 		counts.TotalStreams++
-		
+
 		switch strings.ToLower(stream.CodecType) {
 		case "video":
 			counts.VideoStreams++
@@ -615,7 +643,7 @@ func (ea *EnhancedAnalyzer) analyzeFrameStatistics(frames []FrameInfo) *FrameSta
 	var frameSizes []int64
 	totalFrames := 0
 	iFrames := 0
-	pFrames := 0 
+	pFrames := 0
 	bFrames := 0
 
 	for _, frame := range frames {

@@ -104,12 +104,12 @@ func validateShowEntries(entries string) error {
 	// Check for known valid prefixes
 	validPrefixes := []string{"stream", "format", "packet", "frame", "chapter", "program"}
 	parts := strings.Split(entries, ":")
-	
+
 	for _, part := range parts {
 		if part == "" {
 			continue
 		}
-		
+
 		found := false
 		for _, prefix := range validPrefixes {
 			if strings.HasPrefix(part, prefix+"=") || part == prefix {
@@ -117,7 +117,7 @@ func validateShowEntries(entries string) error {
 				break
 			}
 		}
-		
+
 		if !found {
 			return fmt.Errorf("unknown section in show_entries: %s", part)
 		}

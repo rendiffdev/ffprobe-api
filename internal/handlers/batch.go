@@ -9,12 +9,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/rs/zerolog"
 	"github.com/rendiffdev/ffprobe-api/internal/errors"
 	"github.com/rendiffdev/ffprobe-api/internal/ffmpeg"
 	"github.com/rendiffdev/ffprobe-api/internal/models"
 	"github.com/rendiffdev/ffprobe-api/internal/services"
 	"github.com/rendiffdev/ffprobe-api/internal/validator"
+	"github.com/rs/zerolog"
 )
 
 // BatchHandler handles batch processing operations
@@ -50,12 +50,12 @@ type BatchFileItem struct {
 
 // BatchAnalysisResponse represents the batch analysis response
 type BatchAnalysisResponse struct {
-	BatchID   uuid.UUID            `json:"batch_id"`
-	Status    string               `json:"status"`
-	Total     int                  `json:"total"`
-	Completed int                  `json:"completed"`
-	Failed    int                  `json:"failed"`
-	Results   []BatchResultItem    `json:"results,omitempty"`
+	BatchID   uuid.UUID         `json:"batch_id"`
+	Status    string            `json:"status"`
+	Total     int               `json:"total"`
+	Completed int               `json:"completed"`
+	Failed    int               `json:"failed"`
+	Results   []BatchResultItem `json:"results,omitempty"`
 }
 
 // BatchResultItem represents a single result in a batch
@@ -69,16 +69,16 @@ type BatchResultItem struct {
 
 // BatchStatusResponse represents batch status information
 type BatchStatusResponse struct {
-	BatchID     uuid.UUID           `json:"batch_id"`
-	Status      string              `json:"status"`
-	Total       int                 `json:"total"`
-	Completed   int                 `json:"completed"`
-	Failed      int                 `json:"failed"`
-	InProgress  int                 `json:"in_progress"`
-	StartedAt   time.Time           `json:"started_at"`
-	UpdatedAt   time.Time           `json:"updated_at"`
-	CompletedAt *time.Time          `json:"completed_at,omitempty"`
-	Results     []BatchResultItem   `json:"results"`
+	BatchID     uuid.UUID         `json:"batch_id"`
+	Status      string            `json:"status"`
+	Total       int               `json:"total"`
+	Completed   int               `json:"completed"`
+	Failed      int               `json:"failed"`
+	InProgress  int               `json:"in_progress"`
+	StartedAt   time.Time         `json:"started_at"`
+	UpdatedAt   time.Time         `json:"updated_at"`
+	CompletedAt *time.Time        `json:"completed_at,omitempty"`
+	Results     []BatchResultItem `json:"results"`
 }
 
 // Batch tracking (in-memory for now, should be in database for production)
@@ -139,7 +139,7 @@ func (h *BatchHandler) CreateBatch(c *gin.Context) {
 
 	// Create batch ID
 	batchID := uuid.New()
-	
+
 	// Initialize batch status
 	batchStatus := &BatchStatusResponse{
 		BatchID:    batchID,
@@ -178,7 +178,7 @@ func (h *BatchHandler) CreateBatch(c *gin.Context) {
 	} else {
 		// Process synchronously
 		results := h.processBatchSync(c.Request.Context(), batchID, req)
-		
+
 		c.JSON(http.StatusOK, BatchAnalysisResponse{
 			BatchID:   batchID,
 			Status:    "completed",
@@ -268,7 +268,7 @@ func (h *BatchHandler) CancelBatch(c *gin.Context) {
 // @Router /api/v1/batch [get]
 func (h *BatchHandler) ListBatches(c *gin.Context) {
 	statusFilter := c.Query("status")
-	
+
 	batchMutex.RLock()
 	defer batchMutex.RUnlock()
 
@@ -289,7 +289,7 @@ func (h *BatchHandler) ListBatches(c *gin.Context) {
 
 func (h *BatchHandler) processBatchSync(ctx context.Context, batchID uuid.UUID, req BatchAnalysisRequest) []BatchResultItem {
 	results := make([]BatchResultItem, len(req.Files))
-	
+
 	for i, file := range req.Files {
 		result := BatchResultItem{
 			ID:     file.ID,
@@ -363,8 +363,8 @@ func (h *BatchHandler) processBatchAsync(batchID uuid.UUID, req BatchAnalysisReq
 		wg.Add(1)
 		go func(index int, fileItem BatchFileItem) {
 			defer wg.Done()
-			
-			sem <- struct{}{} // Acquire semaphore
+
+			sem <- struct{}{}        // Acquire semaphore
 			defer func() { <-sem }() // Release semaphore
 
 			result := BatchResultItem{

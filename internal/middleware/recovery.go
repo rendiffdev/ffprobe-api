@@ -16,7 +16,7 @@ func Recovery(logger zerolog.Logger) gin.HandlerFunc {
 			if err := recover(); err != nil {
 				// Get stack trace
 				stack := debug.Stack()
-				
+
 				// Log the panic
 				logger.Error().
 					Interface("error", err).
@@ -25,18 +25,18 @@ func Recovery(logger zerolog.Logger) gin.HandlerFunc {
 					Str("ip", c.ClientIP()).
 					Bytes("stack", stack).
 					Msg("Panic recovered")
-				
+
 				// Return error response
 				c.JSON(http.StatusInternalServerError, gin.H{
-					"error": "Internal server error",
-					"code": "INTERNAL_ERROR",
+					"error":   "Internal server error",
+					"code":    "INTERNAL_ERROR",
 					"message": fmt.Sprintf("An unexpected error occurred: %v", err),
 				})
-				
+
 				c.Abort()
 			}
 		}()
-		
+
 		c.Next()
 	}
 }

@@ -28,49 +28,49 @@ func NewTimecodeAnalyzer(ffprobePath string, logger zerolog.Logger) *TimecodeAna
 
 // TimecodeAnalysis contains comprehensive timecode analysis
 type TimecodeAnalysis struct {
-	HasTimecode          bool                    `json:"has_timecode"`
-	TimecodeStreams      map[int]*TimecodeInfo   `json:"timecode_streams,omitempty"`
-	PrimaryTimecode      *TimecodeInfo           `json:"primary_timecode,omitempty"`
-	IsDropFrame          bool                    `json:"is_drop_frame"`
-	FrameRateCompatible  bool                    `json:"frame_rate_compatible"`
-	TimecodeValidation   *TimecodeValidation     `json:"timecode_validation,omitempty"`
-	EmbeddedTimecodes    []EmbeddedTimecode      `json:"embedded_timecodes,omitempty"`
-	UserDataTimecodes    []UserDataTimecode      `json:"user_data_timecodes,omitempty"`
+	HasTimecode         bool                  `json:"has_timecode"`
+	TimecodeStreams     map[int]*TimecodeInfo `json:"timecode_streams,omitempty"`
+	PrimaryTimecode     *TimecodeInfo         `json:"primary_timecode,omitempty"`
+	IsDropFrame         bool                  `json:"is_drop_frame"`
+	FrameRateCompatible bool                  `json:"frame_rate_compatible"`
+	TimecodeValidation  *TimecodeValidation   `json:"timecode_validation,omitempty"`
+	EmbeddedTimecodes   []EmbeddedTimecode    `json:"embedded_timecodes,omitempty"`
+	UserDataTimecodes   []UserDataTimecode    `json:"user_data_timecodes,omitempty"`
 }
 
 // TimecodeInfo contains detailed timecode information
 type TimecodeInfo struct {
-	StreamIndex      int                `json:"stream_index"`
-	StartTimecode    string             `json:"start_timecode,omitempty"`
-	Format           string             `json:"format"`               // "SMPTE", "VITC", "LTC", "user_data"
-	DropFrame        bool               `json:"drop_frame"`
-	FrameRate        float64            `json:"frame_rate"`
-	ColorFrame       bool               `json:"color_frame,omitempty"`
-	FieldMark        bool               `json:"field_mark,omitempty"`
-	BGF0             bool               `json:"bgf0,omitempty"`       // Binary Group Flag 0
-	BGF1             bool               `json:"bgf1,omitempty"`       // Binary Group Flag 1
-	BGF2             bool               `json:"bgf2,omitempty"`       // Binary Group Flag 2
-	BinaryGroups     string             `json:"binary_groups,omitempty"`
-	IsValid          bool               `json:"is_valid"`
-	ValidationIssues []string           `json:"validation_issues,omitempty"`
+	StreamIndex      int      `json:"stream_index"`
+	StartTimecode    string   `json:"start_timecode,omitempty"`
+	Format           string   `json:"format"` // "SMPTE", "VITC", "LTC", "user_data"
+	DropFrame        bool     `json:"drop_frame"`
+	FrameRate        float64  `json:"frame_rate"`
+	ColorFrame       bool     `json:"color_frame,omitempty"`
+	FieldMark        bool     `json:"field_mark,omitempty"`
+	BGF0             bool     `json:"bgf0,omitempty"` // Binary Group Flag 0
+	BGF1             bool     `json:"bgf1,omitempty"` // Binary Group Flag 1
+	BGF2             bool     `json:"bgf2,omitempty"` // Binary Group Flag 2
+	BinaryGroups     string   `json:"binary_groups,omitempty"`
+	IsValid          bool     `json:"is_valid"`
+	ValidationIssues []string `json:"validation_issues,omitempty"`
 }
 
 // EmbeddedTimecode represents timecode found in video frames
 type EmbeddedTimecode struct {
-	FrameNumber    int     `json:"frame_number"`
-	PTS            float64 `json:"pts"`
-	Timecode       string  `json:"timecode"`
-	Format         string  `json:"format"`
-	Confidence     float64 `json:"confidence"`
+	FrameNumber int     `json:"frame_number"`
+	PTS         float64 `json:"pts"`
+	Timecode    string  `json:"timecode"`
+	Format      string  `json:"format"`
+	Confidence  float64 `json:"confidence"`
 }
 
 // UserDataTimecode represents timecode in user data (e.g., H.264 SEI)
 type UserDataTimecode struct {
-	Type           string  `json:"type"`           // "sei_timecode", "gop_timecode", "aux_data"
-	Timecode       string  `json:"timecode"`
-	DropFrame      bool    `json:"drop_frame"`
-	FrameNumber    int     `json:"frame_number"`
-	Confidence     float64 `json:"confidence"`
+	Type        string  `json:"type"` // "sei_timecode", "gop_timecode", "aux_data"
+	Timecode    string  `json:"timecode"`
+	DropFrame   bool    `json:"drop_frame"`
+	FrameNumber int     `json:"frame_number"`
+	Confidence  float64 `json:"confidence"`
 }
 
 // TimecodeValidation contains timecode validation results
@@ -252,13 +252,13 @@ func (ta *TimecodeAnalyzer) detectEmbeddedTimecodes(ctx context.Context, filePat
 	frameNumber := 0
 	for _, frame := range result.Frames {
 		frameNumber++
-		
+
 		// Check side data for timecode information
 		for _, sideData := range frame.SideData {
 			if strings.Contains(sideData.Type, "timecode") || strings.Contains(sideData.Type, "h264_sei") {
 				if timecodeStr := ta.extractTimecodeFromSideData(sideData.Data); timecodeStr != "" {
 					pts, _ := strconv.ParseFloat(frame.PktPtsTime, 64)
-					
+
 					analysis.EmbeddedTimecodes = append(analysis.EmbeddedTimecodes, EmbeddedTimecode{
 						FrameNumber: frameNumber,
 						PTS:         pts,
@@ -308,13 +308,13 @@ func (ta *TimecodeAnalyzer) analyzeUserDataTimecodes(ctx context.Context, filePa
 			for i, match := range matches {
 				if len(match) >= 5 {
 					timecode := fmt.Sprintf("%s:%s:%s:%s", match[1], match[2], match[3], match[4])
-					
+
 					analysis.UserDataTimecodes = append(analysis.UserDataTimecodes, UserDataTimecode{
-						Type:       pattern.format,
-						Timecode:   timecode,
-						DropFrame:  strings.Contains(match[0], ";"),
+						Type:        pattern.format,
+						Timecode:    timecode,
+						DropFrame:   strings.Contains(match[0], ";"),
 						FrameNumber: i,
-						Confidence: 0.7,
+						Confidence:  0.7,
 					})
 					analysis.HasTimecode = true
 				}
@@ -328,7 +328,7 @@ func (ta *TimecodeAnalyzer) analyzeUserDataTimecodes(ctx context.Context, filePa
 // determinePrimaryTimecode identifies the most reliable timecode source
 func (ta *TimecodeAnalyzer) determinePrimaryTimecode(analysis *TimecodeAnalysis) {
 	// Priority order: Dedicated timecode streams > User data > Embedded > Metadata
-	
+
 	// Check dedicated timecode streams first
 	for _, timecodeInfo := range analysis.TimecodeStreams {
 		if timecodeInfo.IsValid {
@@ -420,7 +420,7 @@ func (ta *TimecodeAnalyzer) isTimecodeCodec(codecName string) bool {
 		"timecode", "smpte_timecode", "vitc", "ltc",
 		"m2v_timecode", "dvd_nav_packet",
 	}
-	
+
 	for _, codec := range timecodeCodecs {
 		if strings.Contains(codecName, codec) {
 			return true
@@ -436,7 +436,7 @@ func (ta *TimecodeAnalyzer) getTimecodeFormat(codecName string) string {
 		"vitc":           "VITC",
 		"ltc":            "LTC",
 	}
-	
+
 	for key, format := range formatMap {
 		if strings.Contains(codecName, key) {
 			return format
@@ -457,7 +457,7 @@ func (ta *TimecodeAnalyzer) parseFrameRate(frameRateStr string) float64 {
 			}
 		}
 	}
-	
+
 	frameRate, _ := strconv.ParseFloat(frameRateStr, 64)
 	return frameRate
 }
@@ -466,7 +466,7 @@ func (ta *TimecodeAnalyzer) isDropFrameRate(frameRate float64) bool {
 	// Drop frame is typically used with 29.97 fps and 59.94 fps
 	dropFrameRates := []float64{29.97, 59.94}
 	tolerance := 0.01
-	
+
 	for _, dfRate := range dropFrameRates {
 		if frameRate >= dfRate-tolerance && frameRate <= dfRate+tolerance {
 			return true
@@ -492,19 +492,19 @@ func (ta *TimecodeAnalyzer) extractTimecodeFromSideData(data map[string]interfac
 	if timecodeStr, ok := data["timecode"].(string); ok {
 		return timecodeStr
 	}
-	
+
 	// Check for numeric timecode components
 	if hours, ok := data["hours"].(float64); ok {
 		if minutes, ok := data["minutes"].(float64); ok {
 			if seconds, ok := data["seconds"].(float64); ok {
 				if frames, ok := data["frames"].(float64); ok {
-					return fmt.Sprintf("%02d:%02d:%02d:%02d", 
+					return fmt.Sprintf("%02d:%02d:%02d:%02d",
 						int(hours), int(minutes), int(seconds), int(frames))
 				}
 			}
 		}
 	}
-	
+
 	return ""
 }
 
@@ -512,11 +512,11 @@ func (ta *TimecodeAnalyzer) executeCommand(ctx context.Context, cmd []string) (s
 	// Execute command with timeout
 	execCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	
+
 	output, err := executeFFprobeCommand(execCtx, cmd)
 	if err != nil {
 		return "", err
 	}
-	
+
 	return string(output), nil
 }

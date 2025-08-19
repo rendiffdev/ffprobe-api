@@ -26,7 +26,7 @@ func (ra *ResolutionAnalyzer) AnalyzeResolution(streams []StreamInfo) *Resolutio
 			videoRes := ra.analyzeVideoResolution(stream)
 			if videoRes != nil {
 				analysis.VideoStreams[stream.Index] = videoRes
-				
+
 				// Update overall analysis
 				if videoRes.Width > analysis.MaxWidth {
 					analysis.MaxWidth = videoRes.Width
@@ -197,10 +197,10 @@ func (ra *ResolutionAnalyzer) categorizeAspectRatio(aspectRatio float64) string 
 	// Common aspect ratio categories with tolerance
 	tolerance := 0.05
 	categories := map[string]float64{
-		"4:3 (Standard)":      4.0 / 3.0,   // 1.333
-		"16:9 (Widescreen)":   16.0 / 9.0,  // 1.778
-		"16:10 (Widescreen)":  16.0 / 10.0, // 1.6
-		"21:9 (Ultrawide)":    21.0 / 9.0,  // 2.333
+		"4:3 (Standard)":       4.0 / 3.0,   // 1.333
+		"16:9 (Widescreen)":    16.0 / 9.0,  // 1.778
+		"16:10 (Widescreen)":   16.0 / 10.0, // 1.6
+		"21:9 (Ultrawide)":     21.0 / 9.0,  // 2.333
 		"2.35:1 (Cinemascope)": 2.35,
 		"2.39:1 (Anamorphic)":  2.39,
 		"1.85:1 (Academy)":     1.85,
@@ -309,8 +309,8 @@ func (ra *ResolutionAnalyzer) hasMultipleResolutions(videoStreams map[int]*Video
 // validateResolution validates overall resolution characteristics
 func (ra *ResolutionAnalyzer) validateResolution(analysis *ResolutionAnalysis) *ResolutionValidation {
 	validation := &ResolutionValidation{
-		IsValid: true,
-		Issues:  []string{},
+		IsValid:         true,
+		Issues:          []string{},
 		Recommendations: []string{},
 	}
 

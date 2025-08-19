@@ -81,7 +81,7 @@ func (qa *QualityAnalyzer) AnalyzeQuality(ctx context.Context, request *QualityC
 				Str("analysis_id", analysisID.String()).
 				Str("metric", string(metric)).
 				Msg("Metric analysis failed")
-			
+
 			result.Status = QualityStatusFailed
 			result.Error = fmt.Sprintf("Failed to analyze %s: %v", metric, err)
 			return result, err
@@ -379,7 +379,7 @@ func (qa *QualityAnalyzer) parseVMAFOutput(analysis *QualityAnalysis, outputFile
 // parsePSNROutput parses PSNR output
 func (qa *QualityAnalyzer) parsePSNROutput(analysis *QualityAnalysis, output string, config *PSNRConfiguration) error {
 	lines := strings.Split(output, "\n")
-	
+
 	var psnrValues []float64
 	for _, line := range lines {
 		if strings.Contains(line, "PSNR") && strings.Contains(line, "average") {
@@ -417,7 +417,7 @@ func (qa *QualityAnalyzer) parsePSNROutput(analysis *QualityAnalysis, output str
 // parseSSIMOutput parses SSIM output
 func (qa *QualityAnalyzer) parseSSIMOutput(analysis *QualityAnalysis, output string, config *SSIMConfiguration) error {
 	lines := strings.Split(output, "\n")
-	
+
 	var ssimValues []float64
 	for _, line := range lines {
 		if strings.Contains(line, "SSIM") && strings.Contains(line, "All:") {
@@ -468,12 +468,12 @@ func (qa *QualityAnalyzer) generateSummary(analyses []*QualityAnalysis, referenc
 	// Process each analysis
 	for _, analysis := range analyses {
 		rating := qa.thresholds.GetRating(analysis.MetricType, analysis.OverallScore)
-		
+
 		metricSummary := &MetricSummary{
-			MetricType:  analysis.MetricType,
-			Score:       analysis.OverallScore,
-			Rating:      rating,
-			Description: qa.getMetricDescription(analysis.MetricType),
+			MetricType:     analysis.MetricType,
+			Score:          analysis.OverallScore,
+			Rating:         rating,
+			Description:    qa.getMetricDescription(analysis.MetricType),
 			Interpretation: qa.getScoreInterpretation(analysis.MetricType, analysis.OverallScore, rating),
 		}
 
@@ -515,9 +515,9 @@ func (qa *QualityAnalyzer) generateVisualization(analyses []*QualityAnalysis) (*
 
 	for _, analysis := range analyses {
 		dataset := map[string]interface{}{
-			"label": string(analysis.MetricType),
-			"data":  []float64{analysis.OverallScore},
-			"borderColor": qa.getMetricColor(analysis.MetricType),
+			"label":           string(analysis.MetricType),
+			"data":            []float64{analysis.OverallScore},
+			"borderColor":     qa.getMetricColor(analysis.MetricType),
 			"backgroundColor": qa.getMetricColor(analysis.MetricType),
 		}
 		chartData["datasets"] = append(chartData["datasets"].([]map[string]interface{}), dataset)
@@ -552,7 +552,7 @@ func (qa *QualityAnalyzer) getMetricDescription(metric QualityMetricType) string
 
 func (qa *QualityAnalyzer) getScoreInterpretation(metric QualityMetricType, score float64, rating QualityRating) string {
 	base := fmt.Sprintf("Score: %.2f - %s quality", score, rating)
-	
+
 	switch metric {
 	case MetricVMAF:
 		return fmt.Sprintf("%s. VMAF scores range from 0-100, with higher values indicating better perceptual quality.", base)
@@ -604,7 +604,7 @@ func (qa *QualityAnalyzer) detectQualityIssues(analysis *QualityAnalysis) []Qual
 	var issues []QualityIssue
 
 	rating := qa.thresholds.GetRating(analysis.MetricType, analysis.OverallScore)
-	
+
 	if rating == RatingPoor || rating == RatingBad {
 		severity := "medium"
 		if rating == RatingBad {
@@ -637,7 +637,7 @@ func (qa *QualityAnalyzer) generateRecommendations(analyses []*QualityAnalysis, 
 
 	for _, analysis := range analyses {
 		rating := qa.thresholds.GetRating(analysis.MetricType, analysis.OverallScore)
-		
+
 		if rating == RatingPoor || rating == RatingBad {
 			switch analysis.MetricType {
 			case MetricVMAF:
@@ -674,7 +674,7 @@ func (qa *QualityAnalyzer) generateComparisonInsights(analyses []*QualityAnalysi
 func (qa *QualityAnalyzer) getMetricColor(metric QualityMetricType) string {
 	colors := map[QualityMetricType]string{
 		MetricVMAF: "#FF6B6B",
-		MetricPSNR: "#4ECDC4", 
+		MetricPSNR: "#4ECDC4",
 		MetricSSIM: "#45B7D1",
 	}
 	return colors[metric]

@@ -15,7 +15,7 @@ import (
 func MigrateUp(databaseURL string, migrationsPath string, logger zerolog.Logger) error {
 	// Determine migration path based on database type
 	finalMigrationsPath := getMigrationPath(databaseURL, migrationsPath)
-	
+
 	m, err := migrate.New(
 		fmt.Sprintf("file://%s", finalMigrationsPath),
 		databaseURL,

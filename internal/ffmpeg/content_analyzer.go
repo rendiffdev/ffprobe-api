@@ -13,9 +13,9 @@ import (
 
 // ContentAnalyzer handles content-based quality analysis using FFmpeg filters
 type ContentAnalyzer struct {
-	ffmpegPath string
-	logger     zerolog.Logger
-	tempDir    string
+	ffmpegPath  string
+	logger      zerolog.Logger
+	tempDir     string
 	hdrAnalyzer *HDRAnalyzer
 }
 
@@ -26,9 +26,9 @@ func NewContentAnalyzer(ffmpegPath string, logger zerolog.Logger) *ContentAnalyz
 	}
 
 	return &ContentAnalyzer{
-		ffmpegPath: ffmpegPath,
-		logger:     logger,
-		tempDir:    "/tmp/content_analysis",
+		ffmpegPath:  ffmpegPath,
+		logger:      logger,
+		tempDir:     "/tmp/content_analysis",
 		hdrAnalyzer: NewHDRAnalyzer("ffprobe", logger),
 	}
 }

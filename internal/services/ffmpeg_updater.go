@@ -29,13 +29,13 @@ type FFmpegUpdater struct {
 
 // FFmpegVersion represents FFmpeg version information
 type FFmpegVersion struct {
-	Major      int       `json:"major"`
-	Minor      int       `json:"minor"`
-	Patch      int       `json:"patch"`
-	Git        string    `json:"git,omitempty"`
-	ReleaseURL string    `json:"release_url,omitempty"`
-	AssetURL   string    `json:"asset_url,omitempty"`
-	Stable     bool      `json:"stable"`
+	Major       int       `json:"major"`
+	Minor       int       `json:"minor"`
+	Patch       int       `json:"patch"`
+	Git         string    `json:"git,omitempty"`
+	ReleaseURL  string    `json:"release_url,omitempty"`
+	AssetURL    string    `json:"asset_url,omitempty"`
+	Stable      bool      `json:"stable"`
 	ReleaseDate time.Time `json:"release_date"`
 }
 
@@ -93,7 +93,7 @@ func (u *FFmpegUpdater) parseFFmpegVersion(output string) (*FFmpegVersion, error
 	// Or: ffmpeg version 6.1.1
 	versionRegex := regexp.MustCompile(`ffmpeg version (?:n)?(\d+)\.(\d+)(?:\.(\d+))?(?:-(\d+)-g([a-f0-9]+))?`)
 	matches := versionRegex.FindStringSubmatch(output)
-	
+
 	if len(matches) < 3 {
 		return nil, fmt.Errorf("could not parse FFmpeg version from output")
 	}
@@ -104,11 +104,11 @@ func (u *FFmpegUpdater) parseFFmpegVersion(output string) (*FFmpegVersion, error
 
 	version.Major, _ = strconv.Atoi(matches[1])
 	version.Minor, _ = strconv.Atoi(matches[2])
-	
+
 	if len(matches) > 3 && matches[3] != "" {
 		version.Patch, _ = strconv.Atoi(matches[3])
 	}
-	
+
 	if len(matches) > 5 && matches[5] != "" {
 		version.Git = matches[5]
 		version.Stable = false // Git versions are considered development
@@ -119,7 +119,7 @@ func (u *FFmpegUpdater) parseFFmpegVersion(output string) (*FFmpegVersion, error
 
 // CheckLatestRelease checks for the latest FFmpeg release from BtbN
 func (u *FFmpegUpdater) CheckLatestRelease(ctx context.Context) (*FFmpegVersion, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", 
+	req, err := http.NewRequestWithContext(ctx, "GET",
 		"https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/latest", nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -170,7 +170,7 @@ func (u *FFmpegUpdater) findAppropriateAsset(assets []struct {
 }) string {
 	// Determine platform-specific file pattern
 	var patterns []string
-	
+
 	switch runtime.GOOS {
 	case "linux":
 		switch runtime.GOARCH {
@@ -239,7 +239,7 @@ func (u *FFmpegUpdater) parseReleaseTag(tag string) (*FFmpegVersion, error) {
 	// Try to parse semantic version if present
 	versionRegex := regexp.MustCompile(`(\d+)\.(\d+)(?:\.(\d+))?`)
 	matches := versionRegex.FindStringSubmatch(tag)
-	
+
 	if len(matches) < 3 {
 		// Can't parse, assume it's latest
 		return &FFmpegVersion{
@@ -296,8 +296,8 @@ func (u *FFmpegUpdater) VerifyStability(ctx context.Context, version *FFmpegVers
 
 	// Check if release is at least 48 hours old (for stability)
 	if time.Since(version.ReleaseDate) < 48*time.Hour {
-		report.Warnings = append(report.Warnings, 
-			fmt.Sprintf("Release is less than 48 hours old (%s)", 
+		report.Warnings = append(report.Warnings,
+			fmt.Sprintf("Release is less than 48 hours old (%s)",
 				time.Since(version.ReleaseDate).Round(time.Hour)))
 		report.Stable = false
 	}
@@ -328,7 +328,7 @@ type StabilityReport struct {
 func (r *StabilityReport) checkKnownIssues() {
 	// FFmpeg 7.0 has breaking changes
 	if r.Version.Major >= 7 {
-		r.Warnings = append(r.Warnings, 
+		r.Warnings = append(r.Warnings,
 			"FFmpeg 7.0+ contains breaking API changes. Manual review recommended.")
 	}
 
@@ -359,13 +359,13 @@ func (u *FFmpegUpdater) testFFmpegBinary(ctx context.Context, version *FFmpegVer
 
 // UpdateInfo contains information about an available update
 type UpdateInfo struct {
-	Current       *FFmpegVersion   `json:"current"`
-	Available     *FFmpegVersion   `json:"available"`
-	IsMajor       bool             `json:"is_major"`
-	IsMinor       bool             `json:"is_minor"`
-	IsPatch       bool             `json:"is_patch"`
-	Stability     *StabilityReport `json:"stability"`
-	Recommendation string          `json:"recommendation"`
+	Current        *FFmpegVersion   `json:"current"`
+	Available      *FFmpegVersion   `json:"available"`
+	IsMajor        bool             `json:"is_major"`
+	IsMinor        bool             `json:"is_minor"`
+	IsPatch        bool             `json:"is_patch"`
+	Stability      *StabilityReport `json:"stability"`
+	Recommendation string           `json:"recommendation"`
 }
 
 // CheckForUpdates checks for available FFmpeg updates
@@ -504,7 +504,7 @@ func (u *FFmpegUpdater) downloadFile(ctx context.Context, url, dest string, prog
 				return writeErr
 			}
 			downloaded += int64(n)
-			
+
 			if progress != nil && totalSize > 0 {
 				percent := int(downloaded * 100 / totalSize)
 				progress(percent)
@@ -553,7 +553,7 @@ func (u *FFmpegUpdater) backupCurrent() error {
 	for _, binary := range []string{"ffmpeg", "ffprobe"} {
 		src := filepath.Join(u.installPath, binary)
 		dst := filepath.Join(u.backupPath, binary)
-		
+
 		if _, err := os.Stat(src); err == nil {
 			if err := u.copyFile(src, dst); err != nil {
 				return fmt.Errorf("failed to backup %s: %w", binary, err)
@@ -569,7 +569,7 @@ func (u *FFmpegUpdater) rollback() error {
 	for _, binary := range []string{"ffmpeg", "ffprobe"} {
 		src := filepath.Join(u.backupPath, binary)
 		dst := filepath.Join(u.installPath, binary)
-		
+
 		if _, err := os.Stat(src); err == nil {
 			if err := u.copyFile(src, dst); err != nil {
 				u.logger.Error().Err(err).Str("binary", binary).Msg("Failed to rollback binary")
@@ -604,11 +604,11 @@ func (u *FFmpegUpdater) installBinaries(tempDir string) error {
 	for _, binary := range []string{"ffmpeg", "ffprobe"} {
 		src := filepath.Join(binDir, binary)
 		dst := filepath.Join(u.installPath, binary)
-		
+
 		if err := u.copyFile(src, dst); err != nil {
 			return fmt.Errorf("failed to install %s: %w", binary, err)
 		}
-		
+
 		// Make executable on Unix-like systems
 		if runtime.GOOS != "windows" {
 			if err := os.Chmod(dst, 0755); err != nil {

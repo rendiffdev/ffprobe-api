@@ -31,7 +31,7 @@ func NewLocalProvider(cfg Config) (*LocalProvider, error) {
 
 func (l *LocalProvider) Upload(ctx context.Context, key string, reader io.Reader, size int64) error {
 	filePath := filepath.Join(l.basePath, key)
-	
+
 	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}

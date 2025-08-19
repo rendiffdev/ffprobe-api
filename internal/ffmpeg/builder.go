@@ -111,6 +111,59 @@ func (b *OptionsBuilder) ShowPrivateData() *OptionsBuilder {
 	return b
 }
 
+// ShowDataHash enables data hash output
+func (b *OptionsBuilder) ShowDataHash() *OptionsBuilder {
+	b.options.ShowDataHash = true
+	return b
+}
+
+// HashAlgorithm sets the hash algorithm for data hash calculation
+func (b *OptionsBuilder) HashAlgorithm(algorithm string) *OptionsBuilder {
+	b.options.HashAlgorithm = algorithm
+	b.options.ShowDataHash = true // Auto-enable when hash is specified
+	return b
+}
+
+// MD5Hash enables MD5 hash calculation
+func (b *OptionsBuilder) MD5Hash() *OptionsBuilder {
+	return b.HashAlgorithm("md5")
+}
+
+// CRC32Hash enables CRC32 hash calculation
+func (b *OptionsBuilder) CRC32Hash() *OptionsBuilder {
+	return b.HashAlgorithm("crc32")
+}
+
+// ErrorDetect sets error detection flags
+func (b *OptionsBuilder) ErrorDetect(flags string) *OptionsBuilder {
+	b.options.ErrorDetect = flags
+	return b
+}
+
+// ErrorDetectAll enables all error detection
+func (b *OptionsBuilder) ErrorDetectAll() *OptionsBuilder {
+	b.options.ErrorDetect = "crccheck+bitstream+buffer+explode+careful+compliant+aggressive"
+	return b
+}
+
+// ErrorDetectBroadcast enables broadcast-safe error detection
+func (b *OptionsBuilder) ErrorDetectBroadcast() *OptionsBuilder {
+	b.options.ErrorDetect = "crccheck+bitstream+buffer+careful+compliant"
+	return b
+}
+
+// FormatErrorDetect sets format error detection flags
+func (b *OptionsBuilder) FormatErrorDetect(flags string) *OptionsBuilder {
+	b.options.FormatErrorDetect = flags
+	return b
+}
+
+// FormatErrorDetectAll enables all format error detection
+func (b *OptionsBuilder) FormatErrorDetectAll() *OptionsBuilder {
+	b.options.FormatErrorDetect = "crccheck+bitstream+buffer+explode+careful+compliant+aggressive"
+	return b
+}
+
 // ShowAll enables all information output
 func (b *OptionsBuilder) ShowAll() *OptionsBuilder {
 	return b.ShowFormat().ShowStreams().ShowChapters().ShowPrograms()
@@ -347,4 +400,25 @@ func (b *OptionsBuilder) QuickInfo() *OptionsBuilder {
 // DeepAnalysis configures options for comprehensive analysis
 func (b *OptionsBuilder) DeepAnalysis() *OptionsBuilder {
 	return b.JSON().ShowAll().CountFrames().CountPackets().ProbeSizeMB(50).AnalyzeDurationSeconds(30)
+}
+
+// QualityControlAnalysis configures options for professional QC analysis
+func (b *OptionsBuilder) QualityControlAnalysis() *OptionsBuilder {
+	return b.JSON().ShowAll().ShowError().ShowData().ShowDataHash().ShowPrivateData().
+		CountFrames().CountPackets().ErrorDetectBroadcast().FormatErrorDetectAll().
+		CRC32Hash().ProbeSizeMB(100).AnalyzeDurationSeconds(60)
+}
+
+// BroadcastQC configures options for broadcast compliance analysis
+func (b *OptionsBuilder) BroadcastQC() *OptionsBuilder {
+	return b.JSON().ShowAll().ShowError().ShowPrivateData().
+		ErrorDetectBroadcast().FormatErrorDetectAll().
+		CountFrames().CountPackets().ProbeSizeMB(50).AnalyzeDurationSeconds(30)
+}
+
+// StreamingQC configures options for streaming platform compliance
+func (b *OptionsBuilder) StreamingQC() *OptionsBuilder {
+	return b.JSON().ShowAll().ShowError().ShowDataHash().
+		ErrorDetect("crccheck+bitstream+buffer+careful").
+		MD5Hash().CountFrames().ProbeSizeMB(25).AnalyzeDurationSeconds(15)
 }

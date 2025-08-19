@@ -30,130 +30,130 @@ func NewIMFAnalyzer(ffprobePath string, logger zerolog.Logger) *IMFAnalyzer {
 
 // IMFAnalysis contains comprehensive IMF compliance analysis
 type IMFAnalysis struct {
-	IsIMFCompliant        bool                   `json:"is_imf_compliant"`
-	IMFProfile            string                 `json:"imf_profile,omitempty"`
-	CPLAnalysis           *CPLAnalysis           `json:"cpl_analysis,omitempty"`
-	PKLAnalysis           *PKLAnalysis           `json:"pkl_analysis,omitempty"`
-	AssetMapAnalysis      *AssetMapAnalysis      `json:"asset_map_analysis,omitempty"`
-	TrackFileAnalysis     []TrackFileAnalysis    `json:"track_file_analysis,omitempty"`
-	NetflixCompliance     *NetflixIMFCompliance  `json:"netflix_compliance,omitempty"`
-	SMPTE2067Compliance   *SMPTE2067Compliance   `json:"smpte_2067_compliance,omitempty"`
-	ValidationResults     *IMFValidationResults  `json:"validation_results,omitempty"`
-	RecommendedActions    []string               `json:"recommended_actions,omitempty"`
+	IsIMFCompliant      bool                  `json:"is_imf_compliant"`
+	IMFProfile          string                `json:"imf_profile,omitempty"`
+	CPLAnalysis         *CPLAnalysis          `json:"cpl_analysis,omitempty"`
+	PKLAnalysis         *PKLAnalysis          `json:"pkl_analysis,omitempty"`
+	AssetMapAnalysis    *AssetMapAnalysis     `json:"asset_map_analysis,omitempty"`
+	TrackFileAnalysis   []TrackFileAnalysis   `json:"track_file_analysis,omitempty"`
+	NetflixCompliance   *NetflixIMFCompliance `json:"netflix_compliance,omitempty"`
+	SMPTE2067Compliance *SMPTE2067Compliance  `json:"smpte_2067_compliance,omitempty"`
+	ValidationResults   *IMFValidationResults `json:"validation_results,omitempty"`
+	RecommendedActions  []string              `json:"recommended_actions,omitempty"`
 }
 
 // CPLAnalysis contains Composition Playlist analysis
 type CPLAnalysis struct {
-	CPLExists             bool                 `json:"cpl_exists"`
-	CPLID                 string               `json:"cpl_id,omitempty"`
-	CPLTitle              string               `json:"cpl_title,omitempty"`
-	EditRate              string               `json:"edit_rate,omitempty"`
-	TotalRunningTime      string               `json:"total_running_time,omitempty"`
-	SegmentList           []IMFSegment         `json:"segment_list,omitempty"`
-	TrackList             []IMFTrack           `json:"track_list,omitempty"`
-	MetadataValidation    *MetadataValidation  `json:"metadata_validation,omitempty"`
-	StructuralValidation  *StructuralValidation `json:"structural_validation,omitempty"`
-	Issues                []string             `json:"issues,omitempty"`
+	CPLExists            bool                  `json:"cpl_exists"`
+	CPLID                string                `json:"cpl_id,omitempty"`
+	CPLTitle             string                `json:"cpl_title,omitempty"`
+	EditRate             string                `json:"edit_rate,omitempty"`
+	TotalRunningTime     string                `json:"total_running_time,omitempty"`
+	SegmentList          []IMFSegment          `json:"segment_list,omitempty"`
+	TrackList            []IMFTrack            `json:"track_list,omitempty"`
+	MetadataValidation   *MetadataValidation   `json:"metadata_validation,omitempty"`
+	StructuralValidation *StructuralValidation `json:"structural_validation,omitempty"`
+	Issues               []string              `json:"issues,omitempty"`
 }
 
 // PKLAnalysis contains Packing List analysis
 type PKLAnalysis struct {
-	PKLExists           bool               `json:"pkl_exists"`
-	PKLID               string             `json:"pkl_id,omitempty"`
-	AssetList           []IMFAsset         `json:"asset_list,omitempty"`
-	HashValidation      *HashValidation    `json:"hash_validation,omitempty"`
+	PKLExists           bool                 `json:"pkl_exists"`
+	PKLID               string               `json:"pkl_id,omitempty"`
+	AssetList           []IMFAsset           `json:"asset_list,omitempty"`
+	HashValidation      *HashValidation      `json:"hash_validation,omitempty"`
 	SignatureValidation *SignatureValidation `json:"signature_validation,omitempty"`
-	Issues              []string           `json:"issues,omitempty"`
+	Issues              []string             `json:"issues,omitempty"`
 }
 
 // AssetMapAnalysis contains Asset Map analysis
 type AssetMapAnalysis struct {
-	AssetMapExists      bool             `json:"asset_map_exists"`
-	AssetMapID          string           `json:"asset_map_id,omitempty"`
-	VolumeCount         int              `json:"volume_count"`
-	AssetCount          int              `json:"asset_count"`
-	ChunkMapping        []ChunkMapping   `json:"chunk_mapping,omitempty"`
-	PathValidation      *PathValidation  `json:"path_validation,omitempty"`
-	Issues              []string         `json:"issues,omitempty"`
+	AssetMapExists bool            `json:"asset_map_exists"`
+	AssetMapID     string          `json:"asset_map_id,omitempty"`
+	VolumeCount    int             `json:"volume_count"`
+	AssetCount     int             `json:"asset_count"`
+	ChunkMapping   []ChunkMapping  `json:"chunk_mapping,omitempty"`
+	PathValidation *PathValidation `json:"path_validation,omitempty"`
+	Issues         []string        `json:"issues,omitempty"`
 }
 
 // TrackFileAnalysis contains individual track file analysis
 type TrackFileAnalysis struct {
-	FileName            string                 `json:"file_name"`
-	TrackID             string                 `json:"track_id"`
-	TrackType           string                 `json:"track_type"`        // "MainImageSequence", "MainAudioSequence", etc.
-	EssenceDescriptor   *EssenceDescriptor     `json:"essence_descriptor,omitempty"`
-	MXFCompliance       *MXFCompliance         `json:"mxf_compliance,omitempty"`
-	ColorCompliance     *ColorCompliance       `json:"color_compliance,omitempty"`
-	AudioCompliance     *AudioCompliance       `json:"audio_compliance,omitempty"`
-	SubtitleCompliance  *SubtitleCompliance    `json:"subtitle_compliance,omitempty"`
-	Issues              []string               `json:"issues,omitempty"`
+	FileName           string              `json:"file_name"`
+	TrackID            string              `json:"track_id"`
+	TrackType          string              `json:"track_type"` // "MainImageSequence", "MainAudioSequence", etc.
+	EssenceDescriptor  *EssenceDescriptor  `json:"essence_descriptor,omitempty"`
+	MXFCompliance      *MXFCompliance      `json:"mxf_compliance,omitempty"`
+	ColorCompliance    *ColorCompliance    `json:"color_compliance,omitempty"`
+	AudioCompliance    *AudioCompliance    `json:"audio_compliance,omitempty"`
+	SubtitleCompliance *SubtitleCompliance `json:"subtitle_compliance,omitempty"`
+	Issues             []string            `json:"issues,omitempty"`
 }
 
 // Netflix-specific IMF compliance
 type NetflixIMFCompliance struct {
-	NetflixCompliant     bool     `json:"netflix_compliant"`
-	NetflixProfile       string   `json:"netflix_profile,omitempty"`
+	NetflixCompliant     bool                 `json:"netflix_compliant"`
+	NetflixProfile       string               `json:"netflix_profile,omitempty"`
 	VideoRequirements    *NetflixVideoReqs    `json:"video_requirements,omitempty"`
 	AudioRequirements    *NetflixAudioReqs    `json:"audio_requirements,omitempty"`
 	SubtitleRequirements *NetflixSubtitleReqs `json:"subtitle_requirements,omitempty"`
 	DeliveryRequirements *NetflixDeliveryReqs `json:"delivery_requirements,omitempty"`
-	Issues               []string `json:"issues,omitempty"`
+	Issues               []string             `json:"issues,omitempty"`
 }
 
 // SMPTE ST 2067 compliance analysis
 type SMPTE2067Compliance struct {
-	SMPTE2067Compliant   bool                 `json:"smpte_2067_compliant"`
-	ApplicationProfile   string               `json:"application_profile,omitempty"`
-	CoreConstraints      *CoreConstraints     `json:"core_constraints,omitempty"`
-	EssenceConstraints   *EssenceConstraints  `json:"essence_constraints,omitempty"`
+	SMPTE2067Compliant   bool                  `json:"smpte_2067_compliant"`
+	ApplicationProfile   string                `json:"application_profile,omitempty"`
+	CoreConstraints      *CoreConstraints      `json:"core_constraints,omitempty"`
+	EssenceConstraints   *EssenceConstraints   `json:"essence_constraints,omitempty"`
 	PackagingConstraints *PackagingConstraints `json:"packaging_constraints,omitempty"`
-	Issues               []string             `json:"issues,omitempty"`
+	Issues               []string              `json:"issues,omitempty"`
 }
 
 // Supporting structures
 type IMFSegment struct {
-	SequenceID       string   `json:"sequence_id"`
-	Duration         string   `json:"duration"`
-	TrackFileID      string   `json:"track_file_id"`
-	SourceEncoding   string   `json:"source_encoding,omitempty"`
-	Issues           []string `json:"issues,omitempty"`
+	SequenceID     string   `json:"sequence_id"`
+	Duration       string   `json:"duration"`
+	TrackFileID    string   `json:"track_file_id"`
+	SourceEncoding string   `json:"source_encoding,omitempty"`
+	Issues         []string `json:"issues,omitempty"`
 }
 
 type IMFTrack struct {
-	TrackID          string   `json:"track_id"`
-	TrackType        string   `json:"track_type"`
-	EditRate         string   `json:"edit_rate,omitempty"`
-	IntrinsicDuration string  `json:"intrinsic_duration,omitempty"`
-	EntryPoint       string   `json:"entry_point,omitempty"`
-	SourceDuration   string   `json:"source_duration,omitempty"`
-	Issues           []string `json:"issues,omitempty"`
+	TrackID           string   `json:"track_id"`
+	TrackType         string   `json:"track_type"`
+	EditRate          string   `json:"edit_rate,omitempty"`
+	IntrinsicDuration string   `json:"intrinsic_duration,omitempty"`
+	EntryPoint        string   `json:"entry_point,omitempty"`
+	SourceDuration    string   `json:"source_duration,omitempty"`
+	Issues            []string `json:"issues,omitempty"`
 }
 
 type IMFAsset struct {
-	AssetID          string   `json:"asset_id"`
-	ChunkList        []string `json:"chunk_list,omitempty"`
-	Hash             string   `json:"hash,omitempty"`
-	HashAlgorithm    string   `json:"hash_algorithm,omitempty"`
-	PackingListID    string   `json:"packing_list_id,omitempty"`
-	Issues           []string `json:"issues,omitempty"`
+	AssetID       string   `json:"asset_id"`
+	ChunkList     []string `json:"chunk_list,omitempty"`
+	Hash          string   `json:"hash,omitempty"`
+	HashAlgorithm string   `json:"hash_algorithm,omitempty"`
+	PackingListID string   `json:"packing_list_id,omitempty"`
+	Issues        []string `json:"issues,omitempty"`
 }
 
 type ChunkMapping struct {
-	ChunkID         string `json:"chunk_id"`
-	Path            string `json:"path"`
-	VolumeIndex     int    `json:"volume_index"`
-	Offset          int64  `json:"offset,omitempty"`
-	Length          int64  `json:"length,omitempty"`
+	ChunkID     string `json:"chunk_id"`
+	Path        string `json:"path"`
+	VolumeIndex int    `json:"volume_index"`
+	Offset      int64  `json:"offset,omitempty"`
+	Length      int64  `json:"length,omitempty"`
 }
 
 type EssenceDescriptor struct {
-	EssenceContainer      string `json:"essence_container"`
-	EssenceEncoding       string `json:"essence_encoding"`
-	SampleRate            string `json:"sample_rate,omitempty"`
-	ContainerDuration     string `json:"container_duration,omitempty"`
-	EssenceLength         string `json:"essence_length,omitempty"`
-	LinkedTrackID         string `json:"linked_track_id,omitempty"`
+	EssenceContainer  string `json:"essence_container"`
+	EssenceEncoding   string `json:"essence_encoding"`
+	SampleRate        string `json:"sample_rate,omitempty"`
+	ContainerDuration string `json:"container_duration,omitempty"`
+	EssenceLength     string `json:"essence_length,omitempty"`
+	LinkedTrackID     string `json:"linked_track_id,omitempty"`
 }
 
 type MXFCompliance struct {
@@ -167,14 +167,14 @@ type MXFCompliance struct {
 }
 
 type ColorCompliance struct {
-	ColorSpace           string   `json:"color_space"`
-	ColorPrimaries       string   `json:"color_primaries"`
-	TransferCharacteristic string `json:"transfer_characteristic"`
-	ColorRange           string   `json:"color_range"`
-	ChromaSubsampling    string   `json:"chroma_subsampling"`
-	BitDepth             int      `json:"bit_depth"`
-	IsCompliant          bool     `json:"is_compliant"`
-	Issues               []string `json:"issues,omitempty"`
+	ColorSpace             string   `json:"color_space"`
+	ColorPrimaries         string   `json:"color_primaries"`
+	TransferCharacteristic string   `json:"transfer_characteristic"`
+	ColorRange             string   `json:"color_range"`
+	ChromaSubsampling      string   `json:"chroma_subsampling"`
+	BitDepth               int      `json:"bit_depth"`
+	IsCompliant            bool     `json:"is_compliant"`
+	Issues                 []string `json:"issues,omitempty"`
 }
 
 type AudioCompliance struct {
@@ -188,119 +188,119 @@ type AudioCompliance struct {
 }
 
 type SubtitleCompliance struct {
-	SubtitleFormat       string   `json:"subtitle_format"`
-	Language             string   `json:"language,omitempty"`
-	SubtitleStandard     string   `json:"subtitle_standard"`
-	TimingAccuracy       bool     `json:"timing_accuracy"`
-	IsCompliant          bool     `json:"is_compliant"`
-	Issues               []string `json:"issues,omitempty"`
+	SubtitleFormat   string   `json:"subtitle_format"`
+	Language         string   `json:"language,omitempty"`
+	SubtitleStandard string   `json:"subtitle_standard"`
+	TimingAccuracy   bool     `json:"timing_accuracy"`
+	IsCompliant      bool     `json:"is_compliant"`
+	Issues           []string `json:"issues,omitempty"`
 }
 
 // Netflix-specific requirements
 type NetflixVideoReqs struct {
-	RequiredResolution   string   `json:"required_resolution"`
-	RequiredFrameRate    string   `json:"required_frame_rate"`
-	RequiredColorSpace   string   `json:"required_color_space"`
-	RequiredBitDepth     int      `json:"required_bit_depth"`
-	HDRRequired          bool     `json:"hdr_required"`
-	IsCompliant          bool     `json:"is_compliant"`
-	Issues               []string `json:"issues,omitempty"`
+	RequiredResolution string   `json:"required_resolution"`
+	RequiredFrameRate  string   `json:"required_frame_rate"`
+	RequiredColorSpace string   `json:"required_color_space"`
+	RequiredBitDepth   int      `json:"required_bit_depth"`
+	HDRRequired        bool     `json:"hdr_required"`
+	IsCompliant        bool     `json:"is_compliant"`
+	Issues             []string `json:"issues,omitempty"`
 }
 
 type NetflixAudioReqs struct {
-	RequiredChannels     int      `json:"required_channels"`
-	RequiredSampleRate   int      `json:"required_sample_rate"`
-	RequiredBitDepth     int      `json:"required_bit_depth"`
-	RequiredLoudness     float64  `json:"required_loudness_lufs"`
-	IsCompliant          bool     `json:"is_compliant"`
-	Issues               []string `json:"issues,omitempty"`
+	RequiredChannels   int      `json:"required_channels"`
+	RequiredSampleRate int      `json:"required_sample_rate"`
+	RequiredBitDepth   int      `json:"required_bit_depth"`
+	RequiredLoudness   float64  `json:"required_loudness_lufs"`
+	IsCompliant        bool     `json:"is_compliant"`
+	Issues             []string `json:"issues,omitempty"`
 }
 
 type NetflixSubtitleReqs struct {
-	RequiredFormat       string   `json:"required_format"`
-	RequiredLanguages    []string `json:"required_languages,omitempty"`
-	RequiredStandard     string   `json:"required_standard"`
-	IsCompliant          bool     `json:"is_compliant"`
-	Issues               []string `json:"issues,omitempty"`
+	RequiredFormat    string   `json:"required_format"`
+	RequiredLanguages []string `json:"required_languages,omitempty"`
+	RequiredStandard  string   `json:"required_standard"`
+	IsCompliant       bool     `json:"is_compliant"`
+	Issues            []string `json:"issues,omitempty"`
 }
 
 type NetflixDeliveryReqs struct {
-	RequiredProfile      string   `json:"required_profile"`
-	MaxFileSize          int64    `json:"max_file_size"`
-	RequiredNaming       string   `json:"required_naming"`
-	IsCompliant          bool     `json:"is_compliant"`
-	Issues               []string `json:"issues,omitempty"`
+	RequiredProfile string   `json:"required_profile"`
+	MaxFileSize     int64    `json:"max_file_size"`
+	RequiredNaming  string   `json:"required_naming"`
+	IsCompliant     bool     `json:"is_compliant"`
+	Issues          []string `json:"issues,omitempty"`
 }
 
 // Validation result structures
 type IMFValidationResults struct {
-	OverallCompliance    bool     `json:"overall_compliance"`
-	CriticalIssues       []string `json:"critical_issues,omitempty"`
-	Warnings             []string `json:"warnings,omitempty"`
-	Recommendations      []string `json:"recommendations,omitempty"`
-	ComplianceScore      float64  `json:"compliance_score"`      // 0-100
-	ValidationSummary    string   `json:"validation_summary"`
+	OverallCompliance bool     `json:"overall_compliance"`
+	CriticalIssues    []string `json:"critical_issues,omitempty"`
+	Warnings          []string `json:"warnings,omitempty"`
+	Recommendations   []string `json:"recommendations,omitempty"`
+	ComplianceScore   float64  `json:"compliance_score"` // 0-100
+	ValidationSummary string   `json:"validation_summary"`
 }
 
 type MetadataValidation struct {
-	UUIDValidation       bool     `json:"uuid_validation"`
-	TimestampValidation  bool     `json:"timestamp_validation"`
-	NamespaceValidation  bool     `json:"namespace_validation"`
-	SchemaValidation     bool     `json:"schema_validation"`
-	Issues               []string `json:"issues,omitempty"`
+	UUIDValidation      bool     `json:"uuid_validation"`
+	TimestampValidation bool     `json:"timestamp_validation"`
+	NamespaceValidation bool     `json:"namespace_validation"`
+	SchemaValidation    bool     `json:"schema_validation"`
+	Issues              []string `json:"issues,omitempty"`
 }
 
 type StructuralValidation struct {
-	SegmentStructure     bool     `json:"segment_structure_valid"`
-	TrackStructure       bool     `json:"track_structure_valid"`
-	TimingConsistency    bool     `json:"timing_consistency"`
-	ReferenceIntegrity   bool     `json:"reference_integrity"`
-	Issues               []string `json:"issues,omitempty"`
+	SegmentStructure   bool     `json:"segment_structure_valid"`
+	TrackStructure     bool     `json:"track_structure_valid"`
+	TimingConsistency  bool     `json:"timing_consistency"`
+	ReferenceIntegrity bool     `json:"reference_integrity"`
+	Issues             []string `json:"issues,omitempty"`
 }
 
 type HashValidation struct {
-	HashAlgorithm        string   `json:"hash_algorithm"`
-	HashesValid          bool     `json:"hashes_valid"`
-	MismatchedHashes     []string `json:"mismatched_hashes,omitempty"`
-	Issues               []string `json:"issues,omitempty"`
+	HashAlgorithm    string   `json:"hash_algorithm"`
+	HashesValid      bool     `json:"hashes_valid"`
+	MismatchedHashes []string `json:"mismatched_hashes,omitempty"`
+	Issues           []string `json:"issues,omitempty"`
 }
 
 type SignatureValidation struct {
-	DigitalSignature     bool     `json:"has_digital_signature"`
-	SignatureValid       bool     `json:"signature_valid"`
-	CertificateChain     bool     `json:"certificate_chain_valid"`
-	Issues               []string `json:"issues,omitempty"`
+	DigitalSignature bool     `json:"has_digital_signature"`
+	SignatureValid   bool     `json:"signature_valid"`
+	CertificateChain bool     `json:"certificate_chain_valid"`
+	Issues           []string `json:"issues,omitempty"`
 }
 
 type PathValidation struct {
-	PathsExist           bool     `json:"paths_exist"`
-	RelativePathsValid   bool     `json:"relative_paths_valid"`
-	FileAccessible       bool     `json:"files_accessible"`
-	Issues               []string `json:"issues,omitempty"`
+	PathsExist         bool     `json:"paths_exist"`
+	RelativePathsValid bool     `json:"relative_paths_valid"`
+	FileAccessible     bool     `json:"files_accessible"`
+	Issues             []string `json:"issues,omitempty"`
 }
 
 type CoreConstraints struct {
-	XMLStructure         bool     `json:"xml_structure_valid"`
-	RequiredElements     bool     `json:"required_elements_present"`
-	UUIDFormat           bool     `json:"uuid_format_valid"`
-	EditRateConstraints  bool     `json:"edit_rate_constraints"`
-	Issues               []string `json:"issues,omitempty"`
+	XMLStructure        bool     `json:"xml_structure_valid"`
+	RequiredElements    bool     `json:"required_elements_present"`
+	UUIDFormat          bool     `json:"uuid_format_valid"`
+	EditRateConstraints bool     `json:"edit_rate_constraints"`
+	Issues              []string `json:"issues,omitempty"`
 }
 
 type EssenceConstraints struct {
-	VideoConstraints     bool     `json:"video_constraints"`
-	AudioConstraints     bool     `json:"audio_constraints"`
-	SubtitleConstraints  bool     `json:"subtitle_constraints"`
-	EssenceEncoding      bool     `json:"essence_encoding_valid"`
-	Issues               []string `json:"issues,omitempty"`
+	VideoConstraints    bool     `json:"video_constraints"`
+	AudioConstraints    bool     `json:"audio_constraints"`
+	SubtitleConstraints bool     `json:"subtitle_constraints"`
+	EssenceEncoding     bool     `json:"essence_encoding_valid"`
+	Issues              []string `json:"issues,omitempty"`
 }
 
 type PackagingConstraints struct {
-	MXFConstraints       bool     `json:"mxf_constraints"`
-	FileNaming           bool     `json:"file_naming_valid"`
-	DirectoryStructure   bool     `json:"directory_structure_valid"`
-	AssetReferences      bool     `json:"asset_references_valid"`
-	Issues               []string `json:"issues,omitempty"`
+	MXFConstraints     bool     `json:"mxf_constraints"`
+	FileNaming         bool     `json:"file_naming_valid"`
+	DirectoryStructure bool     `json:"directory_structure_valid"`
+	AssetReferences    bool     `json:"asset_references_valid"`
+	Issues             []string `json:"issues,omitempty"`
 }
 
 // AnalyzeIMF performs comprehensive IMF compliance analysis
@@ -409,10 +409,10 @@ func (imf *IMFAnalyzer) isIMFPackage(packagePath string) bool {
 // analyzeCPL analyzes the Composition Playlist
 func (imf *IMFAnalyzer) analyzeCPL(packagePath string, analysis *IMFAnalysis) error {
 	cplAnalysis := &CPLAnalysis{
-		CPLExists:            false,
-		SegmentList:          []IMFSegment{},
-		TrackList:            []IMFTrack{},
-		Issues:               []string{},
+		CPLExists:   false,
+		SegmentList: []IMFSegment{},
+		TrackList:   []IMFTrack{},
+		Issues:      []string{},
 	}
 
 	// Find CPL file
@@ -786,11 +786,11 @@ func (imf *IMFAnalyzer) validateCPLMetadata(analysis *CPLAnalysis) *MetadataVali
 
 func (imf *IMFAnalyzer) validateCPLStructure(analysis *CPLAnalysis) *StructuralValidation {
 	validation := &StructuralValidation{
-		SegmentStructure:  true,
-		TrackStructure:    true,
-		TimingConsistency: true,
+		SegmentStructure:   true,
+		TrackStructure:     true,
+		TimingConsistency:  true,
 		ReferenceIntegrity: true,
-		Issues:            []string{},
+		Issues:             []string{},
 	}
 
 	// Basic structural validation
@@ -829,10 +829,10 @@ func (imf *IMFAnalyzer) validateAssetHashes(packagePath string, analysis *PKLAna
 
 func (imf *IMFAnalyzer) validateDigitalSignatures(filePath string, analysis *PKLAnalysis) *SignatureValidation {
 	validation := &SignatureValidation{
-		DigitalSignature:   false,
-		SignatureValid:     false,
-		CertificateChain:   false,
-		Issues:             []string{},
+		DigitalSignature: false,
+		SignatureValid:   false,
+		CertificateChain: false,
+		Issues:           []string{},
 	}
 
 	// Check for digital signature (simplified)
@@ -1110,11 +1110,11 @@ func (imf *IMFAnalyzer) generateRecommendedActions(analysis *IMFAnalysis) []stri
 func (imf *IMFAnalyzer) executeCommand(ctx context.Context, cmd []string) (string, error) {
 	execCtx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
-	
+
 	output, err := executeFFprobeCommand(execCtx, cmd)
 	if err != nil {
 		return "", err
 	}
-	
+
 	return string(output), nil
 }

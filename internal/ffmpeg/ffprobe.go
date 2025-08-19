@@ -31,13 +31,13 @@ func executeFFprobeCommand(ctx context.Context, cmd []string) (string, error) {
 	if len(cmd) == 0 {
 		return "", fmt.Errorf("empty command")
 	}
-	
+
 	command := exec.CommandContext(ctx, cmd[0], cmd[1:]...)
 	output, err := command.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("command failed: %w, output: %s", err, string(output))
 	}
-	
+
 	return string(output), nil
 }
 
@@ -55,11 +55,11 @@ func executeFFprobeCommand(ctx context.Context, cmd []string) (string, error) {
 // The service supports configurable timeouts, output limits, and analysis modes
 // for both development and production environments.
 type FFprobe struct {
-	binaryPath       string
-	logger           zerolog.Logger
-	defaultTimeout   time.Duration
-	maxOutputSize    int64
-	enhancedAnalyzer *EnhancedAnalyzer
+	binaryPath            string
+	logger                zerolog.Logger
+	defaultTimeout        time.Duration
+	maxOutputSize         int64
+	enhancedAnalyzer      *EnhancedAnalyzer
 	enableContentAnalysis bool
 }
 
@@ -88,7 +88,7 @@ func NewFFprobe(binaryPath string, logger zerolog.Logger) *FFprobe {
 	ffprobe := &FFprobe{
 		binaryPath:            binaryPath,
 		logger:                logger,
-		defaultTimeout:        5 * time.Minute, // Default 5 minute timeout
+		defaultTimeout:        5 * time.Minute,   // Default 5 minute timeout
 		maxOutputSize:         100 * 1024 * 1024, // Default 100MB output limit
 		enhancedAnalyzer:      NewEnhancedAnalyzer(binaryPath, logger),
 		enableContentAnalysis: false, // Disabled by default for performance
@@ -102,10 +102,10 @@ func NewFFprobe(binaryPath string, logger zerolog.Logger) *FFprobe {
 // the service can function properly before accepting requests.
 //
 // Validation steps:
-//   1. Checks if binary exists at specified path or in PATH
-//   2. Verifies binary is executable with proper permissions
-//   3. Tests binary functionality by retrieving version information
-//   4. Logs successful validation with version details
+//  1. Checks if binary exists at specified path or in PATH
+//  2. Verifies binary is executable with proper permissions
+//  3. Tests binary functionality by retrieving version information
+//  4. Logs successful validation with version details
 //
 // Parameters:
 //   - ctx: Context for timeout control (recommended: 30 second timeout)
@@ -154,7 +154,7 @@ func (f *FFprobe) ValidateBinaryAtStartup(ctx context.Context) error {
 //
 // Recommended timeouts by use case:
 //   - Small files (<100MB): 1-2 minutes
-//   - Standard files (<1GB): 5 minutes  
+//   - Standard files (<1GB): 5 minutes
 //   - Large files (>1GB): 10+ minutes
 //   - Broadcast files: 15+ minutes
 //
@@ -242,7 +242,7 @@ func (f *FFprobe) Probe(ctx context.Context, options *FFprobeOptions) (*FFprobeR
 
 	// Create command
 	cmd := exec.CommandContext(ctx, f.binaryPath, args...)
-	
+
 	// Prepare stdout and stderr capture
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
@@ -323,7 +323,7 @@ func (f *FFprobe) Probe(ctx context.Context, options *FFprobeOptions) (*FFprobeR
 				Msg("Enhanced content analysis failed")
 			// Don't fail on enhanced analysis errors, just log them
 		}
-		
+
 		// Also perform advanced QC analysis for professional features
 		if err := f.enhancedAnalyzer.AnalyzeResultWithAdvancedQC(ctx, result, options.Input); err != nil {
 			f.logger.Warn().
@@ -339,7 +339,7 @@ func (f *FFprobe) Probe(ctx context.Context, options *FFprobeOptions) (*FFprobeR
 				Msg("Enhanced analysis with HDR failed")
 			// Don't fail on enhanced analysis errors, just log them
 		}
-		
+
 		// Also perform advanced QC analysis for professional features (always enabled)
 		if err := f.enhancedAnalyzer.AnalyzeResultWithAdvancedQC(ctx, result, options.Input); err != nil {
 			f.logger.Warn().
@@ -347,7 +347,7 @@ func (f *FFprobe) Probe(ctx context.Context, options *FFprobeOptions) (*FFprobeR
 				Msg("Advanced QC analysis failed")
 			// Don't fail on advanced QC errors, just log them
 		}
-		
+
 		// Perform LLM-enhanced analysis if available
 		if err := f.enhancedAnalyzer.AnalyzeResultWithLLM(ctx, result, options.Input); err != nil {
 			f.logger.Warn().
@@ -370,14 +370,14 @@ func (f *FFprobe) ProbeFile(ctx context.Context, filePath string) (*FFprobeResul
 		ShowChapters:    true,
 		ShowPrograms:    true,
 		ShowPrivateData: true,
-		ShowFrames:      true,           // Enable frame analysis for GOP structure
+		ShowFrames:      true, // Enable frame analysis for GOP structure
 		CountFrames:     true,
 		CountPackets:    true,
 		ProbeSize:       50 * 1024 * 1024, // 50MB probe size for detailed analysis
 		AnalyzeDuration: 10 * 1000000,     // 10 seconds analysis duration
 		PrettyPrint:     true,
 		HideBanner:      true,
-		ReadIntervals:   "0%+#100",      // Analyze first 100 frames for GOP analysis
+		ReadIntervals:   "0%+#100", // Analyze first 100 frames for GOP analysis
 	}
 
 	return f.Probe(ctx, options)
@@ -388,7 +388,7 @@ func (f *FFprobe) ProbeFileWithOptions(ctx context.Context, filePath string, opt
 	if options == nil {
 		options = &FFprobeOptions{}
 	}
-	
+
 	options.Input = filePath
 	if options.OutputFormat == "" {
 		options.OutputFormat = OutputJSON
@@ -453,10 +453,18 @@ func (f *FFprobe) buildArgs(options *FFprobeOptions) ([]string, error) {
 		args = append(args, "-analyzeduration", strconv.FormatInt(options.AnalyzeDuration, 10))
 	}
 
+	// Error detection options
+	if options.ErrorDetect != "" {
+		args = append(args, "-err_detect", options.ErrorDetect)
+	}
+	if options.FormatErrorDetect != "" {
+		args = append(args, "-f_err_detect", options.FormatErrorDetect)
+	}
+
 	// Output format
 	if options.OutputFormat != "" && options.OutputFormat != OutputDefault {
 		args = append(args, "-of", string(options.OutputFormat))
-		
+
 		// Pretty print for JSON
 		if options.PrettyPrint && options.OutputFormat == OutputJSON {
 			args = append(args, "-pretty")
@@ -490,6 +498,13 @@ func (f *FFprobe) buildArgs(options *FFprobeOptions) ([]string, error) {
 	}
 	if options.ShowPrivateData {
 		args = append(args, "-show_private_data")
+	}
+	if options.ShowDataHash {
+		args = append(args, "-show_data_hash")
+		// Add hash algorithm if specified
+		if options.HashAlgorithm != "" {
+			args = append(args, "-hash", options.HashAlgorithm)
+		}
 	}
 
 	// Selection options
@@ -538,7 +553,7 @@ func (f *FFprobe) parseOutput(result *FFprobeResult, options *FFprobeOptions) er
 // parseJSONOutput parses JSON output from ffprobe
 func (f *FFprobe) parseJSONOutput(result *FFprobeResult) error {
 	var data map[string]interface{}
-	
+
 	if err := json.Unmarshal([]byte(result.Output), &data); err != nil {
 		return fmt.Errorf("failed to unmarshal JSON output: %w", err)
 	}
@@ -672,7 +687,7 @@ func (f *FFprobe) ProbeWithProgress(ctx context.Context, options *FFprobeOptions
 	// This is a simplified implementation
 	// For real progress reporting, you'd need to parse ffprobe's stderr output
 	// and extract progress information
-	
+
 	if progressCallback != nil {
 		progressCallback(0.0)
 	}
@@ -706,7 +721,7 @@ func (f *FFprobe) StreamFile(ctx context.Context, filePath string, chunkCallback
 	}
 
 	cmd := exec.CommandContext(ctx, f.binaryPath, args...)
-	
+
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return fmt.Errorf("failed to create stdout pipe: %w", err)

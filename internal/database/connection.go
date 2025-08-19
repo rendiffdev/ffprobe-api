@@ -9,17 +9,17 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/rs/zerolog"
 	"github.com/rendiffdev/ffprobe-api/internal/config"
+	"github.com/rs/zerolog"
 )
 
 // DB holds database connections and configuration
 type DB struct {
-	SQLX       *sqlx.DB
-	DB         *sqlx.DB // Alias for SQLX to match repository expectations
-	Config     *config.Config
-	Logger     zerolog.Logger
-	DbType     string // "sqlite" only
+	SQLX   *sqlx.DB
+	DB     *sqlx.DB // Alias for SQLX to match repository expectations
+	Config *config.Config
+	Logger zerolog.Logger
+	DbType string // "sqlite" only
 }
 
 // New creates a new database connection
@@ -52,7 +52,7 @@ func New(cfg *config.Config, logger zerolog.Logger) (*DB, error) {
 	// Test the sqlx connection
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	
+
 	if err := sqlxDB.PingContext(ctx); err != nil {
 		sqlxDB.Close()
 		return nil, fmt.Errorf("failed to ping database via sqlx: %w", err)
@@ -76,7 +76,7 @@ func ensureDatabaseDir(dbPath string) error {
 	if dir == "." {
 		return nil // Current directory, no need to create
 	}
-	
+
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("failed to create database directory %s: %w", dir, err)
 	}
@@ -104,14 +104,14 @@ func (db *DB) Health(ctx context.Context) error {
 // Stats returns database connection statistics
 func (db *DB) Stats() map[string]interface{} {
 	sqlxStats := db.SQLX.Stats()
-	
+
 	stats := map[string]interface{}{
 		"database_type": db.DbType,
 		"sqlx": map[string]interface{}{
 			"max_open_connections": sqlxStats.MaxOpenConnections,
 			"open_connections":     sqlxStats.OpenConnections,
-			"in_use":              sqlxStats.InUse,
-			"idle":                sqlxStats.Idle,
+			"in_use":               sqlxStats.InUse,
+			"idle":                 sqlxStats.Idle,
 		},
 	}
 

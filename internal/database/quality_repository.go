@@ -55,42 +55,42 @@ type QualityRepository interface {
 
 // QualityThreshold represents a quality threshold configuration
 type QualityThreshold struct {
-	ID                 uuid.UUID              `json:"id" db:"id"`
+	ID                 uuid.UUID                 `json:"id" db:"id"`
 	MetricType         quality.QualityMetricType `json:"metric_type" db:"metric_type"`
-	ExcellentThreshold float64                `json:"excellent_threshold" db:"excellent_threshold"`
-	GoodThreshold      float64                `json:"good_threshold" db:"good_threshold"`
-	FairThreshold      float64                `json:"fair_threshold" db:"fair_threshold"`
-	PoorThreshold      float64                `json:"poor_threshold" db:"poor_threshold"`
-	IsDefault          bool                   `json:"is_default" db:"is_default"`
-	CreatedAt          time.Time              `json:"created_at" db:"created_at"`
-	UpdatedAt          time.Time              `json:"updated_at" db:"updated_at"`
+	ExcellentThreshold float64                   `json:"excellent_threshold" db:"excellent_threshold"`
+	GoodThreshold      float64                   `json:"good_threshold" db:"good_threshold"`
+	FairThreshold      float64                   `json:"fair_threshold" db:"fair_threshold"`
+	PoorThreshold      float64                   `json:"poor_threshold" db:"poor_threshold"`
+	IsDefault          bool                      `json:"is_default" db:"is_default"`
+	CreatedAt          time.Time                 `json:"created_at" db:"created_at"`
+	UpdatedAt          time.Time                 `json:"updated_at" db:"updated_at"`
 }
 
 // QualityStatisticsFilters represents filters for quality statistics
 type QualityStatisticsFilters struct {
-	MetricType quality.QualityMetricType `json:"metric_type"`
-	StartDate  *time.Time                `json:"start_date"`
-	EndDate    *time.Time                `json:"end_date"`
-	MinScore   *float64                  `json:"min_score"`
-	MaxScore   *float64                  `json:"max_score"`
+	MetricType quality.QualityMetricType      `json:"metric_type"`
+	StartDate  *time.Time                     `json:"start_date"`
+	EndDate    *time.Time                     `json:"end_date"`
+	MinScore   *float64                       `json:"min_score"`
+	MaxScore   *float64                       `json:"max_score"`
 	Status     *quality.QualityAnalysisStatus `json:"status"`
 }
 
 // QualityStatistics represents aggregated quality statistics
 type QualityStatistics struct {
-	TotalAnalyses    int     `json:"total_analyses"`
-	AverageScore     float64 `json:"average_score"`
-	MedianScore      float64 `json:"median_score"`
-	MinScore         float64 `json:"min_score"`
-	MaxScore         float64 `json:"max_score"`
-	StdDevScore      float64 `json:"std_dev_score"`
-	ExcellentCount   int     `json:"excellent_count"`
-	GoodCount        int     `json:"good_count"`
-	FairCount        int     `json:"fair_count"`
-	PoorCount        int     `json:"poor_count"`
-	BadCount         int     `json:"bad_count"`
-	AverageFrameCount int    `json:"average_frame_count"`
-	TotalFrames      int     `json:"total_frames"`
+	TotalAnalyses         int           `json:"total_analyses"`
+	AverageScore          float64       `json:"average_score"`
+	MedianScore           float64       `json:"median_score"`
+	MinScore              float64       `json:"min_score"`
+	MaxScore              float64       `json:"max_score"`
+	StdDevScore           float64       `json:"std_dev_score"`
+	ExcellentCount        int           `json:"excellent_count"`
+	GoodCount             int           `json:"good_count"`
+	FairCount             int           `json:"fair_count"`
+	PoorCount             int           `json:"poor_count"`
+	BadCount              int           `json:"bad_count"`
+	AverageFrameCount     int           `json:"average_frame_count"`
+	TotalFrames           int           `json:"total_frames"`
 	AverageProcessingTime time.Duration `json:"average_processing_time"`
 }
 
@@ -347,20 +347,20 @@ func (r *qualityRepository) GetQualityComparison(ctx context.Context, id uuid.UU
 		WHERE id = $1`
 
 	var comparison struct {
-		ID             uuid.UUID                      `db:"id"`
-		BatchID        uuid.UUID                      `db:"batch_id"`
-		ReferenceFile  string                         `db:"reference_file"`
-		DistortedFile  string                         `db:"distorted_file"`
-		Metrics        []string                       `db:"metrics"`
-		Status         quality.QualityAnalysisStatus  `db:"status"`
-		OverallRating  quality.QualityRating          `db:"overall_rating"`
-		Summary        json.RawMessage                `db:"summary"`
-		Visualization  json.RawMessage                `db:"visualization"`
-		ProcessingTime time.Duration                  `db:"processing_time"`
-		ErrorMessage   string                         `db:"error_message"`
-		CreatedAt      time.Time                      `db:"created_at"`
-		UpdatedAt      time.Time                      `db:"updated_at"`
-		CompletedAt    *time.Time                     `db:"completed_at"`
+		ID             uuid.UUID                     `db:"id"`
+		BatchID        uuid.UUID                     `db:"batch_id"`
+		ReferenceFile  string                        `db:"reference_file"`
+		DistortedFile  string                        `db:"distorted_file"`
+		Metrics        []string                      `db:"metrics"`
+		Status         quality.QualityAnalysisStatus `db:"status"`
+		OverallRating  quality.QualityRating         `db:"overall_rating"`
+		Summary        json.RawMessage               `db:"summary"`
+		Visualization  json.RawMessage               `db:"visualization"`
+		ProcessingTime time.Duration                 `db:"processing_time"`
+		ErrorMessage   string                        `db:"error_message"`
+		CreatedAt      time.Time                     `db:"created_at"`
+		UpdatedAt      time.Time                     `db:"updated_at"`
+		CompletedAt    *time.Time                    `db:"completed_at"`
 	}
 
 	err := r.db.GetContext(ctx, &comparison, query, id)
@@ -598,36 +598,36 @@ func (r *qualityRepository) CreateQualityIssues(ctx context.Context, issues []*q
 	// Build batch insert query
 	var values []interface{}
 	var placeholders []string
-	
+
 	for i, issue := range issues {
 		base := i * 12
-		placeholders = append(placeholders, 
+		placeholders = append(placeholders,
 			fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d)",
 				base+1, base+2, base+3, base+4, base+5, base+6, base+7, base+8, base+9, base+10, base+11, base+12))
-		
+
 		// Convert issue to values
 		id := uuid.New()
 		var frameRangeStart, frameRangeEnd *int
 		var timestampStart, timestampEnd *float64
-		
+
 		if issue.FrameRange != nil {
 			frameRangeStart = &issue.FrameRange.Start
 			frameRangeEnd = &issue.FrameRange.End
 		}
-		
+
 		if issue.Timestamp != nil {
 			timestampStart = &issue.Timestamp.Start
 			timestampEnd = &issue.Timestamp.End
 		}
-		
+
 		additionalData, _ := json.Marshal(map[string]interface{}{})
-		
-		values = append(values, 
+
+		values = append(values,
 			id, issue.QualityID, issue.Type, issue.Severity, issue.Description,
 			frameRangeStart, frameRangeEnd, timestampStart, timestampEnd,
 			issue.Score, additionalData, time.Now())
 	}
-	
+
 	query += strings.Join(placeholders, ", ")
 	_, err := r.db.ExecContext(ctx, query, values...)
 	return err
@@ -641,18 +641,18 @@ func (r *qualityRepository) GetQualityIssues(ctx context.Context, qualityID uuid
 		ORDER BY severity DESC, created_at DESC`
 
 	var dbIssues []struct {
-		ID                uuid.UUID       `db:"id"`
-		QualityID         uuid.UUID       `db:"quality_id"`
-		IssueType         string          `db:"issue_type"`
-		Severity          string          `db:"severity"`
-		Description       string          `db:"description"`
-		FrameRangeStart   *int            `db:"frame_range_start"`
-		FrameRangeEnd     *int            `db:"frame_range_end"`
-		TimestampStart    *float64        `db:"timestamp_start"`
-		TimestampEnd      *float64        `db:"timestamp_end"`
-		Score             float64         `db:"score"`
-		AdditionalData    json.RawMessage `db:"additional_data"`
-		CreatedAt         time.Time       `db:"created_at"`
+		ID              uuid.UUID       `db:"id"`
+		QualityID       uuid.UUID       `db:"quality_id"`
+		IssueType       string          `db:"issue_type"`
+		Severity        string          `db:"severity"`
+		Description     string          `db:"description"`
+		FrameRangeStart *int            `db:"frame_range_start"`
+		FrameRangeEnd   *int            `db:"frame_range_end"`
+		TimestampStart  *float64        `db:"timestamp_start"`
+		TimestampEnd    *float64        `db:"timestamp_end"`
+		Score           float64         `db:"score"`
+		AdditionalData  json.RawMessage `db:"additional_data"`
+		CreatedAt       time.Time       `db:"created_at"`
 	}
 
 	err := r.db.SelectContext(ctx, &dbIssues, query, qualityID)

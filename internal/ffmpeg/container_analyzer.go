@@ -72,7 +72,7 @@ func (ca *ContainerAnalyzer) AnalyzeContainer(format *FormatInfo) *ContainerAnal
 func (ca *ContainerAnalyzer) getContainerFamily(formatName string) string {
 	// Handle common format name variations
 	formatLower := strings.ToLower(formatName)
-	
+
 	// Split by comma and take first format
 	if strings.Contains(formatLower, ",") {
 		formatLower = strings.Split(formatLower, ",")[0]
@@ -80,41 +80,41 @@ func (ca *ContainerAnalyzer) getContainerFamily(formatName string) string {
 	}
 
 	containerMap := map[string]string{
-		"mp4":                "MP4",
-		"mov":                "QuickTime",
-		"qt":                 "QuickTime",
-		"avi":                "AVI",
-		"mkv":                "Matroska",
-		"matroska":           "Matroska",
-		"webm":               "WebM",
-		"flv":                "FLV",
-		"f4v":                "FLV",
-		"ts":                 "MPEG-TS",
-		"mpegts":             "MPEG-TS",
-		"m2ts":               "MPEG-TS",
-		"mts":                "MPEG-TS",
-		"ps":                 "MPEG-PS",
-		"mpegps":             "MPEG-PS",
-		"wmv":                "ASF/WMV",
-		"asf":                "ASF/WMV",
-		"3gp":                "3GPP",
-		"3g2":                "3GPP2",
-		"ogg":                "Ogg",
-		"ogv":                "Ogg",
-		"mxf":                "MXF",
-		"gxf":                "GXF",
-		"rm":                 "RealMedia",
-		"rmvb":               "RealMedia",
-		"nut":                "NUT",
-		"yuv4mpegpipe":       "Y4M",
-		"rawvideo":           "Raw Video",
-		"wav":                "WAV",
-		"mp3":                "MP3",
-		"aac":                "AAC",
-		"flac":               "FLAC",
-		"oga":                "Ogg Audio",
-		"m4a":                "M4A",
-		"wma":                "WMA",
+		"mp4":          "MP4",
+		"mov":          "QuickTime",
+		"qt":           "QuickTime",
+		"avi":          "AVI",
+		"mkv":          "Matroska",
+		"matroska":     "Matroska",
+		"webm":         "WebM",
+		"flv":          "FLV",
+		"f4v":          "FLV",
+		"ts":           "MPEG-TS",
+		"mpegts":       "MPEG-TS",
+		"m2ts":         "MPEG-TS",
+		"mts":          "MPEG-TS",
+		"ps":           "MPEG-PS",
+		"mpegps":       "MPEG-PS",
+		"wmv":          "ASF/WMV",
+		"asf":          "ASF/WMV",
+		"3gp":          "3GPP",
+		"3g2":          "3GPP2",
+		"ogg":          "Ogg",
+		"ogv":          "Ogg",
+		"mxf":          "MXF",
+		"gxf":          "GXF",
+		"rm":           "RealMedia",
+		"rmvb":         "RealMedia",
+		"nut":          "NUT",
+		"yuv4mpegpipe": "Y4M",
+		"rawvideo":     "Raw Video",
+		"wav":          "WAV",
+		"mp3":          "MP3",
+		"aac":          "AAC",
+		"flac":         "FLAC",
+		"oga":          "Ogg Audio",
+		"m4a":          "M4A",
+		"wma":          "WMA",
 	}
 
 	if family, exists := containerMap[formatLower]; exists {
@@ -346,8 +346,8 @@ func (ca *ContainerAnalyzer) getContainerUseCases(containerFamily string) []stri
 // validateContainer validates container format characteristics
 func (ca *ContainerAnalyzer) validateContainer(analysis *ContainerAnalysis) *ContainerValidation {
 	validation := &ContainerValidation{
-		IsValid: true,
-		Issues:  []string{},
+		IsValid:         true,
+		Issues:          []string{},
 		Recommendations: []string{},
 	}
 
@@ -376,7 +376,7 @@ func (ca *ContainerAnalyzer) validateContainer(analysis *ContainerAnalysis) *Con
 	if analysis.FileSize > 0 && analysis.Duration > 0 && analysis.OverallBitRate > 0 {
 		expectedSize := int64((analysis.Duration * float64(analysis.OverallBitRate)) / 8)
 		sizeDiff := float64(analysis.FileSize-expectedSize) / float64(expectedSize)
-		
+
 		if sizeDiff > 0.1 || sizeDiff < -0.1 { // 10% tolerance
 			validation.Issues = append(validation.Issues,
 				"File size inconsistent with duration and bitrate - possible corruption or incomplete file")

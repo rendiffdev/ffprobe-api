@@ -24,7 +24,7 @@ func NewGCSProvider(cfg Config) (*GCSProvider, error) {
 	} else {
 		client, err = storage.NewClient(context.Background())
 	}
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GCS client: %w", err)
 	}
@@ -81,7 +81,7 @@ func (g *GCSProvider) GetURL(ctx context.Context, key string) (string, error) {
 }
 
 func (g *GCSProvider) GetSignedURL(ctx context.Context, key string, expiration int64) (string, error) {
-	
+
 	opts := &storage.SignedURLOptions{
 		Scheme:  storage.SigningSchemeV4,
 		Method:  "GET",
