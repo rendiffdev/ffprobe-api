@@ -130,7 +130,41 @@ curl http://localhost:8080/api/v1/analysis/{id} | jq '.llm_report'
 
 ## 🛠️ Deployment Modes
 
-### Minimal Deployment (Recommended for Testing)
+### 🐳 **NEW: Production-Grade Docker Infrastructure**
+
+FFprobe API now includes **enterprise-ready Docker infrastructure** with comprehensive security, monitoring, and operational capabilities.
+
+#### **🚀 Quick Production Deployment**
+```bash
+# Build optimized production image
+./docker-image/build-optimized.sh --target production --scan --sbom
+
+# Generate secure secrets
+./docker-image/scripts/secrets-manager.sh generate
+
+# Deploy complete production stack
+./docker-image/deploy-production.sh \
+  --mode compose \
+  --environment production \
+  --domain api.yourcompany.com \
+  --enable-ssl \
+  --enable-monitoring \
+  --deploy
+```
+
+**✨ Production Features:**
+- **🛡️ Security-hardened containers** with non-root users
+- **📊 Complete monitoring stack** (Prometheus, Grafana, Jaeger)
+- **🔒 Automated SSL/TLS** with Let's Encrypt
+- **💾 Encrypted backups** with retention policies
+- **⚡ Zero-downtime deployments** with rolling updates
+- **🔄 Auto-scaling** with resource management
+
+📚 **[Complete Docker Documentation](docker-image/README-DOCKER-PRODUCTION.md)**
+
+### Traditional Deployment Modes
+
+#### Minimal Deployment (Testing)
 ```bash
 make minimal
 ```
@@ -139,7 +173,7 @@ make minimal
 - **Memory**: ~2-3GB total
 - **Perfect for**: Development, testing, resource-constrained environments
 
-### Quick Start (Development)
+#### Quick Start (Development)
 ```bash
 make quick
 ```
@@ -148,7 +182,7 @@ make quick
 - Gemma 3 270M for fast analysis
 - Perfect for demos and quick testing
 
-### Development Environment
+#### Development Environment
 ```bash
 make dev
 ```
@@ -157,16 +191,14 @@ make dev
 - File browser interface for uploads
 - Development-focused tooling
 
-### Production Deployment
+#### Legacy Production
 ```bash
 make prod
 ```
-- Full security and monitoring
+- Basic production setup
 - Prometheus + Grafana dashboards
 - Automated backups
-- **Traefik**: Combined reverse proxy + automatic SSL
-- Enterprise-ready infrastructure
-- **Database**: SQLite with WAL mode for production performance
+- **Note**: Use the new Docker infrastructure for enterprise deployments
 
 ## 🔍 Advanced Quality Control Features
 
@@ -202,11 +234,22 @@ The FFprobe API provides **comprehensive professional QC analysis** with industr
 
 ## 🔒 Security Features
 
+### **🛡️ Production Security (Docker Infrastructure)**
+- **Security-hardened containers** with non-root users and read-only filesystems
+- **Comprehensive seccomp profiles** limiting system calls
+- **Secrets management** with automatic rotation
+- **Network encryption** and service isolation
+- **Vulnerability scanning** integrated into CI/CD
+- **Compliance-ready** (SOC2, PCI-DSS, GDPR)
+
+### **🔐 Application Security (All Deployments)**
 - **API Key Authentication**: Secure access control
-- **Rate Limiting**: Prevent abuse
+- **Rate Limiting**: Prevent abuse and DoS attacks
 - **Input Validation**: Comprehensive file validation
 - **Secure Defaults**: No sensitive data exposure
 - **Container Security**: Minimal attack surface
+- **CSRF Protection**: Cross-site request forgery prevention
+- **Security Headers**: HSTS, CSP, and other security headers
 
 ## ⚡ Optimized Component Architecture
 
@@ -458,23 +501,26 @@ make clean              # Clean everything
 
 ## 📊 Monitoring & Observability
 
-### Health Checks
+### **🔍 Production Monitoring (Docker Infrastructure)**
+- **Prometheus metrics** with custom recording rules and alerting
+- **Grafana dashboards** with pre-built visualizations for FFprobe API
+- **Jaeger tracing** for distributed request tracking
+- **Automated alerting** for service health, performance, and security
+- **Log aggregation** with structured JSON logging
+- **Health checks** with dependency monitoring and circuit breakers
+
+**Monitor everything:**
+- Application performance (response times, error rates, throughput)
+- Infrastructure resources (CPU, memory, disk, network)
+- Business metrics (video processing rates, quality scores)
+- Security events (failed auth, rate limits, suspicious activity)
+
+### **📈 Basic Monitoring (All Deployments)**
 - Service health endpoints
-- Dependency health validation
+- Dependency health validation  
 - Model availability checking
 - Resource usage monitoring
-
-### Metrics (Production)
-- Request rate and latency
-- Processing queue depth
-- Resource utilization
-- Error rates and types
-
-### Dashboards (Production)
-- Grafana visualizations
-- Real-time service status
-- Performance trending
-- Alert management
+- Simple metrics collection
 ## 🔄 Updates & Maintenance
 
 ### Automatic Updates
@@ -537,6 +583,13 @@ docker compose exec ollama ollama pull gemma3:270m
 
 ## 📚 Documentation
 
+### **🐳 Production Docker Infrastructure**
+- **[🏭 Docker Production Guide](docker-image/README-DOCKER-PRODUCTION.md)** - Complete production deployment
+- **[🔧 Build System](docker-image/README-DOCKER-PRODUCTION.md#build-system)** - Multi-stage builds and optimization
+- **[🔒 Security Guide](docker-image/README-DOCKER-PRODUCTION.md#security)** - Security hardening and compliance
+- **[📊 Monitoring Setup](docker-image/README-DOCKER-PRODUCTION.md#monitoring--observability)** - Prometheus, Grafana, alerts
+
+### **📖 Application Documentation**
 - **[📖 Complete Documentation](docs/README.md)** - Full documentation index  
 - **[📡 API Reference](docs/api/README.md)** - REST and GraphQL APIs
 - **[🔍 QC Features](docs/QC_ANALYSIS_LIST.md)** - All 20+ quality control categories
