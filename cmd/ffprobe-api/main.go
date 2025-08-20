@@ -15,6 +15,8 @@ import (
 	"github.com/rendiffdev/ffprobe-api/internal/database"
 	"github.com/rendiffdev/ffprobe-api/internal/ffmpeg"
 	"github.com/rendiffdev/ffprobe-api/pkg/logger"
+	"io"
+	"path/filepath"
 )
 
 func main() {
@@ -70,6 +72,68 @@ func main() {
 				"Data Integrity Analysis",
 			},
 			"ffmpeg_validated": true,
+		})
+	})
+
+	// Add probe endpoint for QC analysis
+	router.POST("/api/v1/probe/file", func(c *gin.Context) {
+		file, header, err := c.Request.FormFile("file")
+		if err != nil {
+			c.JSON(400, gin.H{"error": "No file provided", "details": err.Error()})
+			return
+		}
+		defer file.Close()
+
+		// Save uploaded file temporarily
+		tempPath := filepath.Join("/tmp", fmt.Sprintf("upload_%d_%s", time.Now().Unix(), header.Filename))
+		tempFile, err := os.Create(tempPath)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "Failed to create temporary file", "details": err.Error()})
+			return
+		}
+		defer tempFile.Close()
+		defer os.Remove(tempPath)
+
+		_, err = io.Copy(tempFile, file)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "Failed to save file", "details": err.Error()})
+			return
+		}
+
+		// Perform comprehensive QC analysis
+		options := ffmpeg.NewOptionsBuilder().
+			Input(tempPath).
+			JSON().
+			ShowAll().
+			ShowError().
+			ShowDataHash().
+			ShowPrivateData().
+			CountFrames().
+			CountPackets().
+			ErrorDetectBroadcast().
+			FormatErrorDetectAll().
+			CRC32Hash().
+			ProbeSizeMB(100).
+			AnalyzeDurationSeconds(60).
+			Build()
+
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Minute)
+		defer cancel()
+
+		result, err := ffprobeInstance.Probe(ctx, options)
+		if err != nil {
+			c.JSON(500, gin.H{"error": "Analysis failed", "details": err.Error()})
+			return
+		}
+
+		// Return comprehensive analysis
+		c.JSON(200, gin.H{
+			"status":                 "success",
+			"filename":               header.Filename,
+			"size":                   header.Size,
+			"analysis":               result,
+			"qc_categories_analyzed": 19,
+			"timestamp":              time.Now(),
 		})
 	})
 
