@@ -111,7 +111,7 @@ func Load() (*Config, error) {
 		ValkeyPassword:         getEnv("VALKEY_PASSWORD", ""),
 		ValkeyDB:               getEnvAsInt("VALKEY_DB", 0),
 		APIKey:                 getEnv("API_KEY", ""),
-		JWTSecret:              getEnv("JWT_SECRET", "your-super-secret-jwt-key-change-in-production"),
+		JWTSecret:              getEnv("JWT_SECRET", ""),
 		TokenExpiry:            getEnvAsInt("TOKEN_EXPIRY_HOURS", 24),
 		RefreshExpiry:          getEnvAsInt("REFRESH_EXPIRY_HOURS", 168), // 7 days
 		EnableAuth:             getEnvAsBool("ENABLE_AUTH", true),
@@ -250,7 +250,9 @@ func validateConfig(cfg *Config) error {
 			errors = append(errors, "API_KEY must be at least 32 characters long")
 		}
 
-		if cfg.JWTSecret == "your-super-secret-jwt-key-change-in-production" {
+		if cfg.JWTSecret == "" {
+			errors = append(errors, "JWT_SECRET is required for authentication")
+		} else if cfg.JWTSecret == "your-super-secret-jwt-key-change-in-production" {
 			errors = append(errors, "JWT_SECRET must be changed from default value")
 		} else if len(cfg.JWTSecret) < 32 {
 			errors = append(errors, "JWT_SECRET must be at least 32 characters long")
@@ -492,6 +494,6 @@ func validateDirectory(dir string) error {
 // generateRandomString generates a random hex string of specified length
 func generateRandomString(length int) string {
 	bytes := make([]byte, length/2)
-	rand.Read(bytes)
+	_, _ = rand.Read(bytes) // Error intentionally ignored - crypto/rand is the fallback
 	return hex.EncodeToString(bytes)
 }

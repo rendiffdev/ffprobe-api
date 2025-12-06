@@ -1,7 +1,7 @@
 # FFprobe API - Automated Build and Deployment
 # Simple commands for all platforms and deployment modes
 
-.PHONY: help install quick prod dev clean test build docker health logs backup
+.PHONY: help install quick prod dev clean test test-unit test-coverage test-coverage-html test-race test-short test-all test-ffmpeg test-ai test-integration test-benchmark http-benchmark build docker health logs backup
 
 # Default target
 help: ## Show this help message
@@ -112,6 +112,33 @@ test: ## Run health checks and basic tests
 	@echo "Testing file upload..."
 	@curl -f -X POST -F "file=@README.md" http://localhost:8080/api/v1/probe/file > /dev/null 2>&1 && echo "✅ Upload works" || echo "⚠️  Upload test skipped (auth required)"
 
+test-unit: ## Run Go unit tests
+	@echo "🧪 Running Go unit tests..."
+	go test -v ./...
+
+test-coverage: ## Run Go tests with coverage report
+	@echo "📊 Running tests with coverage..."
+	go test -cover -coverprofile=coverage.out ./...
+	@echo ""
+	@echo "Coverage Summary:"
+	@go tool cover -func=coverage.out | tail -1
+
+test-coverage-html: test-coverage ## Generate HTML coverage report
+	@echo "📊 Generating HTML coverage report..."
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "✅ Coverage report generated: coverage.html"
+
+test-race: ## Run tests with race detection
+	@echo "🏃 Running tests with race detection..."
+	go test -race ./...
+
+test-short: ## Run short tests only (skip long-running tests)
+	@echo "⚡ Running short tests..."
+	go test -short ./...
+
+test-all: test-unit test-race test-coverage ## Run all Go tests
+	@echo "✅ All tests completed"
+
 test-ffmpeg: ## Test FFmpeg functionality
 	@echo "🎬 Testing FFmpeg..."
 	@docker compose -f docker-image/compose.yaml exec api ffmpeg -version | head -1
@@ -122,8 +149,17 @@ test-ai: ## Test AI model functionality
 	@echo "🤖 Testing AI models..."
 	@curl -s http://localhost:11434/api/tags | jq -r '.models[].name' | head -5 || echo "⚠️  AI models still downloading"
 
-benchmark: ## Run performance benchmarks
-	@echo "📊 Running benchmarks..."
+test-integration: ## Run integration tests (requires Docker services)
+	@echo "🔗 Running integration tests..."
+	@$(MAKE) wait-ready
+	go test -tags=integration ./tests/integration/... 2>/dev/null || echo "ℹ️  No integration tests found"
+
+test-benchmark: ## Run benchmark tests
+	@echo "📊 Running Go benchmarks..."
+	go test -bench=. -benchmem ./... 2>/dev/null || echo "ℹ️  No benchmarks found"
+
+http-benchmark: ## Run HTTP performance benchmarks
+	@echo "📊 Running HTTP benchmarks..."
 	@ab -n 100 -c 10 http://localhost:8080/health 2>/dev/null | grep -E "(Requests per second|Time per request)" || echo "⚠️  Install 'apache2-utils' for benchmarking"
 
 # === MAINTENANCE ===

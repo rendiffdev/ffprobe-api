@@ -223,7 +223,7 @@ func (s *AnalysisService) completeAnalysis(ctx context.Context, analysisID uuid.
 		// Convert FFprobeData to map for worker
 		analysisMap := make(map[string]interface{})
 		if ffprobeData.Format != nil {
-			json.Unmarshal(ffprobeData.Format, &analysisMap)
+			_ = json.Unmarshal(ffprobeData.Format, &analysisMap) // Ignore error - analysisMap stays empty on failure
 		}
 
 		report, err := s.workerClient.GenerateAnalysisWithLLM(llmCtx, analysisMap)
@@ -387,7 +387,7 @@ func (s *AnalysisService) updateAnalysisError(ctx context.Context, analysisID uu
 
 func (s *AnalysisService) calculateContentHash(filePath string) (string, error) {
 	// For URLs or remote files, skip hash calculation
-	if filepath.IsAbs(filePath) == false || len(filePath) > 2048 {
+	if !filepath.IsAbs(filePath) || len(filePath) > 2048 {
 		return "", nil
 	}
 
@@ -407,7 +407,7 @@ func (s *AnalysisService) calculateContentHash(filePath string) (string, error) 
 
 func (s *AnalysisService) getFileSize(filePath string) (int64, error) {
 	// For URLs or remote files, return 0
-	if filepath.IsAbs(filePath) == false || len(filePath) > 2048 {
+	if !filepath.IsAbs(filePath) || len(filePath) > 2048 {
 		return 0, nil
 	}
 
@@ -650,33 +650,3 @@ func detectSourceType(source string) string {
 	}
 }
 
-// Helper functions for converting worker data to expected formats
-func convertToStreams(data interface{}) []interface{} {
-	if data == nil {
-		return nil
-	}
-	if streams, ok := data.([]interface{}); ok {
-		return streams
-	}
-	return nil
-}
-
-func convertToChapters(data interface{}) []interface{} {
-	if data == nil {
-		return nil
-	}
-	if chapters, ok := data.([]interface{}); ok {
-		return chapters
-	}
-	return nil
-}
-
-func convertToPrograms(data interface{}) []interface{} {
-	if data == nil {
-		return nil
-	}
-	if programs, ok := data.([]interface{}); ok {
-		return programs
-	}
-	return nil
-}

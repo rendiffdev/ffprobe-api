@@ -1,0 +1,165 @@
+# Prometheus Configuration for FFprobe API Production Monitoring
+# Comprehensive service discovery, alerting, and metric collection
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'ffprobe-api-prod'
+    environment: 'production'
+    region: '${REGION:-us-east-1}'
+
+# Rule files specify a list of globs. Rules and alerts are read from all matching files.
+rule_files:
+  - "/etc/prometheus/rules/*.yml"
+  - "/etc/prometheus/alerts/*.yml"
+
+# Alerting configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+      timeout: 10s
+      api_version: v2
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+  # FFprobe API instances
+  - job_name: 'ffprobe-api'
+    dns_sd_configs:
+      - names:
+          - 'api'
+        type: 'A'
+        port: 9090
+    scrape_interval: 15s
+    metrics_path: '/metrics'
+    params:
+      format: ['prometheus']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 'api:9090'
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'go_.*'
+        action: drop  # Drop Go runtime metrics to reduce cardinality
+
+  # Docker container metrics via cAdvisor
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    metric_relabel_configs:
+      - source_labels: [container_label_com_docker_compose_service]
+        target_label: service
+      - source_labels: [container_label_com_docker_compose_project]
+        target_label: project
+
+  # Node Exporter for system metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+
+  # Valkey/Redis metrics
+  - job_name: 'valkey'
+    static_configs:
+      - targets: ['valkey-exporter:9121']
+    scrape_interval: 30s
+    params:
+      check-keys: ['*']
+
+  # Traefik reverse proxy metrics
+  - job_name: 'traefik'
+    static_configs:
+      - targets: ['traefik:8080']
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+
+  # Ollama AI service metrics (if available)
+  - job_name: 'ollama'
+    static_configs:
+      - targets: ['ollama:11434']
+    scrape_interval: 60s
+    metrics_path: '/metrics'
+    scrape_timeout: 30s
+
+  # Application-specific business metrics
+  - job_name: 'ffprobe-business-metrics'
+    static_configs:
+      - targets: ['api:9091']  # Separate port for business metrics
+    scrape_interval: 30s
+    metrics_path: '/business-metrics'
+    honor_labels: true
+
+  # Health check endpoints
+  - job_name: 'health-checks'
+    static_configs:
+      - targets: 
+        - 'api:8080'
+        - 'valkey:6379'
+        - 'ollama:11434'
+    metrics_path: '/health'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    params:
+      format: ['prometheus']
+
+  # Video processing job metrics
+  - job_name: 'video-processing'
+    file_sd_configs:
+      - files:
+        - '/etc/prometheus/targets/video-jobs.json'
+        refresh_interval: 30s
+    relabel_configs:
+      - source_labels: [__meta_filepath]
+        target_label: job_file
+
+# Remote write configuration for long-term storage
+remote_write:
+  - url: "${REMOTE_WRITE_URL}"
+    name: "ffprobe-metrics"
+    write_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'prometheus_.*|go_.*'
+        action: drop
+    queue_config:
+      max_samples_per_send: 1000
+      max_shards: 200
+      capacity: 2500
+    metadata_config:
+      send: true
+      send_interval: 30s
+    headers:
+      X-Environment: "production"
+      X-Service: "ffprobe-api"
+
+# Remote read configuration for federated queries
+remote_read:
+  - url: "${REMOTE_READ_URL}"
+    name: "ffprobe-read"
+    read_recent: true
+
+# Storage configuration
+storage:
+  tsdb:
+    path: /prometheus
+    retention:
+      time: 30d
+      size: 50GB
+    min_block_duration: 2h
+    max_block_duration: 25h
+    wal_compression: true
+    head_chunks_write_queue_size: 10000

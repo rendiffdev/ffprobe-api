@@ -257,7 +257,7 @@ func (qa *QualityAnalyzer) analyzePSNR(ctx context.Context, analysis *QualityAna
 	}
 
 	// Build PSNR filter
-	psrFilter := fmt.Sprintf("[0:v][1:v]psnr=stats_file=-")
+	psrFilter := "[0:v][1:v]psnr=stats_file=-"
 
 	// Build FFmpeg command
 	cmd := exec.CommandContext(ctx,
@@ -298,7 +298,7 @@ func (qa *QualityAnalyzer) analyzeSSIM(ctx context.Context, analysis *QualityAna
 	}
 
 	// Build SSIM filter
-	ssimFilter := fmt.Sprintf("[0:v][1:v]ssim=stats_file=-")
+	ssimFilter := "[0:v][1:v]ssim=stats_file=-"
 
 	// Build FFmpeg command
 	cmd := exec.CommandContext(ctx,

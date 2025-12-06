@@ -242,12 +242,10 @@ func (ra *ResolutionAnalyzer) validateResolutionConsistency(resolution *VideoRes
 	issues := 0
 
 	// Check if coded dimensions match display dimensions
-	if stream.CodedWidth > 0 && stream.CodedHeight > 0 {
-		if stream.CodedWidth != resolution.Width || stream.CodedHeight != resolution.Height {
-			// This is not necessarily an error - coded dimensions can differ
-			// from display dimensions due to cropping
-		}
-	}
+	// Note: Coded dimensions can differ from display dimensions due to cropping
+	// This is informational only, not an error condition
+	_ = stream.CodedWidth
+	_ = stream.CodedHeight
 
 	// Check aspect ratio consistency
 	if resolution.PixelAspectRatio > 0 && resolution.DisplayAspectRatio > 0 {

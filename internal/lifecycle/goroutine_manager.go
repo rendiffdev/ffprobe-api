@@ -300,9 +300,6 @@ func (gm *GoroutineManager) runManagedGoroutine(mg *ManagedGoroutine, config Gor
 		default:
 			err := fn(mg.Context)
 			if err == nil {
-				// Success, reset retry count
-				retries = 0
-
 				// If function returns without error, it completed successfully
 				gm.logger.Debug().
 					Str("goroutine_id", mg.ID).

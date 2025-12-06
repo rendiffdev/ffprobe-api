@@ -309,10 +309,10 @@ func (rl *TenantRateLimiter) checkRateLimit(ctx context.Context, userID, tenantI
 	hourIncr, _ := rl.cache.Incr(ctx, hourKey)
 	dayIncr, _ := rl.cache.Incr(ctx, dayKey)
 
-	// Set expiration
-	rl.cache.Expire(ctx, minuteKey, time.Minute)
-	rl.cache.Expire(ctx, hourKey, time.Hour)
-	rl.cache.Expire(ctx, dayKey, 24*time.Hour)
+	// Set expiration (best effort - ignore errors)
+	_ = rl.cache.Expire(ctx, minuteKey, time.Minute)
+	_ = rl.cache.Expire(ctx, hourKey, time.Hour)
+	_ = rl.cache.Expire(ctx, dayKey, 24*time.Hour)
 
 	// Get current counts
 	limits.CurrentRPM = int(minuteIncr)
@@ -379,8 +379,8 @@ func (rl *TenantRateLimiter) SetUserLimits(ctx context.Context, userID string, r
 		return fmt.Errorf("failed to set user limits: %w", err)
 	}
 
-	// Set expiration to 30 days
-	rl.cache.Expire(ctx, cacheKey, 30*24*time.Hour)
+	// Set expiration to 30 days (best effort)
+	_ = rl.cache.Expire(ctx, cacheKey, 30*24*time.Hour)
 
 	rl.logger.Info().
 		Str("user_id", userID).
@@ -406,8 +406,8 @@ func (rl *TenantRateLimiter) SetTenantLimits(ctx context.Context, tenantID strin
 		return fmt.Errorf("failed to set tenant limits: %w", err)
 	}
 
-	// Set expiration to 30 days
-	rl.cache.Expire(ctx, cacheKey, 30*24*time.Hour)
+	// Set expiration to 30 days (best effort)
+	_ = rl.cache.Expire(ctx, cacheKey, 30*24*time.Hour)
 
 	rl.logger.Info().
 		Str("tenant_id", tenantID).

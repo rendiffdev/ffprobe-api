@@ -138,11 +138,11 @@ func (s *LLMService) generateWithLocalLLM(ctx context.Context, prompt string) (s
 	}
 
 	if s.config.OllamaURL == "" {
-		return "", fmt.Errorf("Ollama URL not configured")
+		return "", fmt.Errorf("ollama URL not configured")
 	}
 
 	if s.config.OllamaModel == "" {
-		return "", fmt.Errorf("Ollama model not configured")
+		return "", fmt.Errorf("ollama model not configured")
 	}
 
 	// Use circuit breaker to protect against cascading failures
@@ -247,7 +247,7 @@ func (s *LLMService) generateWithOllamaModel(ctx context.Context, model string, 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("Ollama API returned status %d", resp.StatusCode)
+		return "", fmt.Errorf("ollama API returned status %d", resp.StatusCode)
 	}
 
 	// Parse Ollama response
@@ -262,11 +262,11 @@ func (s *LLMService) generateWithOllamaModel(ctx context.Context, model string, 
 	}
 
 	if response.Error != "" {
-		return "", fmt.Errorf("Ollama API error: %s", response.Error)
+		return "", fmt.Errorf("ollama API error: %s", response.Error)
 	}
 
 	if !response.Done {
-		return "", fmt.Errorf("Ollama response incomplete")
+		return "", fmt.Errorf("ollama response incomplete")
 	}
 
 	if response.Response == "" {
@@ -532,10 +532,10 @@ func (s *LLMService) buildQualityInsightsPrompt(analysis *models.Analysis, metri
 	for _, metric := range metrics {
 		prompt.WriteString(fmt.Sprintf("- %s: Overall=%.2f, Min=%.2f, Max=%.2f, Mean=%.2f\n",
 			metric.MetricType,
-			metric.OverallScore,
-			metric.MinScore,
-			metric.MaxScore,
-			metric.MeanScore))
+			derefFloat64(metric.OverallScore),
+			derefFloat64(metric.MinScore),
+			derefFloat64(metric.MaxScore),
+			derefFloat64(metric.MeanScore)))
 	}
 
 	prompt.WriteString("\nPlease provide practical insights and recommendations based on these quality metrics.")
@@ -546,7 +546,7 @@ func (s *LLMService) buildQualityInsightsPrompt(analysis *models.Analysis, metri
 // CheckOllamaHealth checks if Ollama service is healthy and models are available
 func (s *LLMService) CheckOllamaHealth(ctx context.Context) (*OllamaHealthStatus, error) {
 	if s.config.OllamaURL == "" {
-		return nil, fmt.Errorf("Ollama URL not configured")
+		return nil, fmt.Errorf("ollama URL not configured")
 	}
 
 	status := &OllamaHealthStatus{
@@ -652,7 +652,7 @@ func (s *LLMService) GetCircuitBreakerStatus() map[string]interface{} {
 // PullModel downloads a model to Ollama
 func (s *LLMService) PullModel(ctx context.Context, modelName string) error {
 	if s.config.OllamaURL == "" {
-		return fmt.Errorf("Ollama URL not configured")
+		return fmt.Errorf("ollama URL not configured")
 	}
 
 	requestBody := map[string]interface{}{
@@ -700,4 +700,12 @@ type OllamaHealthStatus struct {
 	FallbackModelAvailable bool      `json:"fallback_model_available,omitempty"`
 	Error                  string    `json:"error,omitempty"`
 	Timestamp              time.Time `json:"timestamp"`
+}
+
+// derefFloat64 safely dereferences a *float64 pointer, returning 0 if nil
+func derefFloat64(f *float64) float64 {
+	if f == nil {
+		return 0
+	}
+	return *f
 }

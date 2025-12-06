@@ -500,10 +500,11 @@ func (f *FFprobe) buildArgs(options *FFprobeOptions) ([]string, error) {
 		args = append(args, "-show_private_data")
 	}
 	if options.ShowDataHash {
-		args = append(args, "-show_data_hash")
-		// Add hash algorithm if specified
+		// In newer ffprobe versions, hash algorithm is passed directly to -show_data_hash
 		if options.HashAlgorithm != "" {
-			args = append(args, "-hash", options.HashAlgorithm)
+			args = append(args, "-show_data_hash", options.HashAlgorithm)
+		} else {
+			args = append(args, "-show_data_hash")
 		}
 	}
 
@@ -735,7 +736,7 @@ func (f *FFprobe) StreamFile(ctx context.Context, filePath string, chunkCallback
 	scanner := bufio.NewScanner(stdout)
 	for scanner.Scan() {
 		if err := chunkCallback(scanner.Text()); err != nil {
-			cmd.Process.Kill()
+			_ = cmd.Process.Kill() // Best effort kill on error
 			return fmt.Errorf("chunk callback error: %w", err)
 		}
 	}

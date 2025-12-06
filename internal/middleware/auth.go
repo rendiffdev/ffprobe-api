@@ -361,11 +361,6 @@ type UserCredentials struct {
 	LastLoginAt  *time.Time `db:"last_login_at"`
 }
 
-func (m *AuthMiddleware) validateCredentials(username, password string) bool {
-	user, valid := m.validateCredentialsAndGetUser(username, password)
-	return valid && user != nil
-}
-
 func (m *AuthMiddleware) validateCredentialsAndGetUser(username, password string) (*UserCredentials, bool) {
 	if username == "" || password == "" {
 		return nil, false

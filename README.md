@@ -1,556 +1,461 @@
 # FFprobe API
 
-**AI-Powered Video Analysis API - Beyond Traditional FFprobe**
+**Professional Video Analysis API with Advanced QC Capabilities**
 
-🧠 **The only media analysis API with built-in GenAI intelligence** - transforming raw FFprobe data into actionable professional insights, recommendations, and risk assessments.
+A production-ready REST API for comprehensive video/audio file analysis using FFprobe, with 19 professional quality control analysis categories.
 
-**Why choose FFprobe API over direct FFmpeg/FFprobe?**
-- 🎯 **GenAI Analysis**: AI-powered interpretation of technical data into professional insights
-- 🔍 **Intelligent Risk Assessment**: AI identifies safety, compliance, and technical risks
-- 📊 **Smart Recommendations**: GenAI suggests specific FFmpeg commands and workflow improvements
-- 🏆 **Professional QC**: 19 advanced quality control categories beyond basic FFprobe
-- 💡 **Executive Summaries**: AI translates technical data for non-technical stakeholders
+[![Go Version](https://img.shields.io/badge/go-1.25.5-blue.svg)](https://go.dev/)
+[![QC Analysis](https://img.shields.io/badge/QC-19%20Categories-blue.svg)](#quality-control-features)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](#quick-start)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-[![Production Ready](https://img.shields.io/badge/production-ready-green.svg)](docs/PRODUCTION_READINESS_REPORT.md)
-[![QC Analysis](https://img.shields.io/badge/QC-19%20Categories-blue.svg)](#advanced-quality-control-features)
-[![Docker](https://img.shields.io/badge/docker-ready--to--deploy-blue.svg)](#quick-start)
+## Features
 
-## 🧠 Core GenAI Differentiators
+### Core Capabilities
+- **Comprehensive FFprobe Analysis**: Full format, stream, frame, and packet analysis
+- **19 Professional QC Categories**: Industry-standard quality control analysis
+- **REST API**: Simple HTTP interface for video analysis
+- **GraphQL API**: Flexible query interface for advanced integrations
+- **URL & HLS Analysis**: Direct URL probing and HLS stream analysis
+- **Batch Processing**: Process multiple files/URLs in parallel
+- **WebSocket Progress**: Real-time progress updates for long operations
+- **LLM-Powered Insights**: AI-generated professional analysis reports
+- **Docker Ready**: Production-ready containerized deployment
+- **SQLite Embedded**: Zero-configuration database
+- **Valkey/Redis Caching**: High-performance result caching
 
-### **FFprobe API: Enhanced Video Analysis**
+### Quality Control Analysis
+Professional broadcast and streaming QC analysis including:
+- AFD (Active Format Description) Analysis
+- Dead Pixel Detection
+- PSE (Photosensitive Epilepsy) Flash Analysis
+- HDR Analysis (HDR10, Dolby Vision, HLG)
+- Timecode Analysis (SMPTE)
+- MXF Format Validation
+- IMF Compliance Checking
+- Transport Stream Analysis
+- And 10 more categories...
 
-| Standard Workflow | FFprobe API Enhancement |
-|-------------------|------------------------|
-| Technical data output | 🎯 **AI-interpreted insights** |
-| Analysis workflow | 🤖 **Automated risk assessment** |
-| Raw metrics | 💡 **Smart optimization suggestions** |
-| Technical format | 📝 **Executive-friendly summaries** |
-| Individual file processing | 🔄 **Workflow integration recommendations** |
+📋 **[Complete QC Analysis List](docs/QC_ANALYSIS_LIST.md)**
 
-### **🚀 GenAI-Powered Features**
+## Quick Start
 
-- **🧠 AI Technical Analysis**: LLM interprets FFprobe data into professional assessment
-- **⚠️ Risk Assessment**: AI identifies PSE risks, compliance issues, technical problems
-- **🎯 Smart Recommendations**: GenAI suggests specific FFmpeg commands for optimization
-- **📊 Quality Insights**: AI evaluates suitability for different delivery platforms
-- **🏢 Executive Summaries**: Technical findings translated for management/clients
-- **🔍 Issue Detection**: AI spots problems human analysts might miss
+### Prerequisites
+- Docker 24.0+ with Docker Compose
+- 2GB RAM minimum (4GB recommended)
+- 5GB disk space
 
-### **🛠️ Advanced Technical Features**
-
-- **Advanced Quality Control**: 19 professional QC analysis categories including timecode, AFD, MXF validation, dead pixel detection, PSE analysis, data integrity validation, and stream disposition analysis
-- **Latest FFmpeg**: Always uses latest stable BtbN builds with all codecs
-- **Professional Reports**: Comprehensive technical analysis with quality metrics and compliance validation
-- **Multiple Formats**: Supports all video/audio formats that FFmpeg supports
-- **REST & GraphQL API**: Complete RESTful and GraphQL interfaces with OpenAPI documentation
-- **Zero Config**: Runs out-of-the-box with sensible defaults
-- **Production Ready**: Full monitoring, backups, and security features
-
-## 🚀 Quick Start
-
-### Smart Installation with System Requirements Checking
-
-**🤖 The setup script automatically validates your system meets the requirements for your chosen deployment mode:**
+### Installation
 
 ```bash
-# 🔧 Clone and setup (recommended)
-git clone <your-repo-url>
+# Clone the repository
+git clone https://github.com/rendiffdev/ffprobe-api.git
 cd ffprobe-api
+
+# Quick start (development mode)
 make quick
 
-# ⚡ Alternative quick modes:
-make minimal     # 2GB RAM, 6GB disk - core services only
-make dev         # 4GB RAM, 15GB disk - development environment  
-make prod        # 8GB RAM, 20GB disk - production with monitoring
-
-# 🎯 Interactive setup with system validation
-./setup.sh       # Automatically detects best deployment mode
+# Or minimal deployment
+make minimal
 ```
-
-**✨ What the smart installer checks:**
-- 📊 RAM: Deployment-specific minimum (2-8GB)
-- 💾 Disk space: Mode-specific requirements (6-20GB) 
-- 🖥️ CPU cores: Sufficient processing power (1-4 cores)
-- 🔌 Network ports: Required ports available
-- 🐳 Docker: Installation and container capabilities
-- 🌐 Internet: Connection for downloading images
 
 Your API is now running at **http://localhost:8080**
 
-### 🧠 Test GenAI Analysis (The Core USP)
+### Verify Installation
+
 ```bash
 # Check health
 curl http://localhost:8080/health
 
-# Traditional analysis (like basic FFprobe)
-curl -X POST -F "file=@video.mp4" http://localhost:8080/api/v1/probe/file
-
-# 🎆 GenAI-powered analysis (THE DIFFERENTIATOR)
-curl -X POST \
-  -F "file=@video.mp4" \
-  -F "include_llm=true" \
-  http://localhost:8080/api/v1/probe/file
-
-# Get AI insights from the analysis
-curl http://localhost:8080/api/v1/analysis/{id} | jq '.llm_report'
+# Expected response:
+{
+  "status": "healthy",
+  "service": "ffprobe-api",
+  "version": "2.0.0",
+  "features": {
+    "file_probe": true,
+    "url_probe": true,
+    "hls_analysis": true,
+    "batch_processing": true,
+    "websocket": true,
+    "graphql": true,
+    "llm_insights": true
+  },
+  "qc_tools": ["AFD Analysis", "Dead Pixel Detection", ...],
+  "ffmpeg_validated": true
+}
 ```
 
-**💫 What you get with GenAI analysis:**
-- Professional quality assessment in plain English
-- Specific FFmpeg optimization commands
-- Risk assessment for PSE/compliance issues  
-- Delivery platform recommendations
-- Executive summary for stakeholders
+## API Reference
 
-## 📋 System Requirements
+### Health Check
 
-- **Docker** 24.0+ with Compose
-- **2GB RAM** minimum (4GB recommended)
-- **5GB disk space** for models and data
-- **Internet connection** for initial setup
-- **No external database required** - SQLite embedded by default
-
-## 🏗️ Architecture
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   FFprobe API   │───▶│     SQLite      │    │     Valkey      │
-│   (Latest)      │    │ (Embedded DB)   │    │ (Redis-compatible)│
-└─────────┬───────┘    └─────────────────┘    └─────────────────┘
-          │
-          ▼
-┌─────────────────┐    ┌─────────────────┐
-│     Ollama      │    │   FFmpeg        │
-│  (AI Models)    │    │  (BtbN Latest)  │
-│                 │    │                 │
-│ • Gemma3 270M   │    │ • All Codecs    │
-│ • Phi-3 Mini    │    │ • VMAF Support  │
-└─────────────────┘    └─────────────────┘
-```
-
-## 🛠️ Deployment Modes
-
-### 🐳 **NEW: Production-Grade Docker Infrastructure**
-
-FFprobe API now includes **enterprise-ready Docker infrastructure** with comprehensive security, monitoring, and operational capabilities.
-
-#### **🚀 Quick Production Deployment**
-```bash
-# Build optimized production image
-./docker-image/build-optimized.sh --target production --scan --sbom
-
-# Generate secure secrets
-./docker-image/scripts/secrets-manager.sh generate
-
-# Deploy complete production stack
-./docker-image/deploy-production.sh \
-  --mode compose \
-  --environment production \
-  --domain api.yourcompany.com \
-  --enable-ssl \
-  --enable-monitoring \
-  --deploy
-```
-
-**✨ Production Features:**
-- **🛡️ Security-hardened containers** with non-root users
-- **📊 Complete monitoring stack** (Prometheus, Grafana, Jaeger)
-- **🔒 Automated SSL/TLS** with Let's Encrypt
-- **💾 Encrypted backups** with retention policies
-- **⚡ Zero-downtime deployments** with rolling updates
-- **🔄 Auto-scaling** with resource management
-
-📚 **[Complete Docker Documentation](docker-image/README-DOCKER-PRODUCTION.md)**
-
-### Traditional Deployment Modes
-
-#### Minimal Deployment (Testing)
-```bash
-make minimal
-```
-- **Ultra-lightweight**: Only 3 core services
-- **Services**: API + Valkey + Ollama (SQLite embedded)
-- **Memory**: ~2-3GB total
-- **Perfect for**: Development, testing, resource-constrained environments
-
-#### Quick Start (Development)
-```bash
-make quick
-```
-- Ready in 2 minutes
-- No authentication
-- Gemma 3 270M for fast analysis
-- Perfect for demos and quick testing
-
-#### Development Environment
-```bash
-make dev
-```
-- Hot reload and debugging
-- Database/Valkey admin tools
-- File browser interface for uploads
-- Development-focused tooling
-
-#### Legacy Production
-```bash
-make prod
-```
-- Basic production setup
-- Prometheus + Grafana dashboards
-- Automated backups
-- **Note**: Use the new Docker infrastructure for enterprise deployments
-
-## 🔍 Advanced Quality Control Features
-
-The FFprobe API provides **comprehensive professional QC analysis** with industry-standard compliance checking.
-
-📋 **[Complete QC Analysis List](docs/QC_ANALYSIS_LIST.md)** - Detailed breakdown of all 19 QC categories
-
-### QC Analysis Categories Overview
-
-#### Core QC Analysis (19 Categories)
-- **AFD Analysis**: Active Format Description broadcast signaling compliance
-- **Dead Pixel Detection**: Computer vision-based pixel defect analysis  
-- **PSE Flash Analysis**: Photosensitive epilepsy safety analysis
-- **HDR Analysis**: High Dynamic Range content validation
-- **Audio Wrapping Analysis**: Professional audio format detection
-- **Endianness Detection**: Binary format and platform compatibility
-- **Codec Analysis**: Codec validation and profile analysis
-- **Container Validation**: Container format compliance checking
-- **Resolution Analysis**: Resolution and aspect ratio validation
-- **Frame Rate Analysis**: Frame rate accuracy and consistency validation
-- **Bitdepth Analysis**: Bit depth validation and HDR compatibility
-- **Timecode Analysis**: SMPTE timecode parsing and validation
-- **MXF Analysis**: Material Exchange Format compliance
-- **IMF Compliance**: Interoperable Master Format validation (Netflix standard)
-- **Transport Stream Analysis**: MPEG-TS structure and error detection
-- **Content Analysis**: Scene change detection and motion analysis
-- **Enhanced Analysis**: Advanced quality metrics and recommendations
-- **Stream Disposition Analysis**: Accessibility and stream role validation
-- **Data Integrity Analysis**: Error detection and hash-based integrity verification
-
-### AI-Enhanced Analysis (Optional)
-- **Risk Assessment**: Automated technical, compliance, and safety risk evaluation
-- **Quality Scoring**: Overall QC score with critical findings identification
-- **Workflow Integration**: Intelligent recommendations for production pipelines
-- **Compliance Insights**: Broadcast standards validation (ITU, FCC, EBU, ATSC)
-
-## 🔒 Security Features
-
-### **🛡️ Production Security (Docker Infrastructure)**
-- **Security-hardened containers** with non-root users and read-only filesystems
-- **Comprehensive seccomp profiles** limiting system calls
-- **Secrets management** with automatic rotation
-- **Network encryption** and service isolation
-- **Vulnerability scanning** integrated into CI/CD
-- **Compliance-ready** (SOC2, PCI-DSS, GDPR)
-
-### **🔐 Application Security (All Deployments)**
-- **API Key Authentication**: Secure access control
-- **Rate Limiting**: Prevent abuse and DoS attacks
-- **Input Validation**: Comprehensive file validation
-- **Secure Defaults**: No sensitive data exposure
-- **Container Security**: Minimal attack surface
-- **CSRF Protection**: Cross-site request forgery prevention
-- **Security Headers**: HSTS, CSP, and other security headers
-
-## ⚡ Optimized Component Architecture
-
-### **Essential Components** (All Deployments)
-- **SQLite**: Embedded database (zero configuration)
-- **Valkey 8**: High-performance caching (Redis-compatible, open source)
-- **Ollama**: Local AI processing (Gemma 3 270M + Phi-3 Mini)
-- **FFprobe API**: Core video analysis service
-
-### **Production Components** (Production Only)
-- **Traefik v3**: Combined reverse proxy + automatic SSL
-- **Prometheus**: Metrics and monitoring
-- **Grafana**: Dashboards and visualization
-- **Backup Service**: Automated data protection
-
-### **Development Tools** (Development Only)
-- **SQLite Browser**: Database administration
-- **Valkey Commander**: Cache administration  
-- **File Browser**: Upload management
-
-
-**Resource Savings**: ~300MB RAM, faster startup, fewer containers to manage
-
-## 📖 API Documentation
-
-### Core Endpoints
-
-#### Health Check
 ```bash
 GET /health
 ```
 
-#### 🧠 GenAI-Powered Analysis (Core USP)
-```bash
-# THE DIFFERENTIATOR: AI-powered analysis
-POST /api/v1/probe/file
-Content-Type: application/json
+Returns service health status and available QC tools.
 
-{
-  "file_path": "/path/to/video.mp4",
-  "include_llm": true,          // 🎆 Enable GenAI analysis
-  "content_analysis": true,
-  "generate_reports": true,
-  "report_formats": ["json", "pdf"]
-}
-```
-
-**GenAI Response Includes:**
+**Response:**
 ```json
 {
-  "analysis_id": "uuid",
-  "llm_report": "🧠 EXECUTIVE SUMMARY: Professional HD content suitable for broadcast. Video shows excellent technical quality with H.264 encoding at 1920x1080. RECOMMENDATIONS: Consider re-encoding to HEVC for 40% smaller files while maintaining quality. RISKS: No safety concerns detected.",
-  "llm_enabled": true
+  "status": "healthy",
+  "service": "ffprobe-api-core",
+  "qc_tools": [
+    "AFD Analysis",
+    "Dead Pixel Detection",
+    "PSE Flash Analysis",
+    "HDR Analysis",
+    "Audio Wrapping Analysis",
+    "Endianness Detection",
+    "Codec Analysis",
+    "Container Validation",
+    "Resolution Analysis",
+    "Frame Rate Analysis",
+    "Bitdepth Analysis",
+    "Timecode Analysis",
+    "MXF Analysis",
+    "IMF Compliance",
+    "Transport Stream Analysis",
+    "Content Analysis",
+    "Enhanced Analysis",
+    "Stream Disposition Analysis",
+    "Data Integrity Analysis"
+  ],
+  "ffmpeg_validated": true
 }
 ```
 
-#### Traditional Analysis (Like Basic FFprobe)
+### Analyze File
+
 ```bash
 POST /api/v1/probe/file
-Content-Type: application/json
-
-{
-  "file_path": "/path/to/video.mp4",
-  "content_analysis": true,
-  "generate_reports": true,
-  "report_formats": ["json", "pdf"]
-}
+Content-Type: multipart/form-data
 ```
 
-#### URL Analysis with GenAI
+Upload a video/audio file for comprehensive analysis.
+
+**Request:**
 ```bash
-POST /api/v1/probe/url
-Content-Type: application/json
-
-{
-  "url": "https://example.com/video.mp4",
-  "include_llm": true,        // 🧠 Enable AI analysis
-  "content_analysis": true,
-  "timeout": 300
-}
+curl -X POST \
+  -F "file=@video.mp4" \
+  http://localhost:8080/api/v1/probe/file
 ```
 
-#### GraphQL Query
-```graphql
-query AnalyzeMedia($input: AnalysisInput!) {
-  analyzeMedia(input: $input) {
-    id
-    status
-    result {
-      enhancedAnalysis {
-        timecodeAnalysis { hasTimecode isDropFrame }
-        mxfAnalysis { isMXFFile validationResults }
-        pseAnalysis { riskLevel violations }
-      }
-    }
-  }
-}
-```
-
-### Response Format
+**Response:**
 ```json
 {
   "analysis_id": "550e8400-e29b-41d4-a716-446655440000",
-  "status": "completed",
-  "analysis": {
-    "file_info": {
-      "filename": "video.mp4",
-      "size": 1048576,
-      "duration": 60.5
+  "filename": "video.mp4",
+  "size": 1048576,
+  "result": {
+    "format": {
+      "filename": "/tmp/upload_1234567890_video.mp4",
+      "nb_streams": 2,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "duration": "60.500000",
+      "bit_rate": "5000000"
     },
-    "result": {
-      "streams": [...],
-      "format": {...},
-      "enhanced_analysis": {
-        "timecode_analysis": {
-          "has_timecode": true,
-          "is_drop_frame": false,
-          "start_timecode": "01:00:00:00"
-        },
-        "mxf_analysis": {
-          "is_mxf_file": true,
-          "mxf_profile": "OP1a",
-          "validation_results": {
-            "overall_compliance": true
-          }
-        },
-        "pse_analysis": {
-          "pse_risk_level": "safe",
-          "flash_analysis": {...}
-        },
-        "llm_enhanced_report": {
-          "overall_qc_score": 95.5,
-          "critical_findings": [],
-          "risk_assessment": {
-            "overall_risk_level": "low"
-          }
-        }
+    "streams": [
+      {
+        "index": 0,
+        "codec_type": "video",
+        "codec_name": "h264",
+        "width": 1920,
+        "height": 1080,
+        "r_frame_rate": "30/1"
+      },
+      {
+        "index": 1,
+        "codec_type": "audio",
+        "codec_name": "aac",
+        "sample_rate": "48000",
+        "channels": 2
       }
+    ],
+    "enhanced_analysis": {
+      "timecode_analysis": {...},
+      "hdr_analysis": {...},
+      "codec_analysis": {...},
+      "data_integrity": {...}
     }
   }
 }
 ```
 
-## 🧠 GenAI Analysis Examples (Core USP)
+### Analyze URL
 
-### 🎯 Why GenAI Analysis Changes Everything
-
-**Traditional FFprobe Output:**
-```json
-{
-  "codec_name": "h264",
-  "width": 1920,
-  "height": 1080,
-  "bit_rate": "5000000"
-}
-```
-
-**FFprobe API with GenAI Output:**
-```json
-{
-  "llm_report": "EXECUTIVE SUMMARY: Professional HD broadcast content ready for delivery. Technical Analysis: H.264 encoding at optimal bitrate (5Mbps) for 1080p resolution. Quality Assessment: Excellent visual quality with no artifacts detected. Recommendations: 1) Consider HEVC encoding for 40% size reduction while maintaining quality. 2) Add closed captions for accessibility compliance. 3) Suitable for Netflix, YouTube, and broadcast distribution. Risk Assessment: Low technical risk, compliant with industry standards. Workflow Integration: Ready for immediate delivery pipeline integration."
-}
-```
-
-### 🎥 Real-World GenAI Use Cases
-
-#### 🚨 Safety Risk Detection
 ```bash
-# Analyze content for PSE risks
+POST /api/v1/probe/url
+Content-Type: application/json
+```
+
+Analyze a video file from a URL without uploading.
+
+**Request:**
+```bash
 curl -X POST \
-  -F "file=@flashing_video.mp4" \
-  -F "include_llm=true" \
-  http://localhost:8080/api/v1/probe/file
-
-# AI Response:
-"CRITICAL ALERT: High photosensitive epilepsy risk detected. 
- Flashing patterns exceed safe thresholds (>3Hz). 
- REQUIRED ACTIONS: Add PSE warning, consider content modification."
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com/video.mp4", "include_llm": true}' \
+  http://localhost:8080/api/v1/probe/url
 ```
 
-#### 🏆 Quality Optimization
-```bash
-# Get optimization recommendations
-curl -X POST \
-  -F "file=@large_video.mp4" \
-  -F "include_llm=true" \
-  http://localhost:8080/api/v1/probe/file
+### HLS Stream Analysis
 
-# AI Response:
-"OPTIMIZATION OPPORTUNITIES: File is 2.5GB for 10min duration. 
- RECOMMENDED: ffmpeg -i input.mp4 -c:v libx265 -crf 23 -c:a copy output.mp4 
- RESULT: 60% smaller file, same visual quality."
+```bash
+POST /api/v1/probe/hls
+Content-Type: application/json
 ```
 
-#### 📄 Executive Reporting
-```bash
-# Generate stakeholder-friendly reports
-curl -X POST \
-  -F "file=@corporate_video.mp4" \
-  -F "include_llm=true" \
-  http://localhost:8080/api/v1/probe/file
+Analyze HLS streams for quality, compliance, and performance.
 
-# AI Response:
-"CLIENT REPORT: Your video meets all technical requirements for 
- social media distribution. Optimized for YouTube, Instagram, and 
- TikTok. No technical issues detected. Ready for immediate publication."
-```
-
-### 🛠️ HLS Analysis with GenAI
+**Request:**
 ```bash
-# Analyze HLS streams with AI insights
 curl -X POST \
   -H "Content-Type: application/json" \
   -d '{
-    "source": "/path/to/hls/directory/",
+    "manifest_url": "https://example.com/stream.m3u8",
     "analyze_segments": true,
-    "include_llm": true
+    "analyze_quality": true,
+    "validate_compliance": true,
+    "max_segments": 10
   }' \
   http://localhost:8080/api/v1/probe/hls
-
-# AI analyzes all .ts chunks and provides:
-# - Quality ladder optimization suggestions
-# - ABR streaming recommendations  
-# - Platform compatibility assessment
-# - Bandwidth efficiency insights
 ```
 
-## 🔧 Management Commands
+### Batch Processing
 
 ```bash
-# Service management
-make start              # Start all services
-make stop               # Stop all services
-make restart            # Restart all services
-make health             # Check service health
-make logs               # View all logs
+POST /api/v1/batch/analyze    # Start batch job
+GET  /api/v1/batch/status/:id # Get job status
+```
+
+Process multiple files or URLs in parallel.
+
+**Request:**
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{
+    "urls": ["https://example.com/video1.mp4", "https://example.com/video2.mp4"],
+    "include_llm": false
+  }' \
+  http://localhost:8080/api/v1/batch/analyze
+```
+
+**Response:**
+```json
+{
+  "status": "accepted",
+  "job_id": "550e8400-e29b-41d4-a716-446655440000",
+  "total": 2,
+  "status_url": "/api/v1/batch/status/550e8400-e29b-41d4-a716-446655440000",
+  "ws_url": "/api/v1/ws/progress/550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+### WebSocket Progress
+
+```bash
+GET /api/v1/ws/progress/:id
+```
+
+Connect via WebSocket to receive real-time progress updates for batch jobs.
+
+### GraphQL API
+
+```bash
+POST /api/v1/graphql
+GET  /api/v1/graphql  # GraphiQL interface
+```
+
+Query and mutate via GraphQL for flexible data access.
+
+**Example Query:**
+```graphql
+query {
+  health {
+    status
+    version
+  }
+}
+
+mutation {
+  analyzeURL(url: "https://example.com/video.mp4", include_llm: true) {
+    id
+    filename
+    status
+    llm_report
+  }
+}
+```
+
+### LLM Insights
+
+Add `include_llm=true` to any analysis endpoint to get AI-powered insights:
+
+```bash
+# With file upload
+curl -X POST -F "file=@video.mp4" -F "include_llm=true" \
+  http://localhost:8080/api/v1/probe/file
+
+# With URL
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com/video.mp4", "include_llm": true}' \
+  http://localhost:8080/api/v1/probe/url
+```
+
+### FFmpeg Version Management (Admin)
+
+```bash
+GET  /admin/ffmpeg/version     # Get current FFmpeg version
+POST /admin/ffmpeg/check       # Check for updates
+POST /admin/ffmpeg/update      # Update FFmpeg
+```
+
+## Deployment Modes
+
+### Minimal (Development/Testing)
+```bash
+make minimal
+```
+- Core services only: API + Valkey + Ollama
+- Memory: ~2-3GB
+- Best for: Development, testing
+
+### Quick Start
+```bash
+make quick
+```
+- Ready in 2 minutes
+- No authentication required
+- Best for: Quick testing, demos
+
+### Development
+```bash
+make dev
+```
+- Hot reload enabled
+- Admin tools included
+- Best for: Development
+
+### Production
+```bash
+make prod
+```
+- Full monitoring stack
+- Authentication enabled
+- Automated backups
+- Best for: Production deployments
+
+## Architecture
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   FFprobe API   │───▶│     SQLite      │    │     Valkey      │
+│   (Go/Gin)      │    │ (Embedded DB)   │    │ (Redis Cache)   │
+└────────┬────────┘    └─────────────────┘    └─────────────────┘
+         │
+         ▼
+┌─────────────────┐    ┌─────────────────┐
+│     Ollama      │    │     FFmpeg      │
+│  (AI Models)    │    │   (BtbN Build)  │
+└─────────────────┘    └─────────────────┘
+```
+
+## Quality Control Features
+
+### 19 QC Analysis Categories
+
+| Category | Description | Standards |
+|----------|-------------|-----------|
+| AFD Analysis | Active Format Description | ITU-R BT.1868 |
+| Dead Pixel Detection | Pixel defect analysis | Computer Vision |
+| PSE Flash Analysis | Epilepsy safety | ITC/Ofcom, ITU-R BT.1702 |
+| HDR Analysis | HDR content validation | HDR10, Dolby Vision, HLG |
+| Audio Wrapping | Professional audio formats | BWF, RF64, AES3 |
+| Endianness Detection | Binary format compatibility | - |
+| Codec Analysis | Codec validation | - |
+| Container Validation | Format compliance | MP4, MKV, MOV |
+| Resolution Analysis | Aspect ratio validation | - |
+| Frame Rate Analysis | Temporal accuracy | Broadcast standards |
+| Bitdepth Analysis | Color depth validation | 8/10/12-bit |
+| Timecode Analysis | SMPTE timecode | SMPTE 12M |
+| MXF Analysis | Broadcast format | SMPTE ST 377 |
+| IMF Compliance | Distribution format | SMPTE ST 2067 |
+| Transport Stream | MPEG-TS analysis | MPEG-TS |
+| Content Analysis | Scene/motion analysis | - |
+| Enhanced Analysis | Quality metrics | - |
+| Stream Disposition | Accessibility | Section 508 |
+| Data Integrity | Error/hash validation | CRC32, MD5 |
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `8080` | API port |
+| `LOG_LEVEL` | `info` | Log level (debug, info, warn, error) |
+| `FFPROBE_PATH` | `ffprobe` | Path to FFprobe binary |
+| `DB_PATH` | `./data/ffprobe.db` | SQLite database path |
+| `VALKEY_URL` | `valkey:6379` | Valkey/Redis connection |
+
+### Security Configuration
+
+| Variable | Description |
+|----------|-------------|
+| `JWT_SECRET` | JWT signing secret (required in production) |
+| `API_KEY` | API key for authentication |
+| `RATE_LIMIT_RPM` | Rate limit per minute |
+
+## Management Commands
+
+```bash
+# Service Management
+make start      # Start all services
+make stop       # Stop all services
+make restart    # Restart services
+make status     # Show status
+make logs       # View logs
+make health     # Check health
 
 # Development
-make dev                # Development environment
-make shell              # Access API container
-make db-shell           # Access database
-make valkey-shell       # Access Valkey
+make test-unit       # Run unit tests
+make test-coverage   # Run tests with coverage
+make lint            # Run linter
 
 # Maintenance
-make update             # Update to latest versions
-make backup             # Create backup
-make clean              # Clean everything
+make update     # Update services
+make backup     # Create backup
+make clean      # Clean everything
 ```
 
-## 📊 Monitoring & Observability
+## Testing
 
-### **🔍 Production Monitoring (Docker Infrastructure)**
-- **Prometheus metrics** with custom recording rules and alerting
-- **Grafana dashboards** with pre-built visualizations for FFprobe API
-- **Jaeger tracing** for distributed request tracking
-- **Automated alerting** for service health, performance, and security
-- **Log aggregation** with structured JSON logging
-- **Health checks** with dependency monitoring and circuit breakers
-
-**Monitor everything:**
-- Application performance (response times, error rates, throughput)
-- Infrastructure resources (CPU, memory, disk, network)
-- Business metrics (video processing rates, quality scores)
-- Security events (failed auth, rate limits, suspicious activity)
-
-### **📈 Basic Monitoring (All Deployments)**
-- Service health endpoints
-- Dependency health validation  
-- Model availability checking
-- Resource usage monitoring
-- Simple metrics collection
-## 🔄 Updates & Maintenance
-
-### Automatic Updates
-- **FFmpeg**: Latest stable BtbN builds
-- **AI Models**: Model version management
-- **Security**: Regular security updates
-- **Dependencies**: Container base image updates
-
-### Manual Commands
 ```bash
-# Update everything
-make update
+# Run all tests
+make test-unit
 
-# Update specific components
-./scripts/ffmpeg-update.sh check
-./scripts/ffmpeg-update.sh update --allow-major
+# Run with coverage
+make test-coverage
 
-# Model management
-docker compose exec ollama ollama list
-docker compose exec ollama ollama pull gemma3:270m
+# Run specific package
+go test -v ./internal/ffmpeg/...
+
+# Run with race detection
+make test-race
 ```
 
-## 🐛 Troubleshooting
+Current test coverage:
+- config: 50.3%
+- middleware: 22.3%
+- ffmpeg: 6.0%
 
-### Common Issues
+## Troubleshooting
 
-#### Services won't start
+### Services Won't Start
+
 ```bash
 # Check Docker
 docker --version
@@ -560,63 +465,72 @@ docker compose version
 make logs
 
 # Reset everything
-make reset
+make clean && make quick
 ```
 
-#### Port conflicts
+### Port Conflicts
+
 ```bash
-# Check ports
+# Check port usage
 lsof -i :8080
-lsof -i :5432
 
-# Use custom ports
-export API_PORT=8081
-export POSTGRES_PORT=5433
-make quick
+# Use different port
+PORT=8081 make quick
 ```
 
-#### Models not downloading
+### FFprobe Validation Fails
+
 ```bash
-# Check Ollama
-curl http://localhost:11434/api/version
+# Check FFprobe in container
+docker compose exec api ffprobe -version
 
-# Manual download
-docker compose exec ollama ollama pull gemma3:270m
+# Rebuild container
+make clean && make quick
 ```
 
-## 📚 Documentation
+## Documentation
 
-### **🐳 Production Docker Infrastructure**
-- **[🏭 Docker Production Guide](docker-image/README-DOCKER-PRODUCTION.md)** - Complete production deployment
-- **[🔧 Build System](docker-image/README-DOCKER-PRODUCTION.md#build-system)** - Multi-stage builds and optimization
-- **[🔒 Security Guide](docker-image/README-DOCKER-PRODUCTION.md#security)** - Security hardening and compliance
-- **[📊 Monitoring Setup](docker-image/README-DOCKER-PRODUCTION.md#monitoring--observability)** - Prometheus, Grafana, alerts
+- **[QC Analysis List](docs/QC_ANALYSIS_LIST.md)** - All 19 QC categories
+- **[Changelog](CHANGELOG.md)** - Version history
+- **[TODO](TODO.md)** - Roadmap and tasks
 
-### **📖 Application Documentation**
-- **[📖 Complete Documentation](docs/README.md)** - Full documentation index  
-- **[📡 API Reference](docs/api/README.md)** - REST and GraphQL APIs
-- **[🔍 QC Features](docs/QC_ANALYSIS_LIST.md)** - All 20+ quality control categories
-- **[🏢 Production Guide](docs/deployment/README.md)** - Enterprise deployment
-- **[🤖 AI Setup](docs/tutorials/local-llm-setup.md)** - Local AI analysis setup
+## Roadmap
 
-## 🤝 Contributing
+### Completed Features (v2.0.0)
+
+- [x] GraphQL API endpoint
+- [x] URL-based file analysis
+- [x] HLS stream analysis endpoint
+- [x] Batch processing API
+- [x] WebSocket progress streaming
+- [x] LLM-powered analysis insights
+
+### Planned Features
+
+- [ ] Webhook callbacks for async processing
+- [ ] DASH stream analysis
+- [ ] Compare multiple files side-by-side
+- [ ] Custom QC rule definitions
+
+## Contributing
 
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+4. Run tests (`make test-unit`)
+5. Commit your changes
+6. Push to the branch
+7. Open a Pull Request
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Support
+## Support
 
+- **Issues**: [GitHub Issues](https://github.com/rendiffdev/ffprobe-api/issues)
 - **Documentation**: [docs/](docs/)
-- **Issues**: Create GitHub Issues for bug reports
-- **Questions**: Check documentation or create discussions
 
 ---
 
-**Built with ❤️ for the video processing community**
+**Built for the video processing community**

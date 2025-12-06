@@ -459,8 +459,8 @@ func (u *FFmpegUpdater) DownloadUpdate(ctx context.Context, version *FFmpegVersi
 
 	// Install new binaries
 	if err := u.installBinaries(tempDir); err != nil {
-		// Rollback on failure
-		u.rollback()
+		// Rollback on failure (best effort)
+		_ = u.rollback()
 		return fmt.Errorf("failed to install new binaries: %w", err)
 	}
 

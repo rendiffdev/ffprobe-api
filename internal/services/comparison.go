@@ -772,7 +772,7 @@ func (s *ComparisonService) markComparisonFailed(ctx context.Context, comparison
 		ErrorMsg:  &errorMsg,
 		UpdatedAt: time.Now(),
 	}
-	s.comparisonRepo.Update(ctx, comparison)
+	_ = s.comparisonRepo.Update(ctx, comparison) // Best effort update on failure
 }
 
 // generateLLMAssessment generates an AI-powered assessment of the comparison

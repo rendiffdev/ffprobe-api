@@ -79,9 +79,7 @@ func (s *UserService) ListUsers(ctx context.Context, role string, limit, offset 
 	query += ` ORDER BY created_at DESC LIMIT $2 OFFSET $3`
 
 	// Get total count
-	var args []interface{}
 	if role != "" {
-		args = append(args, role)
 		err := s.db.GetContext(ctx, &total, countQuery, role)
 		if err != nil {
 			return nil, 0, fmt.Errorf("failed to get user count: %w", err)

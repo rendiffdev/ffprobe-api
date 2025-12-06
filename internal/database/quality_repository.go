@@ -767,7 +767,7 @@ func (r *qualityRepository) GetQualityStatistics(ctx context.Context, filters Qu
 	if filters.Status != nil {
 		query += fmt.Sprintf(" AND status = $%d", argIndex)
 		args = append(args, *filters.Status)
-		argIndex++
+		_ = argIndex // Last filter, no need to increment
 	}
 
 	var stats QualityStatistics

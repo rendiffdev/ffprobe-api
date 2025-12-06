@@ -1,10 +1,10 @@
 package handlers
 
 import (
-	"encoding/json"
+	"io"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 	"github.com/rendiffdev/ffprobe-api/internal/services"
 	"github.com/rs/zerolog"
 )
@@ -24,34 +24,33 @@ func NewFFmpegVersionHandler(updater *services.FFmpegUpdater, logger zerolog.Log
 }
 
 // GetCurrentVersion returns the current FFmpeg version
-func (h *FFmpegVersionHandler) GetCurrentVersion(w http.ResponseWriter, r *http.Request) {
+func (h *FFmpegVersionHandler) GetCurrentVersion(c *gin.Context) {
 	version, err := h.updater.GetCurrentVersion()
 	if err != nil {
 		h.logger.Error().Err(err).Msg("Failed to get current FFmpeg version")
-		http.Error(w, "Failed to get current version", http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get current version"})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	c.JSON(http.StatusOK, gin.H{
 		"version": version,
 		"status":  "current",
 	})
 }
 
 // CheckForUpdates checks for available FFmpeg updates
-func (h *FFmpegVersionHandler) CheckForUpdates(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+func (h *FFmpegVersionHandler) CheckForUpdates(c *gin.Context) {
+	ctx := c.Request.Context()
 
 	updateInfo, err := h.updater.CheckForUpdates(ctx)
 	if err != nil {
 		h.logger.Error().Err(err).Msg("Failed to check for updates")
-		http.Error(w, "Failed to check for updates", http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check for updates"})
 		return
 	}
 
 	// Add user action required flag for major updates
-	response := map[string]interface{}{
+	c.JSON(http.StatusOK, gin.H{
 		"current":                updateInfo.Current,
 		"available":              updateInfo.Available,
 		"update_available":       updateInfo.Available != nil && h.updater.CompareVersions(updateInfo.Available, updateInfo.Current) > 0,
@@ -61,44 +60,40 @@ func (h *FFmpegVersionHandler) CheckForUpdates(w http.ResponseWriter, r *http.Re
 		"stability":              updateInfo.Stability,
 		"recommendation":         updateInfo.Recommendation,
 		"user_approval_required": updateInfo.IsMajor, // Require approval for major updates
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	})
 }
 
 // UpdateFFmpeg handles FFmpeg update requests
-func (h *FFmpegVersionHandler) UpdateFFmpeg(w http.ResponseWriter, r *http.Request) {
+func (h *FFmpegVersionHandler) UpdateFFmpeg(c *gin.Context) {
 	var req struct {
 		Confirm bool   `json:"confirm"`
 		Version string `json:"version,omitempty"`
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
 
 	// Check if user confirmed the update
 	if !req.Confirm {
-		http.Error(w, "Update must be confirmed", http.StatusBadRequest)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Update must be confirmed"})
 		return
 	}
 
-	ctx := r.Context()
+	ctx := c.Request.Context()
 
 	// Get update information
 	updateInfo, err := h.updater.CheckForUpdates(ctx)
 	if err != nil {
 		h.logger.Error().Err(err).Msg("Failed to check for updates")
-		http.Error(w, "Failed to check for updates", http.StatusInternalServerError)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check for updates"})
 		return
 	}
 
 	// Check if update is available
 	if h.updater.CompareVersions(updateInfo.Available, updateInfo.Current) <= 0 {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{
+		c.JSON(http.StatusOK, gin.H{
 			"status":  "no_update",
 			"message": "Already on the latest version",
 		})
@@ -113,8 +108,7 @@ func (h *FFmpegVersionHandler) UpdateFFmpeg(w http.ResponseWriter, r *http.Reque
 			Msg("Major FFmpeg update requested")
 
 		// Send warning about major update
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		c.JSON(http.StatusOK, gin.H{
 			"status":          "major_update_warning",
 			"message":         "This is a major version upgrade that may contain breaking changes",
 			"current":         updateInfo.Current,
@@ -138,68 +132,50 @@ func (h *FFmpegVersionHandler) UpdateFFmpeg(w http.ResponseWriter, r *http.Reque
 	}()
 
 	// Stream progress to client using Server-Sent Events
-	w.Header().Set("Content-Type", "text/event-stream")
-	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
 
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
-		return
-	}
-
-	for {
+	c.Stream(func(w io.Writer) bool {
 		select {
 		case progress, ok := <-progressChan:
 			if !ok {
 				// Channel closed, check for error
 				if err := <-errorChan; err != nil {
 					h.logger.Error().Err(err).Msg("FFmpeg update failed")
-					json.NewEncoder(w).Encode(map[string]string{
-						"event": "error",
-						"data":  err.Error(),
-					})
+					c.SSEvent("error", gin.H{"data": err.Error()})
 				} else {
-					json.NewEncoder(w).Encode(map[string]string{
-						"event": "complete",
-						"data":  "FFmpeg updated successfully",
-					})
+					c.SSEvent("complete", gin.H{"data": "FFmpeg updated successfully"})
 				}
-				return
+				return false
 			}
+			c.SSEvent("progress", gin.H{"percent": progress})
+			return true
 
-			// Send progress update
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"event":   "progress",
-				"percent": progress,
-			})
-			flusher.Flush()
-
-		case <-r.Context().Done():
-			// Client disconnected
-			return
+		case <-c.Request.Context().Done():
+			return false
 		}
-	}
+	})
 }
 
 // RollbackFFmpeg rolls back to the previous FFmpeg version
-func (h *FFmpegVersionHandler) RollbackFFmpeg(w http.ResponseWriter, r *http.Request) {
+func (h *FFmpegVersionHandler) RollbackFFmpeg(c *gin.Context) {
 	// This would implement rollback functionality
 	// For now, return a placeholder response
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
+	c.JSON(http.StatusOK, gin.H{
 		"status":  "not_implemented",
 		"message": "Rollback functionality will be available in a future release",
 	})
 }
 
-// RegisterRoutes registers the FFmpeg version management routes
-func (h *FFmpegVersionHandler) RegisterRoutes(router *mux.Router) {
+// RegisterRoutes registers the FFmpeg version management routes with Gin
+func (h *FFmpegVersionHandler) RegisterRoutes(router *gin.RouterGroup) {
 	// Admin routes for FFmpeg version management
-	adminRouter := router.PathPrefix("/api/v1/admin/ffmpeg").Subrouter()
-
-	adminRouter.HandleFunc("/version", h.GetCurrentVersion).Methods("GET")
-	adminRouter.HandleFunc("/check-updates", h.CheckForUpdates).Methods("GET")
-	adminRouter.HandleFunc("/update", h.UpdateFFmpeg).Methods("POST")
-	adminRouter.HandleFunc("/rollback", h.RollbackFFmpeg).Methods("POST")
+	admin := router.Group("/admin/ffmpeg")
+	{
+		admin.GET("/version", h.GetCurrentVersion)
+		admin.GET("/check-updates", h.CheckForUpdates)
+		admin.POST("/update", h.UpdateFFmpeg)
+		admin.POST("/rollback", h.RollbackFFmpeg)
+	}
 }

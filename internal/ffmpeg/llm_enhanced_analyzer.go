@@ -285,7 +285,7 @@ func (lla *LLMEnhancedAnalyzer) callOllama(ctx context.Context, prompt, model st
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("Ollama returned status %d", resp.StatusCode)
+		return "", fmt.Errorf("ollama returned status %d", resp.StatusCode)
 	}
 
 	var ollamaResp OllamaResponse

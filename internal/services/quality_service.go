@@ -26,7 +26,3 @@ func (s *LLMService) GenerateQualityInsightsStub(ctx context.Context, analysis *
 	return "", ErrNotImplemented
 }
 
-// buildQualityInsightsPrompt creates a prompt for quality metrics analysis (stub)
-func (s *LLMService) buildQualityInsightsPromptStub(analysis *models.Analysis, metrics []models.QualityMetrics) string {
-	return ""
-}

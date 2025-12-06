@@ -120,7 +120,7 @@ func (rl *RateLimitMiddleware) RateLimit() gin.HandlerFunc {
 			c.Header("X-RateLimit-Limit", strconv.Itoa(limits.RequestsPerMinute))
 			c.Header("X-RateLimit-Remaining", "0")
 			c.Header("X-RateLimit-Reset", strconv.FormatInt(retryAfter.Unix(), 10))
-			c.Header("Retry-After", strconv.FormatInt(int64(retryAfter.Sub(time.Now()).Seconds()), 10))
+			c.Header("Retry-After", strconv.FormatInt(int64(time.Until(retryAfter).Seconds()), 10))
 
 			c.JSON(http.StatusTooManyRequests, gin.H{
 				"error":       "Rate limit exceeded",
@@ -139,79 +139,6 @@ func (rl *RateLimitMiddleware) RateLimit() gin.HandlerFunc {
 
 		c.Next()
 	}
-}
-
-// checkRateLimit checks if request is within rate limits
-func (rl *RateLimitMiddleware) checkRateLimit(identifier string) bool {
-	now := time.Now()
-
-	// Check minute limit
-	if !rl.checkWindow(identifier, "minute", now, time.Minute, rl.config.RequestsPerMinute) {
-		return false
-	}
-
-	// Check hour limit
-	if !rl.checkWindow(identifier, "hour", now, time.Hour, rl.config.RequestsPerHour) {
-		return false
-	}
-
-	// Check day limit
-	if !rl.checkWindow(identifier, "day", now, 24*time.Hour, rl.config.RequestsPerDay) {
-		return false
-	}
-
-	// Increment counters
-	rl.incrementCounters(identifier, now)
-	return true
-}
-
-// checkWindow checks if request is within window limit
-func (rl *RateLimitMiddleware) checkWindow(identifier, window string, now time.Time, duration time.Duration, limit int) bool {
-	var windowMap map[string]*WindowCounter
-
-	switch window {
-	case "minute":
-		windowMap = rl.counters.Minute
-	case "hour":
-		windowMap = rl.counters.Hour
-	case "day":
-		windowMap = rl.counters.Day
-	default:
-		return false
-	}
-
-	rl.counters.mutex.RLock()
-	counter, exists := windowMap[identifier]
-	rl.counters.mutex.RUnlock()
-
-	if !exists {
-		return true // First request
-	}
-
-	counter.mutex.RLock()
-	defer counter.mutex.RUnlock()
-
-	// Reset counter if window has expired
-	if now.After(counter.ResetTime) {
-		return true
-	}
-
-	return counter.Count < limit
-}
-
-// incrementCounters increments all relevant counters
-func (rl *RateLimitMiddleware) incrementCounters(identifier string, now time.Time) {
-	rl.counters.mutex.Lock()
-	defer rl.counters.mutex.Unlock()
-
-	// Increment minute counter
-	rl.incrementCounter(rl.counters.Minute, identifier, now, time.Minute)
-
-	// Increment hour counter
-	rl.incrementCounter(rl.counters.Hour, identifier, now, time.Hour)
-
-	// Increment day counter
-	rl.incrementCounter(rl.counters.Day, identifier, now, 24*time.Hour)
 }
 
 // incrementCounter increments a specific window counter and returns the new count
@@ -238,26 +165,6 @@ func (rl *RateLimitMiddleware) incrementCounter(windowMap map[string]*WindowCoun
 		counter.Count++
 		return counter.Count
 	}
-}
-
-// getRemainingRequests gets remaining requests for identifier
-func (rl *RateLimitMiddleware) getRemainingRequests(identifier string) int {
-	rl.counters.mutex.RLock()
-	defer rl.counters.mutex.RUnlock()
-
-	counter, exists := rl.counters.Minute[identifier]
-	if !exists {
-		return rl.config.RequestsPerMinute
-	}
-
-	counter.mutex.RLock()
-	defer counter.mutex.RUnlock()
-
-	remaining := rl.config.RequestsPerMinute - counter.Count
-	if remaining < 0 {
-		return 0
-	}
-	return remaining
 }
 
 // getRetryAfter gets retry after time for identifier

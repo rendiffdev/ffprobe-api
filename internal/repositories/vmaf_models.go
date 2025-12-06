@@ -254,7 +254,7 @@ func (r *VMAFModelRepository) SetDefault(ctx context.Context, id uuid.UUID) erro
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// Remove default from all models
 	_, err = tx.ExecContext(ctx, `UPDATE vmaf_models SET is_default = false WHERE is_default = true`)

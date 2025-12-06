@@ -89,15 +89,15 @@ func validateGCSConfig(cfg Config) error {
 // validateAzureConfig validates Azure Blob Storage configuration
 func validateAzureConfig(cfg Config) error {
 	if cfg.Bucket == "" {
-		return fmt.Errorf("Azure container name cannot be empty")
+		return fmt.Errorf("azure container name cannot be empty")
 	}
 
 	if cfg.AccessKey == "" {
-		return fmt.Errorf("Azure account name cannot be empty")
+		return fmt.Errorf("azure account name cannot be empty")
 	}
 
 	if cfg.SecretKey == "" {
-		return fmt.Errorf("Azure account key cannot be empty")
+		return fmt.Errorf("azure account key cannot be empty")
 	}
 
 	// Validate container name
@@ -244,7 +244,7 @@ func validateGCSBucketName(bucket string) error {
 // validateAzureContainerName validates Azure container name
 func validateAzureContainerName(container string) error {
 	if len(container) < 3 || len(container) > 63 {
-		return fmt.Errorf("Azure container name must be between 3 and 63 characters")
+		return fmt.Errorf("azure container name must be between 3 and 63 characters")
 	}
 
 	// Azure container name pattern
@@ -255,12 +255,12 @@ func validateAzureContainerName(container string) error {
 	}
 
 	if !matched {
-		return fmt.Errorf("Azure container name contains invalid characters")
+		return fmt.Errorf("azure container name contains invalid characters")
 	}
 
 	// Cannot contain consecutive dashes
 	if strings.Contains(container, "--") {
-		return fmt.Errorf("Azure container name cannot contain consecutive dashes")
+		return fmt.Errorf("azure container name cannot contain consecutive dashes")
 	}
 
 	return nil

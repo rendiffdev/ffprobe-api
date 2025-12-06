@@ -147,8 +147,8 @@ type PlatformCompatibility struct {
 	Recommendations   []string `json:"recommendations,omitempty"`
 }
 
-// Known file signatures and their endianness
-var fileSignatures = map[string]string{
+// Known file signatures and their endianness (reserved for future use)
+var _ = map[string]string{
 	"ftyp":             "big",      // MP4 file type box (big endian)
 	"RIFF":             "little",   // RIFF header (little endian)
 	"RIFX":             "big",      // RIFF big endian variant
@@ -437,7 +437,9 @@ func (ea *EndiannessAnalyzer) analyzeRawBinaryData(filePath string, analysis *En
 			sampleSize = fileSize - offset
 		}
 
-		file.Seek(offset, 0)
+		if _, err := file.Seek(offset, 0); err != nil {
+			continue
+		}
 		sampleData := make([]byte, sampleSize)
 		n, err := file.Read(sampleData)
 		if err != nil && err != io.EOF {

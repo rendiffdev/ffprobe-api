@@ -1,0 +1,285 @@
+# FFprobe API - Production Alert Rules
+# Comprehensive alerting for application health, performance, and business metrics
+
+groups:
+  - name: ffprobe-api.rules
+    interval: 30s
+    rules:
+      # Application Health Alerts
+      - alert: FFprobeAPIDown
+        expr: up{job="ffprobe-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: ffprobe-api
+          category: availability
+        annotations:
+          summary: "FFprobe API instance is down"
+          description: "FFprobe API instance {{ $labels.instance }} has been down for more than 1 minute."
+          runbook_url: "https://runbooks.company.com/ffprobe-api/instance-down"
+
+      - alert: FFprobeAPIHealthCheckFailing
+        expr: ffprobe_health_check_status != 1
+        for: 2m
+        labels:
+          severity: warning
+          service: ffprobe-api
+          category: health
+        annotations:
+          summary: "FFprobe API health check failing"
+          description: "Health check for FFprobe API instance {{ $labels.instance }} has been failing for {{ $value }} checks."
+
+      # Performance Alerts
+      - alert: FFprobeAPIHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="ffprobe-api"}[5m])) > 5
+        for: 3m
+        labels:
+          severity: warning
+          service: ffprobe-api
+          category: performance
+        annotations:
+          summary: "FFprobe API high response time"
+          description: "95th percentile response time for {{ $labels.instance }} is {{ $value }}s, exceeding 5s threshold."
+
+      - alert: FFprobeAPIHighErrorRate
+        expr: rate(http_requests_total{job="ffprobe-api",status=~"5.."}[5m]) / rate(http_requests_total{job="ffprobe-api"}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: ffprobe-api
+          category: errors
+        annotations:
+          summary: "FFprobe API high error rate"
+          description: "Error rate for {{ $labels.instance }} is {{ $value | humanizePercentage }}, exceeding 5% threshold."
+
+      - alert: FFprobeAPIHighConcurrency
+        expr: ffprobe_concurrent_jobs > 20
+        for: 5m
+        labels:
+          severity: warning
+          service: ffprobe-api
+          category: capacity
+        annotations:
+          summary: "FFprobe API high concurrency"
+          description: "Concurrent job count for {{ $labels.instance }} is {{ $value }}, approaching limits."
+
+      # Resource Utilization Alerts
+      - alert: FFprobeAPIHighMemoryUsage
+        expr: process_resident_memory_bytes{job="ffprobe-api"} / container_spec_memory_limit_bytes > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: ffprobe-api
+          category: resources
+        annotations:
+          summary: "FFprobe API high memory usage"
+          description: "Memory usage for {{ $labels.instance }} is {{ $value | humanizePercentage }}, exceeding 80% of limit."
+
+      - alert: FFprobeAPIHighCPUUsage
+        expr: rate(process_cpu_seconds_total{job="ffprobe-api"}[5m]) > 1.5
+        for: 5m
+        labels:
+          severity: warning
+          service: ffprobe-api
+          category: resources
+        annotations:
+          summary: "FFprobe API high CPU usage"
+          description: "CPU usage for {{ $labels.instance }} is {{ $value | humanizePercentage }}, exceeding 150% threshold."
+
+      # Video Processing Alerts
+      - alert: FFmpegProcessingFailureRate
+        expr: rate(ffprobe_analysis_failures_total[5m]) / rate(ffprobe_analysis_total[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: warning
+          service: ffprobe-api
+          category: processing
+        annotations:
+          summary: "High FFmpeg processing failure rate"
+          description: "FFmpeg processing failure rate is {{ $value | humanizePercentage }}, exceeding 10% threshold."
+
+      - alert: FFmpegProcessingQueueBacklog
+        expr: ffprobe_processing_queue_size > 100
+        for: 5m
+        labels:
+          severity: warning
+          service: ffprobe-api
+          category: processing
+        annotations:
+          summary: "FFmpeg processing queue backlog"
+          description: "Processing queue size is {{ $value }}, indicating potential bottleneck."
+
+      - alert: LongRunningFFmpegJobs
+        expr: ffprobe_job_duration_seconds > 300
+        for: 1m
+        labels:
+          severity: warning
+          service: ffprobe-api
+          category: processing
+        annotations:
+          summary: "Long-running FFmpeg job detected"
+          description: "FFmpeg job {{ $labels.job_id }} has been running for {{ $value }}s, exceeding 5-minute threshold."
+
+      # Database and Cache Alerts
+      - alert: ValkeyConnectionFailures
+        expr: rate(valkey_connections_failed_total[5m]) > 1
+        for: 2m
+        labels:
+          severity: warning
+          service: valkey
+          category: database
+        annotations:
+          summary: "Valkey connection failures"
+          description: "Valkey connection failure rate is {{ $value }}/sec for {{ $labels.instance }}."
+
+      - alert: ValkeyHighMemoryUsage
+        expr: valkey_memory_used_bytes / valkey_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: critical
+          service: valkey
+          category: resources
+        annotations:
+          summary: "Valkey high memory usage"
+          description: "Valkey memory usage is {{ $value | humanizePercentage }}, approaching maximum."
+
+      - alert: SQLiteHighDiskUsage
+        expr: node_filesystem_avail_bytes{mountpoint="/app/data"} / node_filesystem_size_bytes{mountpoint="/app/data"} < 0.1
+        for: 5m
+        labels:
+          severity: critical
+          service: ffprobe-api
+          category: storage
+        annotations:
+          summary: "SQLite database disk space low"
+          description: "Available disk space for SQLite database is {{ $value | humanizePercentage }}."
+
+      # AI/LLM Service Alerts
+      - alert: OllamaServiceDown
+        expr: up{job="ollama"} == 0
+        for: 3m
+        labels:
+          severity: warning
+          service: ollama
+          category: ai
+        annotations:
+          summary: "Ollama AI service is down"
+          description: "Ollama service has been unreachable for more than 3 minutes."
+
+      - alert: OllamaHighInferenceTime
+        expr: histogram_quantile(0.95, rate(ollama_inference_duration_seconds_bucket[5m])) > 30
+        for: 5m
+        labels:
+          severity: warning
+          service: ollama
+          category: ai
+        annotations:
+          summary: "Ollama high inference time"
+          description: "95th percentile inference time is {{ $value }}s, exceeding 30s threshold."
+
+      # Security and Authentication Alerts
+      - alert: HighFailedAuthAttempts
+        expr: rate(auth_failed_attempts_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: ffprobe-api
+          category: security
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Failed authentication rate is {{ $value }}/sec, indicating potential attack."
+
+      - alert: UnauthorizedAPIAccess
+        expr: rate(http_requests_total{status="401"}[5m]) > 5
+        for: 3m
+        labels:
+          severity: warning
+          service: ffprobe-api
+          category: security
+        annotations:
+          summary: "High unauthorized access attempts"
+          description: "Unauthorized access attempt rate is {{ $value }}/sec."
+
+      # Network and Infrastructure Alerts
+      - alert: TraefikHighErrorRate
+        expr: rate(traefik_service_requests_total{code=~"5.."}[5m]) / rate(traefik_service_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          service: traefik
+          category: network
+        annotations:
+          summary: "Traefik high error rate"
+          description: "Traefik error rate is {{ $value | humanizePercentage }} for service {{ $labels.service }}."
+
+      - alert: ContainerRestarting
+        expr: rate(container_start_time_seconds[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          category: infrastructure
+        annotations:
+          summary: "Container restarting frequently"
+          description: "Container {{ $labels.name }} is restarting frequently."
+
+      # Business Logic Alerts
+      - alert: VideoQualityAnalysisFailures
+        expr: rate(ffprobe_quality_analysis_failures_total[10m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: ffprobe-api
+          category: business
+        annotations:
+          summary: "Video quality analysis failures increasing"
+          description: "Quality analysis failure rate is {{ $value }}/sec, affecting video processing."
+
+      - alert: LowVideoProcessingThroughput
+        expr: rate(ffprobe_videos_processed_total[10m]) < 1
+        for: 10m
+        labels:
+          severity: warning
+          service: ffprobe-api
+          category: business
+        annotations:
+          summary: "Low video processing throughput"
+          description: "Video processing rate is {{ $value }}/sec, below expected throughput."
+
+      - alert: HighStorageGrowthRate
+        expr: predict_linear(node_filesystem_avail_bytes{mountpoint="/app/uploads"}[6h], 24*3600) < 0
+        for: 1h
+        labels:
+          severity: warning
+          service: ffprobe-api
+          category: capacity
+        annotations:
+          summary: "Storage will be full soon"
+          description: "Upload storage is predicted to be full within 24 hours based on current growth rate."
+
+  - name: ffprobe-api.recording-rules
+    interval: 30s
+    rules:
+      # Recording rules for efficient querying and alerting
+      - record: ffprobe:request_rate_5m
+        expr: rate(http_requests_total{job="ffprobe-api"}[5m])
+
+      - record: ffprobe:error_rate_5m
+        expr: rate(http_requests_total{job="ffprobe-api",status=~"5.."}[5m])
+
+      - record: ffprobe:response_time_95p_5m
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="ffprobe-api"}[5m]))
+
+      - record: ffprobe:concurrent_jobs_avg_5m
+        expr: avg_over_time(ffprobe_concurrent_jobs[5m])
+
+      - record: ffprobe:processing_throughput_5m
+        expr: rate(ffprobe_videos_processed_total[5m])
+
+      - record: ffprobe:cache_hit_rate_5m
+        expr: rate(cache_hits_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m]))
+
+      - record: ffprobe:memory_usage_percent
+        expr: process_resident_memory_bytes{job="ffprobe-api"} / container_spec_memory_limit_bytes * 100
+
+      - record: ffprobe:cpu_usage_percent
+        expr: rate(process_cpu_seconds_total{job="ffprobe-api"}[5m]) * 100

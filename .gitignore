@@ -103,8 +103,12 @@ docker-compose.override.yml
 compose.override.yml
 compose.override.yaml
 
-# Docker image build directory (contains large files and build contexts)
-docker-image/
+# Docker build artifacts and data directories
+docker-image/data/
+docker-image/volumes/
+docker-image/secrets/
+docker-image/.env
+!docker-image/.env.example
 
 # Docker volumes and data
 data/
@@ -198,12 +202,14 @@ certs/
 # Monitoring & Metrics
 # =============================================================================
 
-# Prometheus data
+# Prometheus data (but keep docker-image configs)
 prometheus/
 metrics/
+!docker-image/config/prometheus/
 
-# Grafana data
+# Grafana data (but keep docker-image configs)
 grafana/
+!docker-image/config/grafana/
 
 # =============================================================================
 # Testing
@@ -228,9 +234,22 @@ doc/latex/
 *.pdf
 *.html
 
-# Internal QC documentation (not for public repo)
+# Internal documentation (not for public repo)
 qc.md
 ENHANCED_ANALYSIS.md
+*AUDIT*.md
+*READINESS*.md
+PRODUCT_READINESS_*.md
+SECURITY_AUDIT_*.md
+TODO.md
+RAILWAY-DEPLOY.md
+DOCKER-IMAGES.md
+
+# Production templates (keep examples but not actual configs)
+.env.production
+.env.staging
+!.env.example
+!.env.production.template
 
 # =============================================================================
 # Cloud & Infrastructure

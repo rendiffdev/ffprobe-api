@@ -159,15 +159,15 @@ func (s *SecretRotationService) GenerateAPIKey(ctx context.Context, userID, tena
 		return nil, "", fmt.Errorf("failed to store API key: %w", err)
 	}
 
-	// Cache key metadata in Redis for fast lookup
+	// Cache key metadata in Redis for fast lookup (best effort)
 	cacheKey := fmt.Sprintf("apikey:%s:meta", keyPrefix)
-	s.cache.HSet(ctx, cacheKey, map[string]interface{}{
+	_ = s.cache.HSet(ctx, cacheKey, map[string]interface{}{
 		"user_id":   userID,
 		"tenant_id": tenantID,
 		"key_id":    apiKey.ID,
 		"status":    "active",
 	})
-	s.cache.Expire(ctx, cacheKey, 24*time.Hour)
+	_ = s.cache.Expire(ctx, cacheKey, 24*time.Hour)
 
 	s.logger.Info().
 		Str("user_id", userID).
@@ -203,9 +203,9 @@ func (s *SecretRotationService) RotateAPIKey(ctx context.Context, keyID string) 
 		return nil, "", fmt.Errorf("failed to update old key: %w", err)
 	}
 
-	// Invalidate old key cache
+	// Invalidate old key cache (best effort)
 	oldCacheKey := fmt.Sprintf("apikey:%s:meta", oldKey.KeyPrefix)
-	s.cache.Del(ctx, oldCacheKey)
+	_ = s.cache.Del(ctx, oldCacheKey)
 
 	s.logger.Info().
 		Str("old_key_id", keyID).
@@ -252,7 +252,7 @@ func (s *SecretRotationService) RotateJWTSecret(ctx context.Context) (*JWTSecret
 	if err != nil {
 		return nil, fmt.Errorf("failed to start transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	// Deactivate old secrets (keep for verification during grace period)
 	_, err = tx.ExecContext(ctx,
@@ -276,9 +276,9 @@ func (s *SecretRotationService) RotateJWTSecret(ctx context.Context) (*JWTSecret
 		return nil, fmt.Errorf("failed to insert new JWT secret: %w", err)
 	}
 
-	// Cache new secret for fast access
-	s.cache.Set(ctx, "jwt:secret:active", newSecret, s.config.RotationInterval)
-	s.cache.Set(ctx, "jwt:version:active", jwtSecret.Version, s.config.RotationInterval)
+	// Cache new secret for fast access (best effort)
+	_ = s.cache.Set(ctx, "jwt:secret:active", newSecret, s.config.RotationInterval)
+	_ = s.cache.Set(ctx, "jwt:version:active", jwtSecret.Version, s.config.RotationInterval)
 
 	// Commit transaction
 	if err = tx.Commit(); err != nil {
@@ -426,16 +426,16 @@ func (s *SecretRotationService) SetUserRateLimits(ctx context.Context, keyID str
 		return fmt.Errorf("failed to update rate limits: %w", err)
 	}
 
-	// Update cache
+	// Update cache (best effort)
 	var key APIKey
 	if err = s.db.GetContext(ctx, &key, "SELECT * FROM api_keys WHERE id = $1", keyID); err == nil {
 		cacheKey := fmt.Sprintf("apikey:%s:limits", key.KeyPrefix)
-		s.cache.HSet(ctx, cacheKey, map[string]interface{}{
+		_ = s.cache.HSet(ctx, cacheKey, map[string]interface{}{
 			"rpm": rpm,
 			"rph": rph,
 			"rpd": rpd,
 		})
-		s.cache.Expire(ctx, cacheKey, 24*time.Hour)
+		_ = s.cache.Expire(ctx, cacheKey, 24*time.Hour)
 	}
 
 	return nil

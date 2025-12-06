@@ -136,16 +136,16 @@ func validateOpenAIConfig(config *LLMConfig) error {
 // validateAnthropicConfig validates Anthropic-specific configuration
 func validateAnthropicConfig(config *LLMConfig) error {
 	if config.APIKey == "" {
-		return fmt.Errorf("Anthropic API key cannot be empty")
+		return fmt.Errorf("anthropic API key cannot be empty")
 	}
 
 	// Check API key format (starts with sk-ant-)
 	if !strings.HasPrefix(config.APIKey, "sk-ant-") {
-		return fmt.Errorf("Anthropic API key should start with 'sk-ant-'")
+		return fmt.Errorf("anthropic API key should start with 'sk-ant-'")
 	}
 
 	if len(config.APIKey) < 30 {
-		return fmt.Errorf("Anthropic API key appears invalid (too short)")
+		return fmt.Errorf("anthropic API key appears invalid (too short)")
 	}
 
 	// Validate model
@@ -189,7 +189,7 @@ func validateOllamaConfig(config *LLMConfig) error {
 
 	// Validate model name
 	if config.Model == "" {
-		return fmt.Errorf("Ollama model name cannot be empty")
+		return fmt.Errorf("ollama model name cannot be empty")
 	}
 
 	// Basic model name validation (alphanumeric, dash, underscore, colon)

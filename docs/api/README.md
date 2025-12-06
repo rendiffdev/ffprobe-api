@@ -1,332 +1,606 @@
 # FFprobe API Reference
 
-**🧠 AI-Powered Video Analysis API - Beyond Traditional FFprobe**
-
-**The only media analysis API with built-in GenAI intelligence** - transforming raw FFprobe data into actionable professional insights, recommendations, and risk assessments.
-
-**Key GenAI Differentiator:** Every endpoint supports `"include_llm": true` parameter for AI-powered analysis
+**Professional Video Analysis API with 19 QC Categories**
 
 ## Base URL
 
 ```
-http://localhost:8080/api/v1
+http://localhost:8080
 ```
 
 ## Authentication
 
-The API supports multiple authentication methods:
+Authentication is optional in development mode. In production, the API supports:
 
-### API Key Authentication (Recommended)
+### API Key Authentication
 ```bash
 curl -H "X-API-Key: your-api-key" \
-     -H "Content-Type: application/json" \
      http://localhost:8080/api/v1/probe/file
 ```
 
 ### JWT Token Authentication
 ```bash
 curl -H "Authorization: Bearer your-jwt-token" \
-     -H "Content-Type: application/json" \
      http://localhost:8080/api/v1/probe/file
 ```
 
-## Core API Endpoints
+## API Endpoints
 
-### 🎬 Video Analysis
+### Health Check
 
-| Endpoint | Method | Description | Authentication |
-|----------|--------|-------------|----------------|
-| `/probe/file` | POST | Analyze uploaded video file | Required |
-| `/probe/url` | POST | Analyze video from URL | Required |
-| `/probe/quick` | POST | Fast basic analysis | Required |
-| `/probe/hls` | POST | Analyze HLS streams | Required |
-| `/probe/status/{id}` | GET | Get analysis status | Required |
-| `/probe/analyses` | GET | List user analyses | Required |
-| `/probe/analyses/{id}` | DELETE | Delete analysis | Required |
+```
+GET /health
+```
 
-### 🔍 Quality & Comparison
+Returns service health status and available QC analysis tools.
 
-| Endpoint | Method | Description | Authentication |
-|----------|--------|-------------|----------------|
-| `/quality/compare` | POST | Compare video quality | Required |
-| `/quality/analysis/{id}` | GET | Get quality analysis | Required |
-| `/quality/statistics` | GET | Quality statistics | Required |
-| `/comparisons` | POST | Create video comparison | Required |
-| `/comparisons/{id}` | GET | Get comparison results | Required |
-| `/comparisons` | GET | List comparisons | Required |
+**Response:**
+```json
+{
+  "status": "healthy",
+  "service": "ffprobe-api-core",
+  "qc_tools": [
+    "AFD Analysis",
+    "Dead Pixel Detection",
+    "PSE Flash Analysis",
+    "HDR Analysis",
+    "Audio Wrapping Analysis",
+    "Endianness Detection",
+    "Codec Analysis",
+    "Container Validation",
+    "Resolution Analysis",
+    "Frame Rate Analysis",
+    "Bitdepth Analysis",
+    "Timecode Analysis",
+    "MXF Analysis",
+    "IMF Compliance",
+    "Transport Stream Analysis",
+    "Content Analysis",
+    "Enhanced Analysis",
+    "Stream Disposition Analysis",
+    "Data Integrity Analysis"
+  ],
+  "ffmpeg_validated": true
+}
+```
 
-### 📊 Reports & Data
+### Analyze Video File
 
-| Endpoint | Method | Description | Authentication |
-|----------|--------|-------------|----------------|
-| `/reports/analysis` | POST | Generate analysis report | Required |
-| `/reports/comparison` | POST | Generate comparison report | Required |
-| `/reports/formats` | GET | List report formats | Required |
-| `/probe/raw/{id}` | GET | Get raw FFprobe data | Required |
-| `/probe/download/{id}` | GET | Download report | Required |
+```
+POST /api/v1/probe/file
+Content-Type: multipart/form-data
+```
 
-### ⚡ Batch & Streaming
+Upload and analyze a video or audio file with comprehensive QC analysis.
 
-| Endpoint | Method | Description | Authentication |
-|----------|--------|-------------|----------------|
-| `/batch/analyze` | POST | Batch video processing | Required |
-| `/batch/status/{id}` | GET | Get batch status | Required |
-| `/stream/analysis` | GET | Stream analysis (WebSocket) | Required |
-| `/stream/progress/{id}` | GET | Stream progress | Required |
-
-### 📁 Storage & Upload
-
-| Endpoint | Method | Description | Authentication |
-|----------|--------|-------------|----------------|
-| `/upload` | POST | Upload video file | Required |
-| `/upload/chunk` | POST | Chunked upload | Required |
-| `/storage/upload` | POST | Storage upload | Required |
-| `/storage/download/{key}` | GET | Download from storage | Required |
-
-### 🔐 Authentication & Keys
-
-| Endpoint | Method | Description | Authentication |
-|----------|--------|-------------|----------------|
-| `/auth/login` | POST | User login | None |
-| `/auth/refresh` | POST | Refresh token | None |
-| `/auth/logout` | POST | User logout | Required |
-| `/keys/create` | POST | Create API key | Required |
-| `/keys/rotate` | POST | Rotate API key | Required |
-
-### 🎯 GraphQL
-
-| Endpoint | Method | Description | Authentication |
-|----------|--------|-------------|----------------|
-| `/graphql` | POST | GraphQL endpoint | Optional |
-| `/graphql/playground` | GET | GraphQL playground (dev) | None |
-| `/graphql/schema` | GET | GraphQL schema | None |
-
-## Sample Requests
-
-### Analyze a Video File
-
+**Request:**
 ```bash
-curl -X POST http://localhost:8080/api/v1/probe/file \
-  -H "X-API-Key: your-api-key" \
+curl -X POST \
   -F "file=@video.mp4" \
-  -F "include_llm=true" \
-  -F "quality_analysis=true"
+  http://localhost:8080/api/v1/probe/file
 ```
 
 **Response:**
 ```json
 {
-  "analysis_id": "uuid-here",
-  "status": "completed",
-  "file_info": {
-    "filename": "video.mp4",
-    "size": 1048576,
-    "duration": 60.5,
-    "format": "mp4"
-  },
-  "video_streams": [
-    {
-      "index": 0,
-      "codec_name": "h264",
-      "width": 1920,
-      "height": 1080,
-      "frame_rate": "30/1",
-      "bit_rate": "5000000"
-    }
-  ],
-  "audio_streams": [
-    {
-      "index": 1,
-      "codec_name": "aac",
-      "sample_rate": 48000,
-      "channels": 2,
-      "bit_rate": "128000"
-    }
-  ],
-  "quality_metrics": {
-    "vmaf_score": 85.2,
-    "psnr": 42.1,
-    "ssim": 0.95
-  },
-  "llm_report": "🧠 EXECUTIVE SUMMARY: Professional HD content ready for broadcast delivery. TECHNICAL ANALYSIS: H.264 encoding at optimal 5Mbps bitrate for 1080p resolution. QUALITY ASSESSMENT: Excellent visual quality (VMAF 85.2), no artifacts detected. RECOMMENDATIONS: 1) Consider HEVC encoding for 40% size reduction while maintaining quality. 2) Audio levels optimal for broadcast standards. 3) Suitable for Netflix, YouTube, and OTT platforms. RISK ASSESSMENT: Low technical risk, fully compliant with industry standards. WORKFLOW INTEGRATION: Ready for immediate delivery pipeline.",
-  "llm_enabled": true
-}
-```
-
-### Compare Two Videos
-
-```bash
-curl -X POST http://localhost:8080/api/v1/comparisons \
-  -H "X-API-Key: your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "original_analysis_id": "uuid-1",
-    "modified_analysis_id": "uuid-2",
-    "comparison_type": "quality",
-    "include_ai_analysis": true
-  }'
-```
-
-**Response:**
-```json
-{
-  "comparison_id": "uuid-comparison",
-  "status": "completed",
-  "original_file": {
-    "filename": "original.mp4",
-    "quality_score": 75.2
-  },
-  "modified_file": {
-    "filename": "optimized.mp4",
-    "quality_score": 85.1
-  },
-  "improvement": {
-    "quality_delta": 9.9,
-    "size_reduction": "15%",
-    "is_improvement": true
-  },
-  "ai_assessment": "The modified version shows significant quality improvement..."
-}
-```
-
-### Generate Analysis Report
-
-```bash
-curl -X POST http://localhost:8080/api/v1/reports/analysis \
-  -H "X-API-Key: your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "analysis_id": "uuid-here",
-    "format": "pdf",
-    "include_recommendations": true,
-    "include_charts": true
-  }'
-```
-
-## Error Responses
-
-The API uses standard HTTP status codes and returns JSON error responses:
-
-```json
-{
-  "error": {
-    "code": "INVALID_FILE_FORMAT",
-    "message": "Unsupported video format",
-    "details": "Only MP4, AVI, MOV, and MKV formats are supported"
-  },
-  "request_id": "req-12345678"
-}
-```
-
-### Common Error Codes
-
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| `INVALID_API_KEY` | 401 | Invalid or missing API key |
-| `INSUFFICIENT_PERMISSIONS` | 403 | User lacks required permissions |
-| `FILE_TOO_LARGE` | 413 | File exceeds maximum size limit |
-| `INVALID_FILE_FORMAT` | 400 | Unsupported video format |
-| `PROCESSING_FAILED` | 500 | Video analysis failed |
-| `RATE_LIMIT_EXCEEDED` | 429 | Too many requests |
-
-## Rate Limits
-
-| Limit Type | Default | Scope |
-|------------|---------|-------|
-| Per Minute | 60 requests | Per API key |
-| Per Hour | 1000 requests | Per API key |
-| Per Day | 10000 requests | Per API key |
-
-Rate limit headers are included in responses:
-```
-X-RateLimit-Limit: 60
-X-RateLimit-Remaining: 59
-X-RateLimit-Reset: 1640995200
-```
-
-## AI-Powered Features
-
-### LLM Analysis
-- **Models**: Gemma 3 270M (primary), Phi-3 Mini (fallback)
-- **Response Time**: 0.5-3 seconds
-- **Analysis Sections**: 8 professional sections including quality assessment, optimization recommendations
-
-### Quality Metrics
-- **VMAF**: Video Multi-method Assessment Fusion scores
-- **PSNR**: Peak Signal-to-Noise Ratio
-- **SSIM**: Structural Similarity Index
-- **Custom**: Blockiness, blur, noise detection
-
-## WebSocket Endpoints
-
-### Real-time Analysis Progress
-```javascript
-const ws = new WebSocket('ws://localhost:8080/api/v1/stream/analysis');
-
-ws.onmessage = function(event) {
-  const progress = JSON.parse(event.data);
-  console.log(`Progress: ${progress.percentage}%`);
-};
-```
-
-## GraphQL Schema
-
-The API provides a comprehensive GraphQL schema for complex queries:
-
-```graphql
-query GetAnalysisWithComparisons($id: ID!) {
-  analysis(id: $id) {
-    id
-    filename
-    status
-    videoStreams {
-      codecName
-      width
-      height
-      bitRate
-    }
-    qualityMetrics {
-      vmafScore
-      psnrAvg
-      ssimAvg
-    }
-    comparisons {
-      id
-      originalFile
-      modifiedFile
-      qualityImprovement
+  "analysis_id": "550e8400-e29b-41d4-a716-446655440000",
+  "filename": "video.mp4",
+  "size": 1048576,
+  "result": {
+    "format": {
+      "filename": "/tmp/upload_1234567890_video.mp4",
+      "nb_streams": 2,
+      "nb_programs": 0,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "format_long_name": "QuickTime / MOV",
+      "start_time": "0.000000",
+      "duration": "60.500000",
+      "size": "1048576",
+      "bit_rate": "5000000",
+      "probe_score": 100
+    },
+    "streams": [
+      {
+        "index": 0,
+        "codec_name": "h264",
+        "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+        "profile": "High",
+        "codec_type": "video",
+        "width": 1920,
+        "height": 1080,
+        "coded_width": 1920,
+        "coded_height": 1088,
+        "display_aspect_ratio": "16:9",
+        "pix_fmt": "yuv420p",
+        "level": 40,
+        "r_frame_rate": "30/1",
+        "avg_frame_rate": "30/1",
+        "time_base": "1/30000",
+        "nb_frames": "1815"
+      },
+      {
+        "index": 1,
+        "codec_name": "aac",
+        "codec_long_name": "AAC (Advanced Audio Coding)",
+        "codec_type": "audio",
+        "sample_rate": "48000",
+        "channels": 2,
+        "channel_layout": "stereo",
+        "bits_per_sample": 0,
+        "nb_frames": "2833"
+      }
+    ],
+    "enhanced_analysis": {
+      "timecode_analysis": {
+        "has_timecode": true,
+        "is_drop_frame": false,
+        "start_timecode": "01:00:00:00"
+      },
+      "hdr_analysis": {
+        "is_hdr_content": false,
+        "color_space": "bt709"
+      },
+      "codec_analysis": {
+        "video_codec": "h264",
+        "video_profile": "High",
+        "audio_codec": "aac"
+      },
+      "resolution_analysis": {
+        "width": 1920,
+        "height": 1080,
+        "aspect_ratio": "16:9",
+        "is_standard_resolution": true
+      },
+      "data_integrity": {
+        "has_errors": false,
+        "crc_valid": true,
+        "integrity_score": 100
+      }
     }
   }
 }
 ```
 
----
+### Analyze URL
 
-## 🚀 Quick Start Integration
-
-```bash
-# 1. Get API key
-curl -X POST http://localhost:8080/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email": "user@example.com", "password": "password"}'
-
-# 2. Analyze video
-curl -X POST http://localhost:8080/api/v1/probe/file \
-  -H "X-API-Key: your-api-key" \
-  -F "file=@video.mp4"
-
-# 3. Get results
-curl http://localhost:8080/api/v1/probe/analyses \
-  -H "X-API-Key: your-api-key"
+```
+POST /api/v1/probe/url
+Content-Type: application/json
 ```
 
-## SDKs and Libraries
+Analyze a video file directly from a URL without uploading.
 
-- **JavaScript/Node.js**: Coming soon
-- **Python**: Coming soon  
-- **Go**: Native API client examples available
-- **cURL**: Complete examples in this documentation
+**Request Body:**
+```json
+{
+  "url": "https://example.com/video.mp4",
+  "include_llm": false,
+  "timeout": 60
+}
+```
+
+**Request:**
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com/video.mp4", "include_llm": true}' \
+  http://localhost:8080/api/v1/probe/url
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "analysis_id": "550e8400-e29b-41d4-a716-446655440000",
+  "url": "https://example.com/video.mp4",
+  "filename": "video.mp4",
+  "analysis": { ... },
+  "qc_categories_analyzed": 19,
+  "llm_report": "Professional analysis report...",
+  "llm_enabled": true,
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+### HLS Stream Analysis
+
+```
+POST /api/v1/probe/hls
+Content-Type: application/json
+```
+
+Analyze HLS streams for quality, compliance, and performance metrics.
+
+**Request Body:**
+```json
+{
+  "manifest_url": "https://example.com/stream.m3u8",
+  "analyze_segments": true,
+  "analyze_quality": true,
+  "validate_compliance": true,
+  "performance_analysis": true,
+  "max_segments": 10,
+  "include_llm": false
+}
+```
+
+**Request:**
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{
+    "manifest_url": "https://example.com/stream.m3u8",
+    "analyze_segments": true,
+    "max_segments": 5
+  }' \
+  http://localhost:8080/api/v1/probe/hls
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "analysis_id": "550e8400-e29b-41d4-a716-446655440000",
+  "manifest_url": "https://example.com/stream.m3u8",
+  "analysis": {
+    "playlist_type": "master",
+    "variants": [...],
+    "segments": [...],
+    "compliance": {...}
+  },
+  "processing_time": "2.5s",
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+### Batch Processing
+
+#### Start Batch Job
+```
+POST /api/v1/batch/analyze
+Content-Type: application/json
+```
+
+Process multiple files or URLs in parallel.
+
+**Request Body:**
+```json
+{
+  "files": ["/path/to/video1.mp4", "/path/to/video2.mp4"],
+  "urls": ["https://example.com/video3.mp4"],
+  "include_llm": false
+}
+```
+
+**Response:**
+```json
+{
+  "status": "accepted",
+  "job_id": "550e8400-e29b-41d4-a716-446655440000",
+  "total": 3,
+  "message": "Batch job started",
+  "status_url": "/api/v1/batch/status/550e8400-e29b-41d4-a716-446655440000",
+  "ws_url": "/api/v1/ws/progress/550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+#### Get Batch Status
+```
+GET /api/v1/batch/status/:id
+```
+
+Get the status and results of a batch job.
+
+**Response:**
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "completed",
+  "total": 3,
+  "completed": 2,
+  "failed": 1,
+  "results": [
+    {"type": "file", "path": "/path/to/video1.mp4", "status": "success", "analysis": {...}},
+    {"type": "url", "url": "https://example.com/video3.mp4", "status": "success", "analysis": {...}},
+    {"type": "file", "path": "/path/to/video2.mp4", "status": "failed", "error": "File not found"}
+  ],
+  "created_at": "2024-01-15T10:30:00Z",
+  "updated_at": "2024-01-15T10:35:00Z"
+}
+```
+
+### WebSocket Progress
+
+```
+GET /api/v1/ws/progress/:id
+```
+
+Connect via WebSocket to receive real-time progress updates for batch jobs.
+
+**Message Format:**
+```json
+{
+  "type": "progress",
+  "job_id": "550e8400-e29b-41d4-a716-446655440000",
+  "progress": 66.7,
+  "message": "Processed file: video2.mp4",
+  "status": "processing",
+  "timestamp": "2024-01-15T10:32:00Z"
+}
+```
+
+**JavaScript Example:**
+```javascript
+const ws = new WebSocket('ws://localhost:8080/api/v1/ws/progress/job-id');
+ws.onmessage = (event) => {
+  const update = JSON.parse(event.data);
+  console.log(`Progress: ${update.progress}% - ${update.message}`);
+};
+```
+
+### GraphQL API
+
+```
+POST /api/v1/graphql
+GET  /api/v1/graphql  # GraphiQL interactive interface
+```
+
+Flexible query interface for advanced integrations.
+
+**Example Query:**
+```graphql
+query {
+  health {
+    status
+    version
+  }
+}
+```
+
+**Example Mutation:**
+```graphql
+mutation {
+  analyzeURL(url: "https://example.com/video.mp4", include_llm: true) {
+    id
+    filename
+    status
+    streams {
+      index
+      codec_name
+      codec_type
+      width
+      height
+    }
+    format {
+      format_name
+      duration
+      bit_rate
+    }
+    llm_report
+    llm_enabled
+    timestamp
+  }
+}
+```
+
+**cURL Example:**
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ health { status version } }"}' \
+  http://localhost:8080/api/v1/graphql
+```
+
+### LLM-Powered Insights
+
+Add `include_llm=true` to any analysis endpoint to receive AI-generated professional reports.
+
+**With File Upload:**
+```bash
+curl -X POST \
+  -F "file=@video.mp4" \
+  -F "include_llm=true" \
+  http://localhost:8080/api/v1/probe/file
+```
+
+**With URL:**
+```bash
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com/video.mp4", "include_llm": true}' \
+  http://localhost:8080/api/v1/probe/url
+```
+
+**LLM Report Contains:**
+- Basic media overview
+- Video stream details
+- Audio stream analysis
+- Technical issues detection
+- FFmpeg optimization recommendations
+- Non-technical summary
+- Delivery readiness assessment
+
+### FFmpeg Version Management (Admin)
+
+#### Get Current Version
+```
+GET /admin/ffmpeg/version
+```
+
+Returns the current FFmpeg/FFprobe version information.
+
+**Response:**
+```json
+{
+  "version": "6.1.1",
+  "build_date": "2024-01-15",
+  "configuration": "--enable-gpl --enable-libx264..."
+}
+```
+
+#### Check for Updates
+```
+POST /admin/ffmpeg/check
+```
+
+Checks if FFmpeg updates are available.
+
+#### Update FFmpeg
+```
+POST /admin/ffmpeg/update
+```
+
+Triggers an FFmpeg update (requires proper permissions).
+
+## Error Responses
+
+The API uses standard HTTP status codes:
+
+| Status | Description |
+|--------|-------------|
+| 200 | Success |
+| 400 | Bad Request - Invalid input |
+| 401 | Unauthorized - Authentication required |
+| 403 | Forbidden - Insufficient permissions |
+| 404 | Not Found |
+| 413 | Payload Too Large - File exceeds limit |
+| 429 | Too Many Requests - Rate limited |
+| 500 | Internal Server Error |
+
+**Error Response Format:**
+```json
+{
+  "error": "Error description",
+  "details": "Additional details about the error"
+}
+```
+
+## Rate Limits
+
+Default rate limits (configurable):
+
+| Window | Limit |
+|--------|-------|
+| Per Minute | 60 requests |
+| Per Hour | 1000 requests |
+| Per Day | 10000 requests |
+
+## Supported File Formats
+
+The API supports all formats that FFmpeg/FFprobe supports, including:
+
+### Video Containers
+- MP4, MOV, MKV, AVI, WebM
+- MXF (Material Exchange Format)
+- MPEG-TS (Transport Stream)
+- FLV, WMV, ASF
+
+### Video Codecs
+- H.264/AVC, H.265/HEVC
+- VP8, VP9, AV1
+- ProRes, DNxHD, DNxHR
+- MPEG-2, MPEG-4
+
+### Audio Formats
+- AAC, MP3, WAV, FLAC
+- AC3, EAC3, DTS
+- PCM (various bit depths)
+- Opus, Vorbis
+
+## QC Analysis Categories
+
+The API performs 19 quality control analysis categories automatically:
+
+1. AFD Analysis
+2. Dead Pixel Detection
+3. PSE Flash Analysis
+4. HDR Analysis
+5. Audio Wrapping Analysis
+6. Endianness Detection
+7. Codec Analysis
+8. Container Validation
+9. Resolution Analysis
+10. Frame Rate Analysis
+11. Bitdepth Analysis
+12. Timecode Analysis
+13. MXF Analysis
+14. IMF Compliance
+15. Transport Stream Analysis
+16. Content Analysis
+17. Enhanced Analysis
+18. Stream Disposition Analysis
+19. Data Integrity Analysis
+
+See [QC Analysis List](../QC_ANALYSIS_LIST.md) for detailed information on each category.
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `8080` | API server port |
+| `LOG_LEVEL` | `info` | Logging level |
+| `FFPROBE_PATH` | `ffprobe` | Path to FFprobe binary |
+| `MAX_FILE_SIZE` | `5GB` | Maximum upload file size |
+| `ANALYSIS_TIMEOUT` | `5m` | Analysis timeout duration |
+
+## Examples
+
+### Basic File Analysis
+```bash
+curl -X POST \
+  -F "file=@sample.mp4" \
+  http://localhost:8080/api/v1/probe/file
+```
+
+### With Authentication
+```bash
+curl -X POST \
+  -H "X-API-Key: your-api-key" \
+  -F "file=@sample.mp4" \
+  http://localhost:8080/api/v1/probe/file
+```
+
+### Health Check
+```bash
+curl http://localhost:8080/health | jq
+```
+
+## API Summary
+
+### All Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Service health and feature status |
+| `/api/v1/probe/file` | POST | Analyze uploaded file |
+| `/api/v1/probe/url` | POST | Analyze file from URL |
+| `/api/v1/probe/hls` | POST | Analyze HLS stream |
+| `/api/v1/batch/analyze` | POST | Start batch processing |
+| `/api/v1/batch/status/:id` | GET | Get batch job status |
+| `/api/v1/ws/progress/:id` | WS | Real-time progress updates |
+| `/api/v1/graphql` | POST/GET | GraphQL API / GraphiQL |
+| `/admin/ffmpeg/version` | GET | FFmpeg version info |
+| `/admin/ffmpeg/check` | POST | Check for updates |
+| `/admin/ffmpeg/update` | POST | Update FFmpeg |
+
+### Implemented Features (v2.0.0)
+
+- [x] URL-based file analysis (`POST /api/v1/probe/url`)
+- [x] HLS stream analysis (`POST /api/v1/probe/hls`)
+- [x] Batch processing (`POST /api/v1/batch/analyze`)
+- [x] GraphQL endpoint (`POST /api/v1/graphql`)
+- [x] WebSocket progress streaming
+- [x] LLM-powered insights
+
+### Planned Features
+
+- [ ] Webhook callbacks for async processing
+- [ ] DASH stream analysis
+- [ ] File comparison endpoint
+- [ ] Custom QC rule definitions
 
 ---
 
-**For more examples and advanced usage, see our [API Usage Tutorial](../tutorials/api_usage.md)**
+**For complete QC analysis documentation, see [QC Analysis List](../QC_ANALYSIS_LIST.md)**

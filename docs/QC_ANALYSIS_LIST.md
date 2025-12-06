@@ -232,6 +232,6 @@ The following categories are currently implemented and validated:
 
 ---
 
-**Total QC Categories**: 17 (All Production-Ready)  
-**Compliance Standards**: 10+ international and regional standards  
+**Total QC Categories**: 19 (All Production-Ready)
+**Compliance Standards**: 10+ international and regional standards
 **Industry Applications**: Broadcast, Streaming, Post-Production, Archival
