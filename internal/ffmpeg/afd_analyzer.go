@@ -306,8 +306,32 @@ func (aa *AFDAnalyzer) detectAFDFromVideoCharacteristics(ctx context.Context, fi
 	return nil
 }
 
+// escapeFFmpegFilterPath escapes a file path for use in FFmpeg filter expressions.
+// FFmpeg filter syntax requires special characters to be escaped.
+// See: https://ffmpeg.org/ffmpeg-filters.html#Notes-on-filtergraph-escaping
+func escapeFFmpegFilterPath(path string) string {
+	// Escape backslashes first (must be done before other escapes)
+	escaped := strings.ReplaceAll(path, `\`, `\\`)
+	// Escape single quotes
+	escaped = strings.ReplaceAll(escaped, `'`, `'\''`)
+	// Escape colons (used as option separator)
+	escaped = strings.ReplaceAll(escaped, `:`, `\:`)
+	// Escape commas (used as filter separator)
+	escaped = strings.ReplaceAll(escaped, `,`, `\,`)
+	// Escape brackets (used in filter chains)
+	escaped = strings.ReplaceAll(escaped, `[`, `\[`)
+	escaped = strings.ReplaceAll(escaped, `]`, `\]`)
+	// Escape semicolons (used as filterchain separator)
+	escaped = strings.ReplaceAll(escaped, `;`, `\;`)
+	// Wrap in single quotes for additional safety
+	return `'` + escaped + `'`
+}
+
 // detectLetterboxing analyzes frames to detect letterboxing/pillarboxing
 func (aa *AFDAnalyzer) detectLetterboxing(ctx context.Context, filePath string, analysis *AFDAnalysis) error {
+	// Escape the file path for FFmpeg filter expression to prevent injection
+	escapedPath := escapeFFmpegFilterPath(filePath)
+
 	// Use ffprobe with cropdetect filter to detect black bars
 	cmd := []string{
 		aa.ffprobePath,
@@ -315,7 +339,7 @@ func (aa *AFDAnalyzer) detectLetterboxing(ctx context.Context, filePath string, 
 		"-print_format", "json",
 		"-show_entries", "frame_tags=lavfi.cropdetect.w,lavfi.cropdetect.h,lavfi.cropdetect.x,lavfi.cropdetect.y",
 		"-f", "lavfi",
-		"-i", fmt.Sprintf("movie=%s,cropdetect=24:16:0", filePath),
+		"-i", fmt.Sprintf("movie=%s,cropdetect=24:16:0", escapedPath),
 		"-frames:v", "10",
 	}
 

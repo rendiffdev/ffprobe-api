@@ -794,21 +794,24 @@ func (r *qualityRepository) GetQualityStatistics(ctx context.Context, filters Qu
 
 // GetQualityTrends retrieves quality trends over time
 func (r *qualityRepository) GetQualityTrends(ctx context.Context, metricType quality.QualityMetricType, days int) ([]*QualityTrend, error) {
+	// Use parameterized query with SQLite-compatible date arithmetic
+	// The '-X days' modifier is passed as a parameter to prevent SQL injection
 	query := `
-		SELECT 
+		SELECT
 			DATE(created_at) as date,
 			AVG(overall_score) as average_score,
 			COUNT(*) as sample_count
 		FROM quality_metrics
-		WHERE metric_type = $1 
-		AND created_at >= CURRENT_DATE - INTERVAL '%d days'
+		WHERE metric_type = $1
+		AND created_at >= DATE('now', $2)
 		GROUP BY DATE(created_at)
 		ORDER BY date DESC`
 
-	query = fmt.Sprintf(query, days)
+	// Format the days parameter as SQLite modifier string (e.g., "-30 days")
+	daysModifier := fmt.Sprintf("-%d days", days)
 
 	var trends []*QualityTrend
-	err := r.db.SelectContext(ctx, &trends, query, metricType)
+	err := r.db.SelectContext(ctx, &trends, query, metricType, daysModifier)
 	if err != nil {
 		return nil, err
 	}

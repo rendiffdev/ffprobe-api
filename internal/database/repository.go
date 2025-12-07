@@ -180,7 +180,7 @@ func (r *SQLiteRepository) UpdateAnalysisStatus(ctx context.Context, id uuid.UUI
 		SET status = ?, error_msg = ?, updated_at = ?
 		WHERE id = ?`
 
-	_, err := r.db.DB.ExecContext(ctx, query, id, status, errorMsg, time.Now())
+	_, err := r.db.DB.ExecContext(ctx, query, status, errorMsg, time.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to update analysis status: %w", err)
 	}
@@ -195,7 +195,7 @@ func (r *SQLiteRepository) UpdateAnalysisLLMReport(ctx context.Context, id uuid.
 		SET llm_report = ?, updated_at = ?
 		WHERE id = ?`
 
-	_, err := r.db.DB.ExecContext(ctx, query, id, report, time.Now())
+	_, err := r.db.DB.ExecContext(ctx, query, report, time.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to update analysis LLM report: %w", err)
 	}
@@ -801,7 +801,7 @@ func (r *SQLiteRepository) DeleteQualityComparison(ctx context.Context, id uuid.
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("processing job not found")
+		return fmt.Errorf("quality comparison not found")
 	}
 
 	return nil
@@ -845,7 +845,7 @@ func (r *SQLiteRepository) UpdateProcessingJob(ctx context.Context, job *models.
 		WHERE id = ?`
 
 	_, err := r.db.DB.ExecContext(ctx, query,
-		job.ID, job.Status, job.StartedAt, job.CompletedAt, job.ErrorMsg, job.RetryCount)
+		job.Status, job.StartedAt, job.CompletedAt, job.ErrorMsg, job.RetryCount, job.ID)
 	return err
 }
 

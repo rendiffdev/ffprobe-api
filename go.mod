@@ -23,7 +23,7 @@ require (
 	github.com/redis/go-redis/v9 v9.12.1
 	github.com/rs/zerolog v1.32.0
 	github.com/spf13/cobra v1.10.2
-	golang.org/x/crypto v0.44.0
+	golang.org/x/crypto v0.45.0
 	google.golang.org/api v0.177.0
 )
 
@@ -96,7 +96,7 @@ require (
 	go.uber.org/atomic v1.7.0 // indirect
 	golang.org/x/arch v0.8.0 // indirect
 	golang.org/x/net v0.47.0 // indirect
-	golang.org/x/oauth2 v0.19.0 // indirect
+	golang.org/x/oauth2 v0.33.0 // indirect
 	golang.org/x/sync v0.18.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/text v0.31.0 // indirect

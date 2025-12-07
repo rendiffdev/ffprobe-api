@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"fmt"
 	"net/http"
@@ -186,7 +187,9 @@ func (sm *SecurityMiddleware) CSRF() gin.HandlerFunc {
 		// Get expected token from session/context
 		expectedToken := c.GetString("csrf_token")
 
-		if token == "" || expectedToken == "" || token != expectedToken {
+		// Use constant-time comparison to prevent timing attacks
+		tokenMatch := subtle.ConstantTimeCompare([]byte(token), []byte(expectedToken)) == 1
+		if token == "" || expectedToken == "" || !tokenMatch {
 			sm.logger.Warn().
 				Str("path", c.Request.URL.Path).
 				Str("ip", c.ClientIP()).
