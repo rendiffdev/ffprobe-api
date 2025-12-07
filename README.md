@@ -419,27 +419,29 @@ make prod
 
 ### 19 Top-Level QC Categories
 
-| Category | Description | Standards |
-|----------|-------------|-----------|
-| AFD Analysis | Active Format Description | ITU-R BT.1868 |
-| Dead Pixel Detection | Pixel defect analysis | Computer Vision |
-| PSE Flash Analysis | Epilepsy safety | ITC/Ofcom, ITU-R BT.1702 |
-| HDR Analysis | HDR content validation | HDR10, Dolby Vision, HLG |
-| Audio Wrapping | Professional audio formats | BWF, RF64, AES3 |
-| Endianness Detection | Binary format compatibility | - |
-| Codec Analysis | Codec validation | - |
-| Container Validation | Format compliance | MP4, MKV, MOV |
-| Resolution Analysis | Aspect ratio validation | - |
-| Frame Rate Analysis | Temporal accuracy | Broadcast standards |
-| Bitdepth Analysis | Color depth validation | 8/10/12-bit |
-| Timecode Analysis | SMPTE timecode | SMPTE 12M |
-| MXF Analysis | Broadcast format | SMPTE ST 377 |
-| IMF Compliance | Distribution format | SMPTE ST 2067 |
-| Transport Stream | MPEG-TS analysis | MPEG-TS |
-| Content Analysis | 26 parallel sub-analyzers | See above |
-| Enhanced Analysis | Quality metrics | - |
-| Stream Disposition | Accessibility | Section 508 |
-| Data Integrity | Error/hash validation | CRC32, MD5 |
+> **[View Complete QC Parameters Reference](docs/QC_ANALYSIS_LIST.md)** - Detailed documentation of all 19 categories with 121 parameters
+
+| # | Category | Key Parameters | Standards | Use Cases |
+|---|----------|----------------|-----------|-----------|
+| 1 | **[AFD Analysis](docs/QC_ANALYSIS_LIST.md#1-afd-analysis)** | AFD codes, aspect ratio validation | ITU-R BT.1868 | Broadcast distribution |
+| 2 | **[Dead Pixel Detection](docs/QC_ANALYSIS_LIST.md#2-dead-pixel-detection)** | Stuck/dead/hot pixels, defect maps | Computer Vision | Camera QC, acquisition |
+| 3 | **[PSE Flash Analysis](docs/QC_ANALYSIS_LIST.md#3-pse-flash-analysis)** | Flash rate, luminance changes, risk level | ITC/Ofcom, ITU-R BT.1702 | Broadcast safety |
+| 4 | **[HDR Analysis](docs/QC_ANALYSIS_LIST.md#4-hdr-analysis)** | MaxCLL, MaxFALL, color gamut | HDR10, Dolby Vision, HLG | Streaming platforms |
+| 5 | **[Audio Wrapping](docs/QC_ANALYSIS_LIST.md#5-audio-wrapping-analysis)** | Channel mapping, embedding format | BWF, RF64, AES3 | Post-production |
+| 6 | **[Endianness Detection](docs/QC_ANALYSIS_LIST.md#6-endianness-detection)** | Byte order, platform compatibility | - | Cross-platform workflows |
+| 7 | **[Codec Analysis](docs/QC_ANALYSIS_LIST.md#7-codec-analysis)** | Profile, level, bitrate efficiency | - | Format validation |
+| 8 | **[Container Validation](docs/QC_ANALYSIS_LIST.md#8-container-validation)** | Structure, metadata, muxing pattern | MP4, MKV, MOV | Workflow compatibility |
+| 9 | **[Resolution Analysis](docs/QC_ANALYSIS_LIST.md#9-resolution-analysis)** | PAR, DAR, display optimization | - | Quality validation |
+| 10 | **[Frame Rate Analysis](docs/QC_ANALYSIS_LIST.md#10-frame-rate-analysis)** | Temporal accuracy, VFR detection | Broadcast standards | Temporal analysis |
+| 11 | **[Bitdepth Analysis](docs/QC_ANALYSIS_LIST.md#11-bitdepth-analysis)** | Color precision, dynamic range | 8/10/12-bit | HDR compatibility |
+| 12 | **[Timecode Analysis](docs/QC_ANALYSIS_LIST.md#12-timecode-analysis)** | SMPTE TC, drop frame, continuity | SMPTE 12M | Broadcast, post |
+| 13 | **[MXF Analysis](docs/QC_ANALYSIS_LIST.md#13-mxf-analysis)** | OP patterns, essence containers | SMPTE ST 377 | Professional broadcast |
+| 14 | **[IMF Compliance](docs/QC_ANALYSIS_LIST.md#14-imf-compliance)** | CPL, OPL, application profiles | SMPTE ST 2067 | Netflix delivery |
+| 15 | **[Transport Stream](docs/QC_ANALYSIS_LIST.md#15-transport-stream-analysis)** | PID mapping, PSI/SI, continuity | MPEG-TS | IPTV, streaming |
+| 16 | **[Content Analysis](docs/QC_ANALYSIS_LIST.md#content-analysis-26-parallel-analyzers)** | 26 parallel analyzers (see below) | Multiple | Real-time QC |
+| 17 | **[Enhanced Analysis](docs/QC_ANALYSIS_LIST.md#17-enhanced-analysis)** | Quality scoring, risk assessment | - | Advanced metrics |
+| 18 | **[Stream Disposition](docs/QC_ANALYSIS_LIST.md#18-stream-disposition-analysis)** | SDH, audio descriptions, languages | Section 508, WCAG | Accessibility |
+| 19 | **[Data Integrity](docs/QC_ANALYSIS_LIST.md#19-data-integrity-analysis)** | CRC32, MD5, corruption detection | - | File validation |
 
 ## Configuration
 
