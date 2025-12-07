@@ -95,3 +95,11 @@ func (g *GCSProvider) GetSignedURL(ctx context.Context, key string, expiration i
 
 	return url, nil
 }
+
+// Close closes the GCS client and releases resources
+func (g *GCSProvider) Close() error {
+	if g.client != nil {
+		return g.client.Close()
+	}
+	return nil
+}

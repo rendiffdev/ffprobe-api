@@ -26,6 +26,9 @@ type BatchHandler struct {
 
 // NewBatchHandler creates a new batch handler
 func NewBatchHandler(analysisService *services.AnalysisService, logger zerolog.Logger) *BatchHandler {
+	if analysisService == nil {
+		panic("analysisService cannot be nil")
+	}
 	return &BatchHandler{
 		analysisService: analysisService,
 		maxBatchSize:    100, // Default max batch size
@@ -357,6 +360,7 @@ func (h *BatchHandler) processBatchAsync(batchID uuid.UUID, req BatchAnalysisReq
 	// Process files concurrently with limited concurrency
 	sem := make(chan struct{}, 5) // Limit to 5 concurrent analyses
 	var wg sync.WaitGroup
+	var resultsMutex sync.Mutex
 	results := make([]BatchResultItem, len(req.Files))
 
 	for i, file := range req.Files {
@@ -382,7 +386,9 @@ func (h *BatchHandler) processBatchAsync(batchID uuid.UUID, req BatchAnalysisReq
 
 			if cancelled {
 				result.Status = "cancelled"
+				resultsMutex.Lock()
 				results[index] = result
+				resultsMutex.Unlock()
 				return
 			}
 
@@ -400,8 +406,12 @@ func (h *BatchHandler) processBatchAsync(batchID uuid.UUID, req BatchAnalysisReq
 			if err != nil {
 				result.Status = "failed"
 				result.Error = err.Error()
+				resultsMutex.Lock()
 				results[index] = result
-				h.updateBatchProgress(batchID, results)
+				resultsCopy := make([]BatchResultItem, len(results))
+				copy(resultsCopy, results)
+				resultsMutex.Unlock()
+				h.updateBatchProgress(batchID, resultsCopy)
 				return
 			}
 
@@ -420,8 +430,12 @@ func (h *BatchHandler) processBatchAsync(batchID uuid.UUID, req BatchAnalysisReq
 				result.Status = "completed"
 			}
 
+			resultsMutex.Lock()
 			results[index] = result
-			h.updateBatchProgress(batchID, results)
+			resultsCopy := make([]BatchResultItem, len(results))
+			copy(resultsCopy, results)
+			resultsMutex.Unlock()
+			h.updateBatchProgress(batchID, resultsCopy)
 		}(i, file)
 	}
 

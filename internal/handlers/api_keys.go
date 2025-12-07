@@ -17,17 +17,43 @@ type APIKeyHandler struct {
 
 // NewAPIKeyHandler creates a new API key handler
 func NewAPIKeyHandler(rotationService *services.SecretRotationService, logger zerolog.Logger) *APIKeyHandler {
+	if rotationService == nil {
+		panic("rotationService cannot be nil")
+	}
 	return &APIKeyHandler{
 		rotationService: rotationService,
 		logger:          logger,
 	}
 }
 
+// isAdmin checks if the current user has admin role
+func isAdmin(c *gin.Context) bool {
+	roles := c.GetStringSlice("roles")
+	for _, role := range roles {
+		if role == "admin" {
+			return true
+		}
+	}
+	return false
+}
+
+// requireAdmin returns an error response if the user is not an admin, returns true if admin
+func requireAdmin(c *gin.Context) bool {
+	if !isAdmin(c) {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":   "Forbidden",
+			"message": "Admin role required",
+		})
+		return false
+	}
+	return true
+}
+
 // CreateAPIKeyRequest represents the request to create a new API key
 type CreateAPIKeyRequest struct {
 	Name        string   `json:"name" binding:"required,min=3,max=100"`
 	Permissions []string `json:"permissions"`
-	ExpiresIn   int      `json:"expires_in_days,omitempty"` // Optional, defaults to 90 days
+	ExpiresIn   int      `json:"expires_in_days,omitempty" binding:"omitempty,min=1,max=365"` // Optional, defaults to 90 days, max 1 year
 }
 
 // RotateAPIKeyRequest represents the request to rotate an API key
@@ -183,21 +209,7 @@ func (h *APIKeyHandler) RotateAPIKey(c *gin.Context) {
 
 // RotateJWTSecret rotates the JWT signing secret (admin only)
 func (h *APIKeyHandler) RotateJWTSecret(c *gin.Context) {
-	// Check admin role
-	roles := c.GetStringSlice("roles")
-	isAdmin := false
-	for _, role := range roles {
-		if role == "admin" {
-			isAdmin = true
-			break
-		}
-	}
-
-	if !isAdmin {
-		c.JSON(http.StatusForbidden, gin.H{
-			"error":   "Forbidden",
-			"message": "Admin role required",
-		})
+	if !requireAdmin(c) {
 		return
 	}
 
@@ -242,21 +254,7 @@ func (h *APIKeyHandler) UpdateRateLimits(c *gin.Context) {
 		return
 	}
 
-	// Check admin role
-	roles := c.GetStringSlice("roles")
-	isAdmin := false
-	for _, role := range roles {
-		if role == "admin" {
-			isAdmin = true
-			break
-		}
-	}
-
-	if !isAdmin {
-		c.JSON(http.StatusForbidden, gin.H{
-			"error":   "Forbidden",
-			"message": "Admin role required",
-		})
+	if !requireAdmin(c) {
 		return
 	}
 
@@ -319,21 +317,7 @@ func (h *APIKeyHandler) UpdateRateLimits(c *gin.Context) {
 
 // CheckRotationStatus checks which secrets are due for rotation (admin only)
 func (h *APIKeyHandler) CheckRotationStatus(c *gin.Context) {
-	// Check admin role
-	roles := c.GetStringSlice("roles")
-	isAdmin := false
-	for _, role := range roles {
-		if role == "admin" {
-			isAdmin = true
-			break
-		}
-	}
-
-	if !isAdmin {
-		c.JSON(http.StatusForbidden, gin.H{
-			"error":   "Forbidden",
-			"message": "Admin role required",
-		})
+	if !requireAdmin(c) {
 		return
 	}
 
@@ -361,21 +345,7 @@ func (h *APIKeyHandler) CheckRotationStatus(c *gin.Context) {
 
 // CleanupExpiredKeys removes expired keys past their grace period (admin only)
 func (h *APIKeyHandler) CleanupExpiredKeys(c *gin.Context) {
-	// Check admin role
-	roles := c.GetStringSlice("roles")
-	isAdmin := false
-	for _, role := range roles {
-		if role == "admin" {
-			isAdmin = true
-			break
-		}
-	}
-
-	if !isAdmin {
-		c.JSON(http.StatusForbidden, gin.H{
-			"error":   "Forbidden",
-			"message": "Admin role required",
-		})
+	if !requireAdmin(c) {
 		return
 	}
 

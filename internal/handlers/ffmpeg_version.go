@@ -17,6 +17,9 @@ type FFmpegVersionHandler struct {
 
 // NewFFmpegVersionHandler creates a new FFmpeg version handler
 func NewFFmpegVersionHandler(updater *services.FFmpegUpdater, logger zerolog.Logger) *FFmpegVersionHandler {
+	if updater == nil {
+		panic("updater cannot be nil")
+	}
 	return &FFmpegVersionHandler{
 		updater: updater,
 		logger:  logger,
@@ -121,13 +124,18 @@ func (h *FFmpegVersionHandler) UpdateFFmpeg(c *gin.Context) {
 
 	// Perform the update
 	progressChan := make(chan int, 100)
-	errorChan := make(chan error, 1)
+	doneChan := make(chan error, 1)
 
 	go func() {
 		err := h.updater.DownloadUpdate(ctx, updateInfo.Available, func(percent int) {
-			progressChan <- percent
+			select {
+			case progressChan <- percent:
+			default:
+				// Channel full, skip this update
+			}
 		})
-		errorChan <- err
+		doneChan <- err
+		close(doneChan)
 		close(progressChan)
 	}()
 
@@ -140,11 +148,17 @@ func (h *FFmpegVersionHandler) UpdateFFmpeg(c *gin.Context) {
 		select {
 		case progress, ok := <-progressChan:
 			if !ok {
-				// Channel closed, check for error
-				if err := <-errorChan; err != nil {
-					h.logger.Error().Err(err).Msg("FFmpeg update failed")
-					c.SSEvent("error", gin.H{"data": err.Error()})
-				} else {
+				// Progress channel closed, get result from done channel
+				select {
+				case err := <-doneChan:
+					if err != nil {
+						h.logger.Error().Err(err).Msg("FFmpeg update failed")
+						c.SSEvent("error", gin.H{"data": err.Error()})
+					} else {
+						c.SSEvent("complete", gin.H{"data": "FFmpeg updated successfully"})
+					}
+				default:
+					// Already consumed or not available
 					c.SSEvent("complete", gin.H{"data": "FFmpeg updated successfully"})
 				}
 				return false
