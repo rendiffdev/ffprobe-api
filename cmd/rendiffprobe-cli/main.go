@@ -464,7 +464,7 @@ func formatReport(results []map[string]interface{}) string {
 		sb.WriteString(strings.Repeat("=", 80) + "\n")
 		sb.WriteString("CATEGORY 1: AFD ANALYSIS (Active Format Description)\n")
 		sb.WriteString(strings.Repeat("=", 80) + "\n")
-		sb.WriteString(fmt.Sprintf("  AFD Present:                    N/A\n"))
+		sb.WriteString("  AFD Present:                    N/A\n")
 		sb.WriteString(fmt.Sprintf("  Display Aspect Ratio:           %s\n", getStreamString(videoStream, "display_aspect_ratio")))
 		sb.WriteString(fmt.Sprintf("  Sample Aspect Ratio:            %s\n", getStreamString(videoStream, "sample_aspect_ratio")))
 		sb.WriteString("\n")

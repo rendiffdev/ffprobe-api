@@ -86,7 +86,7 @@ services:
         max-size: "10m"
         max-file: "3"
     networks:
-      - ffprobe-network
+      - rendiff-network
 
   # Valkey for caching (Redis-compatible, open source alternative)
   valkey:
@@ -122,7 +122,7 @@ services:
           cpus: '0.1'
           memory: 64M
     networks:
-      - ffprobe-network
+      - rendiff-network
 
   # Ollama AI service (optional for GenAI features)
   ollama:
@@ -184,10 +184,10 @@ services:
         wait $$OLLAMA_PID
       "
     networks:
-      - ffprobe-network
+      - rendiff-network
 
 networks:
-  ffprobe-network:
+  rendiff-network:
     driver: bridge
     ipam:
       config:

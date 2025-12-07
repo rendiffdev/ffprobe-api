@@ -1,4 +1,5 @@
-# FFprobe API - Modern Docker Compose Application
+# Rendiff Probe - Modern Docker Compose Application
+# Powered by FFprobe (FFmpeg)
 # Uses latest Docker Compose Application Model
 # https://docs.docker.com/compose/intro/compose-application-model/
 
@@ -96,7 +97,7 @@ services:
       - "com.rendiff-probe.service=api"
       - "com.rendiff-probe.version=latest"
     networks:
-      - ffprobe-network
+      - rendiff-network
     profiles:
       - api
       - quick
@@ -161,7 +162,7 @@ services:
       - "com.rendiff-probe.service=cache"
       - "com.rendiff-probe.version=8"
     networks:
-      - ffprobe-network
+      - rendiff-network
     profiles:
       - cache
       - quick
@@ -222,7 +223,7 @@ services:
       - "com.rendiff-probe.service=ai"
       - "com.rendiff-probe.models=${OLLAMA_MODEL:-gemma3:270m},${OLLAMA_FALLBACK_MODEL:-phi3:mini}"
     networks:
-      - ffprobe-network
+      - rendiff-network
     profiles:
       - ai
       - quick
@@ -327,7 +328,7 @@ volumes:
 
 # Modern network configuration with custom driver and IPAM
 networks:
-  ffprobe-network:
+  rendiff-network:
     driver: bridge
     enable_ipv6: false
     ipam:

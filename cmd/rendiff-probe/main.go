@@ -279,7 +279,7 @@ func closeAllWebSocketConnections() {
 
 	for id, conn := range wsConnections {
 		appLogger.Info().Str("job_id", id).Msg("Closing WebSocket connection")
-		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseGoingAway, "Server shutting down"))
+		_ = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseGoingAway, "Server shutting down"))
 		conn.Close()
 	}
 	wsConnections = make(map[string]*websocket.Conn)
@@ -742,8 +742,7 @@ func wsProgressHandler(c *gin.Context) {
 	// Set connection limits
 	conn.SetReadLimit(512) // Small limit for ping/pong
 	conn.SetPongHandler(func(string) error {
-		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
-		return nil
+		return conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	})
 
 	wsLock.Lock()
@@ -779,7 +778,9 @@ func wsProgressHandler(c *gin.Context) {
 				return
 			}
 		default:
-			conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+			if err := conn.SetReadDeadline(time.Now().Add(60 * time.Second)); err != nil {
+				return
+			}
 			_, _, err := conn.ReadMessage()
 			if err != nil {
 				return

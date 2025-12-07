@@ -1,4 +1,5 @@
-# FFprobe API - Production-Ready Multi-Stage Docker Build
+# Rendiff Probe - Production-Ready Multi-Stage Docker Build
+# Powered by FFprobe (FFmpeg)
 # Supports both AMD64 and ARM64 architectures
 # Based on latest FFmpeg from BtbN/ffmpeg-builds
 
