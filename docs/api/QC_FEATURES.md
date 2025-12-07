@@ -2,9 +2,11 @@
 
 ## Overview
 
-The FFprobe API provides comprehensive Quality Control (QC) analysis with **20+ professional QC analysis categories** designed for broadcast, streaming, and post-production workflows.
+The Rendiff Probe API provides comprehensive Quality Control (QC) analysis with **19 top-level QC categories** and **26 parallel content analyzers** covering **121 industry-standard parameters** designed for broadcast, streaming, and post-production workflows.
 
-> 📋 **For the complete detailed list of all QC categories**, see [QC_ANALYSIS_LIST.md](../../QC_ANALYSIS_LIST.md) in the root directory.
+All content analyzers use real FFmpeg filters (signalstats, idet, ebur128, astats, etc.) for accurate, production-grade analysis.
+
+> 📋 **For the complete detailed list of all QC categories**, see [QC_ANALYSIS_LIST.md](../QC_ANALYSIS_LIST.md).
 
 This guide focuses on **API usage**, **integration patterns**, and **implementation best practices** for QC analysis.
 

@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -15,13 +17,23 @@ import (
 // PSEAnalyzer handles Photosensitive Epilepsy (PSE) risk analysis
 type PSEAnalyzer struct {
 	ffprobePath string
+	ffmpegPath  string
 	logger      zerolog.Logger
 }
 
 // NewPSEAnalyzer creates a new photosensitive epilepsy analyzer
 func NewPSEAnalyzer(ffprobePath string, logger zerolog.Logger) *PSEAnalyzer {
+	// Derive ffmpeg path from ffprobe path
+	ffmpegPath := "ffmpeg"
+	if ffprobePath != "" && ffprobePath != "ffprobe" {
+		// If ffprobePath is a full path, replace ffprobe with ffmpeg
+		if len(ffprobePath) > 7 && ffprobePath[len(ffprobePath)-7:] == "ffprobe" {
+			ffmpegPath = ffprobePath[:len(ffprobePath)-7] + "ffmpeg"
+		}
+	}
 	return &PSEAnalyzer{
 		ffprobePath: ffprobePath,
+		ffmpegPath:  ffmpegPath,
 		logger:      logger,
 	}
 }
@@ -577,36 +589,12 @@ func (pse *PSEAnalyzer) extractVideoInfo(ctx context.Context, filePath string) (
 	return videoInfo, nil
 }
 
-// analyzeFlashPatterns analyzes general flash patterns
+// analyzeFlashPatterns analyzes general flash patterns using FFmpeg luminance analysis
 func (pse *PSEAnalyzer) analyzeFlashPatterns(ctx context.Context, filePath string, videoInfo *VideoInfo, analysis *PSEAnalysis) error {
-	// Since we can't directly access pixel data with ffprobe, we'll simulate flash analysis
-	// based on scene changes and frame characteristics
+	// Use FFmpeg signalstats to measure luminance changes between frames
+	// A flash is defined as a pair of opposing luminance changes of 10%+ of max relative luminance
+	// where the darker image is below 0.80 relative luminance (per WCAG 2.0)
 
-	// Extract frame information for scene change analysis
-	cmd := []string{
-		pse.ffprobePath,
-		"-v", "quiet",
-		"-print_format", "json",
-		"-show_frames",
-		"-select_streams", "v:0",
-		"-read_intervals", "%+#100", // Sample 100 frames
-		filePath,
-	}
-
-	output, err := pse.executeCommand(ctx, cmd)
-	if err != nil {
-		return fmt.Errorf("failed to extract frames: %w", err)
-	}
-
-	var result struct {
-		Frames []FrameInfo `json:"frames"`
-	}
-
-	if err := json.Unmarshal([]byte(output), &result); err != nil {
-		return fmt.Errorf("failed to parse frame data: %w", err)
-	}
-
-	// Simulate flash detection based on frame characteristics
 	flashAnalysis := &FlashAnalysis{
 		FlashCount:       0,
 		FlashRate:        0.0,
@@ -618,46 +606,379 @@ func (pse *PSEAnalyzer) analyzeFlashPatterns(ctx context.Context, filePath strin
 		CriticalPeriods:  []TimePeriod{},
 	}
 
-	// Analyze for potential flashes based on key frame distribution
-	keyFrameChanges := 0
-	for _, frame := range result.Frames {
-		if frame.KeyFrame == 1 {
-			keyFrameChanges++
-		}
+	// Run FFmpeg with signalstats to get luminance data per frame
+	luminanceData, err := pse.extractLuminanceData(ctx, filePath)
+	if err != nil {
+		pse.logger.Warn().Err(err).Msg("Failed to extract luminance data, using fallback analysis")
+		// Fallback to basic analysis
+		return pse.fallbackFlashAnalysis(ctx, filePath, videoInfo, analysis, flashAnalysis)
 	}
 
-	// Estimate flash rate based on scene changes
+	// Analyze luminance changes for flash detection
+	flashes := pse.detectFlashesFromLuminance(luminanceData, videoInfo.FrameRate)
+
+	flashAnalysis.FlashCount = len(flashes)
+
 	if videoInfo.Duration > 0 {
-		flashAnalysis.FlashRate = float64(keyFrameChanges) / videoInfo.Duration
-		flashAnalysis.MaxFlashRate = flashAnalysis.FlashRate * 1.5 // Estimated peak
+		flashAnalysis.FlashRate = float64(len(flashes)) / videoInfo.Duration
 	}
 
-	flashAnalysis.FlashCount = keyFrameChanges
+	// Find max flash rate within any 1-second window
+	flashAnalysis.MaxFlashRate = pse.calculateMaxFlashRate(flashes, videoInfo.FrameRate)
 
-	// Check if exceeds threshold (3 flashes per second)
-	if flashAnalysis.FlashRate > 3.0 {
+	// PSE threshold is 3 flashes per second (WCAG 2.0 / Ofcom)
+	if flashAnalysis.MaxFlashRate > 3.0 {
 		flashAnalysis.ExceedsThreshold = true
 
-		// Create a violation
-		violation := PSEViolation{
-			Timestamp:           0.0,
-			ViolationType:       "flash",
-			Severity:            "medium",
-			Description:         fmt.Sprintf("Flash rate of %.2f Hz exceeds 3 Hz threshold", flashAnalysis.FlashRate),
-			AffectedArea:        1.0,
-			Duration:            videoInfo.Duration,
-			RiskScore:           50.0,
-			ComplianceStandards: []string{"FCC PSE", "ITU-R BT.709"},
+		// Find critical periods where threshold is exceeded
+		criticalPeriods := pse.findCriticalPeriods(flashes, videoInfo.FrameRate)
+		flashAnalysis.CriticalPeriods = criticalPeriods
+
+		for _, period := range criticalPeriods {
+			violation := PSEViolation{
+				Timestamp:           period.StartTime,
+				ViolationType:       "flash",
+				Severity:            pse.determineSeverity(flashAnalysis.MaxFlashRate),
+				Description:         fmt.Sprintf("Flash rate of %.2f Hz detected (exceeds 3 Hz threshold)", flashAnalysis.MaxFlashRate),
+				AffectedArea:        1.0,
+				Duration:            period.EndTime - period.StartTime,
+				RiskScore:           math.Min(100, flashAnalysis.MaxFlashRate*20),
+				ComplianceStandards: []string{"WCAG 2.0", "Ofcom", "FCC PSE", "ITU-R BT.709"},
+			}
+			analysis.ViolationInstances = append(analysis.ViolationInstances, violation)
 		}
-		analysis.ViolationInstances = append(analysis.ViolationInstances, violation)
 	}
 
-	// Create flash characteristics
+	// Calculate flash characteristics from actual data
+	flashAnalysis.FlashCharacteristics = pse.analyzeFlashCharacteristics(flashes, videoInfo.FrameRate)
+
+	analysis.FlashAnalysis = flashAnalysis
+
+	pse.logger.Info().
+		Int("flash_count", flashAnalysis.FlashCount).
+		Float64("flash_rate", flashAnalysis.FlashRate).
+		Float64("max_flash_rate", flashAnalysis.MaxFlashRate).
+		Bool("exceeds_threshold", flashAnalysis.ExceedsThreshold).
+		Msg("Flash pattern analysis completed")
+
+	return nil
+}
+
+// LuminanceFrame holds luminance data for a single frame
+type LuminanceFrame struct {
+	FrameNumber int
+	Timestamp   float64
+	YAvg        float64 // Average luminance
+	YMin        float64 // Minimum luminance
+	YMax        float64 // Maximum luminance
+}
+
+// FlashEvent represents a detected flash
+type FlashEvent struct {
+	FrameNumber int
+	Timestamp   float64
+	Intensity   float64 // Delta luminance
+}
+
+// extractLuminanceData uses FFmpeg signalstats to get per-frame luminance
+func (pse *PSEAnalyzer) extractLuminanceData(ctx context.Context, filePath string) ([]LuminanceFrame, error) {
+	// Use FFmpeg signalstats filter to get luminance statistics
+	cmd := exec.CommandContext(ctx,
+		pse.ffmpegPath,
+		"-i", filePath,
+		"-vf", "signalstats,metadata=mode=print",
+		"-f", "null",
+		"-t", "30", // Analyze first 30 seconds
+		"-",
+	)
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("signalstats failed: %w", err)
+	}
+
+	return pse.parseLuminanceOutput(string(output))
+}
+
+// parseLuminanceOutput parses FFmpeg signalstats output for luminance data
+func (pse *PSEAnalyzer) parseLuminanceOutput(output string) ([]LuminanceFrame, error) {
+	var frames []LuminanceFrame
+	var currentFrame *LuminanceFrame
+	frameNum := 0
+
+	lines := strings.Split(output, "\n")
+	frameRe := regexp.MustCompile(`frame:\s*(\d+)`)
+	yavgRe := regexp.MustCompile(`signalstats\.YAVG=(\d+\.?\d*)`)
+	yminRe := regexp.MustCompile(`signalstats\.YMIN=(\d+\.?\d*)`)
+	ymaxRe := regexp.MustCompile(`signalstats\.YMAX=(\d+\.?\d*)`)
+	ptsRe := regexp.MustCompile(`pts_time:\s*(\d+\.?\d*)`)
+
+	for _, line := range lines {
+		// Check for new frame
+		if match := frameRe.FindStringSubmatch(line); len(match) > 1 {
+			if currentFrame != nil {
+				frames = append(frames, *currentFrame)
+			}
+			frameNum, _ = strconv.Atoi(match[1])
+			currentFrame = &LuminanceFrame{FrameNumber: frameNum}
+		}
+
+		if currentFrame == nil {
+			currentFrame = &LuminanceFrame{}
+		}
+
+		// Parse PTS time
+		if match := ptsRe.FindStringSubmatch(line); len(match) > 1 {
+			currentFrame.Timestamp, _ = strconv.ParseFloat(match[1], 64)
+		}
+
+		// Parse YAVG (average luminance)
+		if match := yavgRe.FindStringSubmatch(line); len(match) > 1 {
+			currentFrame.YAvg, _ = strconv.ParseFloat(match[1], 64)
+		}
+
+		// Parse YMIN
+		if match := yminRe.FindStringSubmatch(line); len(match) > 1 {
+			currentFrame.YMin, _ = strconv.ParseFloat(match[1], 64)
+		}
+
+		// Parse YMAX
+		if match := ymaxRe.FindStringSubmatch(line); len(match) > 1 {
+			currentFrame.YMax, _ = strconv.ParseFloat(match[1], 64)
+		}
+	}
+
+	// Add last frame
+	if currentFrame != nil && currentFrame.YAvg > 0 {
+		frames = append(frames, *currentFrame)
+	}
+
+	if len(frames) == 0 {
+		return nil, fmt.Errorf("no luminance data found")
+	}
+
+	return frames, nil
+}
+
+// detectFlashesFromLuminance analyzes luminance data to detect flashes
+func (pse *PSEAnalyzer) detectFlashesFromLuminance(frames []LuminanceFrame, frameRate float64) []FlashEvent {
+	var flashes []FlashEvent
+
+	if len(frames) < 2 {
+		return flashes
+	}
+
+	// A flash is a rapid change in luminance
+	// WCAG 2.0: 10% or more change in relative luminance where darker is below 0.80
+	const flashThreshold = 25.5 // 10% of 255 (max luminance in 8-bit)
+
+	for i := 1; i < len(frames); i++ {
+		delta := math.Abs(frames[i].YAvg - frames[i-1].YAvg)
+
+		// Check if this is a significant luminance change
+		if delta > flashThreshold {
+			// Check if the darker frame is below 0.80 relative luminance (204 in 8-bit)
+			minLuma := math.Min(frames[i].YAvg, frames[i-1].YAvg)
+			if minLuma < 204 {
+				flash := FlashEvent{
+					FrameNumber: frames[i].FrameNumber,
+					Timestamp:   frames[i].Timestamp,
+					Intensity:   delta / 255.0, // Normalize to 0-1
+				}
+				flashes = append(flashes, flash)
+			}
+		}
+	}
+
+	return flashes
+}
+
+// calculateMaxFlashRate finds the maximum flash rate in any 1-second window
+func (pse *PSEAnalyzer) calculateMaxFlashRate(flashes []FlashEvent, frameRate float64) float64 {
+	if len(flashes) == 0 {
+		return 0
+	}
+
+	maxRate := 0.0
+
+	// Slide a 1-second window through the flashes
+	for i := 0; i < len(flashes); i++ {
+		windowEnd := flashes[i].Timestamp + 1.0
+		count := 0
+
+		for j := i; j < len(flashes) && flashes[j].Timestamp < windowEnd; j++ {
+			count++
+		}
+
+		if float64(count) > maxRate {
+			maxRate = float64(count)
+		}
+	}
+
+	return maxRate
+}
+
+// findCriticalPeriods identifies time periods where flash rate exceeds threshold
+func (pse *PSEAnalyzer) findCriticalPeriods(flashes []FlashEvent, frameRate float64) []TimePeriod {
+	var periods []TimePeriod
+
+	if len(flashes) == 0 {
+		return periods
+	}
+
+	var inCritical bool
+	var periodStart float64
+
+	for i := 0; i < len(flashes); i++ {
+		windowEnd := flashes[i].Timestamp + 1.0
+		count := 0
+
+		for j := i; j < len(flashes) && flashes[j].Timestamp < windowEnd; j++ {
+			count++
+		}
+
+		if count >= 3 { // 3+ flashes per second
+			if !inCritical {
+				inCritical = true
+				periodStart = flashes[i].Timestamp
+			}
+		} else if inCritical {
+			endTime := flashes[i-1].Timestamp
+			periods = append(periods, TimePeriod{
+				StartTime: periodStart,
+				EndTime:   endTime,
+				Duration:  endTime - periodStart,
+			})
+			inCritical = false
+		}
+	}
+
+	// Close any open period
+	if inCritical && len(flashes) > 0 {
+		endTime := flashes[len(flashes)-1].Timestamp
+		periods = append(periods, TimePeriod{
+			StartTime: periodStart,
+			EndTime:   endTime,
+			Duration:  endTime - periodStart,
+		})
+	}
+
+	return periods
+}
+
+// determineSeverity returns severity level based on flash rate
+func (pse *PSEAnalyzer) determineSeverity(flashRate float64) string {
+	if flashRate >= 25 {
+		return "extreme"
+	} else if flashRate >= 10 {
+		return "high"
+	} else if flashRate >= 5 {
+		return "medium"
+	}
+	return "low"
+}
+
+// analyzeFlashCharacteristics computes flash pattern characteristics
+func (pse *PSEAnalyzer) analyzeFlashCharacteristics(flashes []FlashEvent, frameRate float64) *FlashCharacteristics {
+	if len(flashes) < 2 {
+		return &FlashCharacteristics{
+			DominantFrequency: 0,
+			FrequencySpread:   0,
+			RegularityIndex:   1.0,
+			Predictability:    1.0,
+		}
+	}
+
+	// Calculate inter-flash intervals
+	var intervals []float64
+	for i := 1; i < len(flashes); i++ {
+		interval := flashes[i].Timestamp - flashes[i-1].Timestamp
+		if interval > 0 {
+			intervals = append(intervals, interval)
+		}
+	}
+
+	if len(intervals) == 0 {
+		return &FlashCharacteristics{
+			DominantFrequency: 0,
+			FrequencySpread:   0,
+			RegularityIndex:   1.0,
+			Predictability:    1.0,
+		}
+	}
+
+	// Calculate mean interval and frequency
+	var sum float64
+	for _, i := range intervals {
+		sum += i
+	}
+	meanInterval := sum / float64(len(intervals))
+	dominantFreq := 1.0 / meanInterval
+
+	// Calculate variance for regularity
+	var variance float64
+	for _, i := range intervals {
+		diff := i - meanInterval
+		variance += diff * diff
+	}
+	variance /= float64(len(intervals))
+	stdDev := math.Sqrt(variance)
+
+	// Regularity: 1 = perfectly regular, 0 = completely irregular
+	regularity := 1.0 - math.Min(1.0, stdDev/meanInterval)
+
+	return &FlashCharacteristics{
+		DominantFrequency: dominantFreq,
+		FrequencySpread:   stdDev,
+		RegularityIndex:   regularity,
+		Predictability:    regularity * 0.8, // Predictability correlates with regularity
+	}
+}
+
+// fallbackFlashAnalysis provides basic analysis when signalstats is unavailable
+func (pse *PSEAnalyzer) fallbackFlashAnalysis(ctx context.Context, filePath string, videoInfo *VideoInfo, analysis *PSEAnalysis, flashAnalysis *FlashAnalysis) error {
+	pse.logger.Info().Msg("Using fallback scene-change based flash analysis")
+
+	// Use scene detection as a proxy for potential flashes
+	cmd := exec.CommandContext(ctx,
+		pse.ffmpegPath,
+		"-i", filePath,
+		"-vf", "select='gt(scene,0.3)',metadata=print",
+		"-f", "null",
+		"-t", "30",
+		"-",
+	)
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		// If FFmpeg fails, report no flashes detected with low confidence
+		flashAnalysis.FlashCount = 0
+		flashAnalysis.FlashRate = 0
+		flashAnalysis.MaxFlashRate = 0
+		flashAnalysis.ExceedsThreshold = false
+		flashAnalysis.FlashCharacteristics = &FlashCharacteristics{
+			DominantFrequency: 0,
+			RegularityIndex:   1.0,
+			Predictability:    1.0,
+		}
+		analysis.FlashAnalysis = flashAnalysis
+		return nil
+	}
+
+	// Count scene changes as potential flash events
+	sceneChanges := strings.Count(string(output), "scene:")
+
+	flashAnalysis.FlashCount = sceneChanges
+	if videoInfo.Duration > 0 {
+		flashAnalysis.FlashRate = float64(sceneChanges) / videoInfo.Duration
+		flashAnalysis.MaxFlashRate = flashAnalysis.FlashRate * 1.2
+	}
+
+	flashAnalysis.ExceedsThreshold = flashAnalysis.FlashRate > 3.0
 	flashAnalysis.FlashCharacteristics = &FlashCharacteristics{
 		DominantFrequency: flashAnalysis.FlashRate,
-		FrequencySpread:   flashAnalysis.FlashRate * 0.2,
-		RegularityIndex:   0.5, // Moderate regularity
-		Predictability:    0.6, // Moderate predictability
+		RegularityIndex:   0.5,
+		Predictability:    0.5,
 	}
 
 	analysis.FlashAnalysis = flashAnalysis

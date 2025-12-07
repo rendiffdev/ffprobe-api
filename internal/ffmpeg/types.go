@@ -340,15 +340,32 @@ type FrameStatistics struct {
 
 // ContentAnalysis provides content-based quality analysis
 type ContentAnalysis struct {
-	BlackFrames   *BlackFrameAnalysis    `json:"black_frames,omitempty"`
-	FreezeFrames  *FreezeFrameAnalysis   `json:"freeze_frames,omitempty"`
-	AudioClipping *AudioClippingAnalysis `json:"audio_clipping,omitempty"`
-	Blockiness    *BlockinessAnalysis    `json:"blockiness,omitempty"`
-	Blurriness    *BlurrinessAnalysis    `json:"blurriness,omitempty"`
-	InterlaceInfo *InterlaceAnalysis     `json:"interlace_info,omitempty"`
-	NoiseLevel    *NoiseAnalysis         `json:"noise_level,omitempty"`
-	LoudnessMeter *LoudnessAnalysis      `json:"loudness_meter,omitempty"`
-	HDRAnalysis   *HDRAnalysis           `json:"hdr_analysis,omitempty"`
+	BlackFrames          *BlackFrameAnalysis           `json:"black_frames,omitempty"`
+	FreezeFrames         *FreezeFrameAnalysis          `json:"freeze_frames,omitempty"`
+	AudioClipping        *AudioClippingAnalysis        `json:"audio_clipping,omitempty"`
+	SilenceInfo          *SilenceAnalysis              `json:"silence_info,omitempty"`
+	PhaseInfo            *PhaseAnalysis                `json:"phase_info,omitempty"`
+	AudioLevelInfo       *AudioLevelAnalysis           `json:"audio_level_info,omitempty"`
+	LetterboxInfo        *LetterboxAnalysis            `json:"letterbox_info,omitempty"`
+	DropoutInfo          *DropoutAnalysis              `json:"dropout_info,omitempty"`
+	ColorBarsInfo        *ColorBarsAnalysis            `json:"color_bars_info,omitempty"`
+	TestToneInfo         *TestToneAnalysis             `json:"test_tone_info,omitempty"`
+	SafeAreaInfo         *SafeAreaAnalysis             `json:"safe_area_info,omitempty"`
+	ChannelMappingInfo   *ChannelMappingAnalysis       `json:"channel_mapping_info,omitempty"`
+	TimecodeInfo         *TimecodeContinuityAnalysis   `json:"timecode_info,omitempty"`
+	Blockiness           *BlockinessAnalysis           `json:"blockiness,omitempty"`
+	Blurriness           *BlurrinessAnalysis           `json:"blurriness,omitempty"`
+	InterlaceInfo        *InterlaceAnalysis            `json:"interlace_info,omitempty"`
+	NoiseLevel           *NoiseAnalysis                `json:"noise_level,omitempty"`
+	LoudnessMeter        *LoudnessAnalysis             `json:"loudness_meter,omitempty"`
+	HDRAnalysis          *HDRAnalysis                  `json:"hdr_analysis,omitempty"`
+	BasebandInfo         *BasebandAnalysis             `json:"baseband_info,omitempty"`
+	VideoQualityScore    *VideoQualityScoreAnalysis    `json:"video_quality_score,omitempty"`
+	TemporalComplexity   *TemporalComplexityAnalysis   `json:"temporal_complexity,omitempty"`
+	FieldDominance       *FieldDominanceAnalysis       `json:"field_dominance,omitempty"`
+	DifferentialFrame    *DifferentialFrameAnalysis    `json:"differential_frame,omitempty"`
+	LineErrors           *LineErrorAnalysis            `json:"line_errors,omitempty"`
+	AudioFrequency       *AudioFrequencyAnalysis       `json:"audio_frequency,omitempty"`
 }
 
 // BlackFrameAnalysis detects black or nearly black frames
@@ -370,6 +387,231 @@ type AudioClippingAnalysis struct {
 	ClippedSamples int     `json:"clipped_samples"`
 	Percentage     float64 `json:"percentage"`
 	PeakLevel      float64 `json:"peak_level_db"`
+}
+
+// SilenceAnalysis detects silence/mute periods in audio
+type SilenceAnalysis struct {
+	SilencePeriods     []SilencePeriod `json:"silence_periods,omitempty"`
+	TotalSilenceCount  int             `json:"total_silence_count"`
+	TotalSilenceSec    float64         `json:"total_silence_seconds"`
+	LongestSilenceSec  float64         `json:"longest_silence_seconds"`
+	SilencePercentage  float64         `json:"silence_percentage"`
+	NoiseFloorDB       float64         `json:"noise_floor_db"`
+	ThresholdDB        float64         `json:"threshold_db"`
+	MinDurationSec     float64         `json:"min_duration_seconds"`
+	HasProblematicMute bool            `json:"has_problematic_mute"`
+}
+
+// SilencePeriod represents a detected silence period
+type SilencePeriod struct {
+	StartTime   float64 `json:"start_time"`
+	EndTime     float64 `json:"end_time"`
+	Duration    float64 `json:"duration"`
+	NoiseFloor  float64 `json:"noise_floor_db,omitempty"`
+	IsStartMute bool    `json:"is_start_mute,omitempty"`
+	IsEndMute   bool    `json:"is_end_mute,omitempty"`
+}
+
+// PhaseAnalysis detects audio phase issues (out-of-phase stereo)
+type PhaseAnalysis struct {
+	AveragePhase       float64        `json:"average_phase"`
+	MinPhase           float64        `json:"min_phase"`
+	MaxPhase           float64        `json:"max_phase"`
+	PhaseCorrelation   float64        `json:"phase_correlation"`
+	OutOfPhasePercent  float64        `json:"out_of_phase_percent"`
+	HasPhaseIssues     bool           `json:"has_phase_issues"`
+	PhaseProblemFrames int            `json:"phase_problem_frames"`
+	TotalFrames        int            `json:"total_frames"`
+	PhaseEvents        []PhaseEvent   `json:"phase_events,omitempty"`
+	Severity           string         `json:"severity"`
+}
+
+// PhaseEvent represents a detected phase issue event
+type PhaseEvent struct {
+	StartTime      float64 `json:"start_time"`
+	EndTime        float64 `json:"end_time"`
+	Duration       float64 `json:"duration"`
+	AveragePhase   float64 `json:"average_phase"`
+	MinPhase       float64 `json:"min_phase"`
+}
+
+// AudioLevelAnalysis provides detailed audio level measurements
+type AudioLevelAnalysis struct {
+	Channels          []ChannelLevelInfo `json:"channels,omitempty"`
+	OverallPeakDB     float64            `json:"overall_peak_db"`
+	OverallRMSDB      float64            `json:"overall_rms_db"`
+	DynamicRangeDB    float64            `json:"dynamic_range_db"`
+	CrestFactor       float64            `json:"crest_factor"`
+	DCOffset          float64            `json:"dc_offset"`
+	HasClipping       bool               `json:"has_clipping"`
+	ClippingCount     int                `json:"clipping_count"`
+	IsBroadcastSafe   bool               `json:"is_broadcast_safe"`
+	Headroom          float64            `json:"headroom_db"`
+	Severity          string             `json:"severity"`
+}
+
+// ChannelLevelInfo provides per-channel audio measurements
+type ChannelLevelInfo struct {
+	Channel      int     `json:"channel"`
+	PeakDB       float64 `json:"peak_db"`
+	RMSDB        float64 `json:"rms_db"`
+	MinDB        float64 `json:"min_db"`
+	MaxDB        float64 `json:"max_db"`
+	CrestFactor  float64 `json:"crest_factor"`
+	DCOffset     float64 `json:"dc_offset"`
+	FlatFactor   float64 `json:"flat_factor"`
+	PeakCount    int     `json:"peak_count"`
+	BitDepth     int     `json:"bit_depth,omitempty"`
+	DynamicRange float64 `json:"dynamic_range_db"`
+}
+
+// LetterboxAnalysis detects letterboxing and pillarboxing in video
+type LetterboxAnalysis struct {
+	HasLetterbox     bool    `json:"has_letterbox"`
+	HasPillarbox     bool    `json:"has_pillarbox"`
+	Type             string  `json:"type"`
+	OriginalWidth    int     `json:"original_width"`
+	OriginalHeight   int     `json:"original_height"`
+	ActiveWidth      int     `json:"active_width"`
+	ActiveHeight     int     `json:"active_height"`
+	TopBar           int     `json:"top_bar"`
+	BottomBar        int     `json:"bottom_bar"`
+	LeftBar          int     `json:"left_bar"`
+	RightBar         int     `json:"right_bar"`
+	AspectRatio      string  `json:"aspect_ratio"`
+	ActiveAspect     string  `json:"active_aspect_ratio"`
+	CropFilter       string  `json:"crop_filter"`
+	BlackPercentage  float64 `json:"black_percentage"`
+	IsConsistent     bool    `json:"is_consistent"`
+	FramesAnalyzed   int     `json:"frames_analyzed"`
+	Confidence       float64 `json:"confidence"`
+}
+
+// DropoutAnalysis detects video/audio signal dropouts
+type DropoutAnalysis struct {
+	HasDropouts           bool           `json:"has_dropouts"`
+	VideoDropouts         []DropoutEvent `json:"video_dropouts,omitempty"`
+	AudioDropouts         []DropoutEvent `json:"audio_dropouts,omitempty"`
+	TotalVideoDropouts    int            `json:"total_video_dropouts"`
+	TotalAudioDropouts    int            `json:"total_audio_dropouts"`
+	MaxVideoDropoutSec    float64        `json:"max_video_dropout_seconds"`
+	MaxAudioDropoutSec    float64        `json:"max_audio_dropout_seconds"`
+	TotalDropoutSec       float64        `json:"total_dropout_seconds"`
+	DropoutPercentage     float64        `json:"dropout_percentage"`
+	IsBroadcastCompliant  bool           `json:"is_broadcast_compliant"`
+	Severity              string         `json:"severity"`
+	FramesAnalyzed        int            `json:"frames_analyzed"`
+}
+
+// DropoutEvent represents a detected dropout event
+type DropoutEvent struct {
+	Type        string  `json:"type"`
+	StartTime   float64 `json:"start_time"`
+	EndTime     float64 `json:"end_time"`
+	Duration    float64 `json:"duration"`
+	Severity    string  `json:"severity"`
+	Description string  `json:"description,omitempty"`
+}
+
+// ColorBarsAnalysis detects color bars/test patterns at start/end of content
+type ColorBarsAnalysis struct {
+	HasColorBars      bool             `json:"has_color_bars"`
+	ColorBarsAtStart  bool             `json:"color_bars_at_start"`
+	ColorBarsAtEnd    bool             `json:"color_bars_at_end"`
+	StartDuration     float64          `json:"start_duration_seconds"`
+	EndDuration       float64          `json:"end_duration_seconds"`
+	DetectedPattern   string           `json:"detected_pattern"`
+	ColorBarsEvents   []ColorBarsEvent `json:"color_bars_events,omitempty"`
+	IsCompliant       bool             `json:"is_compliant"`
+	Confidence        float64          `json:"confidence"`
+}
+
+// ColorBarsEvent represents a detected color bars segment
+type ColorBarsEvent struct {
+	StartTime   float64 `json:"start_time"`
+	EndTime     float64 `json:"end_time"`
+	Duration    float64 `json:"duration"`
+	PatternType string  `json:"pattern_type"`
+	Confidence  float64 `json:"confidence"`
+}
+
+// TestToneAnalysis detects test tones (1kHz, slate tones) in audio
+type TestToneAnalysis struct {
+	HasTestTone       bool            `json:"has_test_tone"`
+	TestToneAtStart   bool            `json:"test_tone_at_start"`
+	TestToneAtEnd     bool            `json:"test_tone_at_end"`
+	StartDuration     float64         `json:"start_duration_seconds"`
+	EndDuration       float64         `json:"end_duration_seconds"`
+	DetectedFrequency float64         `json:"detected_frequency_hz"`
+	DetectedLevel     float64         `json:"detected_level_db"`
+	TestToneEvents    []TestToneEvent `json:"test_tone_events,omitempty"`
+	IsCompliant       bool            `json:"is_compliant"`
+}
+
+// TestToneEvent represents a detected test tone segment
+type TestToneEvent struct {
+	StartTime float64 `json:"start_time"`
+	EndTime   float64 `json:"end_time"`
+	Duration  float64 `json:"duration"`
+	Frequency float64 `json:"frequency_hz"`
+	Level     float64 `json:"level_db"`
+}
+
+// SafeAreaAnalysis checks title-safe and action-safe boundaries
+type SafeAreaAnalysis struct {
+	TitleSafeCompliant  bool    `json:"title_safe_compliant"`
+	ActionSafeCompliant bool    `json:"action_safe_compliant"`
+	TitleSafeMargin     float64 `json:"title_safe_margin_percent"`
+	ActionSafeMargin    float64 `json:"action_safe_margin_percent"`
+	ContentInTitleSafe  float64 `json:"content_in_title_safe_percent"`
+	ContentInActionSafe float64 `json:"content_in_action_safe_percent"`
+	ViolationCount      int     `json:"violation_count"`
+	FramesAnalyzed      int     `json:"frames_analyzed"`
+}
+
+// ChannelMappingAnalysis validates audio channel configuration
+type ChannelMappingAnalysis struct {
+	TotalChannels     int                    `json:"total_channels"`
+	ChannelLayout     string                 `json:"channel_layout"`
+	ExpectedLayout    string                 `json:"expected_layout,omitempty"`
+	IsValid           bool                   `json:"is_valid"`
+	ChannelDetails    []ChannelDetail        `json:"channel_details,omitempty"`
+	HasSurround       bool                   `json:"has_surround"`
+	HasLFE            bool                   `json:"has_lfe"`
+	IsBroadcastLayout bool                   `json:"is_broadcast_layout"`
+	LayoutIssues      []string               `json:"layout_issues,omitempty"`
+}
+
+// ChannelDetail provides info about individual audio channel
+type ChannelDetail struct {
+	Index       int     `json:"index"`
+	Name        string  `json:"name"`
+	PeakLevel   float64 `json:"peak_level_db"`
+	RMSLevel    float64 `json:"rms_level_db"`
+	IsSilent    bool    `json:"is_silent"`
+	IsActive    bool    `json:"is_active"`
+}
+
+// TimecodeContinuityAnalysis checks for timecode gaps/discontinuities
+type TimecodeContinuityAnalysis struct {
+	HasTimecode        bool                 `json:"has_timecode"`
+	TimecodeFormat     string               `json:"timecode_format"`
+	StartTimecode      string               `json:"start_timecode"`
+	EndTimecode        string               `json:"end_timecode"`
+	IsContinuous       bool                 `json:"is_continuous"`
+	Discontinuities    []TimecodeGap        `json:"discontinuities,omitempty"`
+	TotalGaps          int                  `json:"total_gaps"`
+	IsDropFrame        bool                 `json:"is_drop_frame"`
+	FrameRate          float64              `json:"frame_rate"`
+}
+
+// TimecodeGap represents a timecode discontinuity
+type TimecodeGap struct {
+	Position       float64 `json:"position_seconds"`
+	ExpectedTC     string  `json:"expected_timecode"`
+	ActualTC       string  `json:"actual_timecode"`
+	GapFrames      int     `json:"gap_frames"`
+	GapSeconds     float64 `json:"gap_seconds"`
 }
 
 // BlockinessAnalysis measures compression blockiness
@@ -778,4 +1020,208 @@ type DataIntegrityValidation struct {
 	Issues             []string `json:"issues,omitempty"`
 	Recommendations    []string `json:"recommendations,omitempty"`
 	RequiredActions    []string `json:"required_actions,omitempty"`
+}
+
+// BasebandAnalysis provides comprehensive baseband/waveform signal analysis
+type BasebandAnalysis struct {
+	// Luminance analysis
+	HighestLuminance       float64            `json:"highest_luminance"`
+	LowestLuminance        float64            `json:"lowest_luminance"`
+	AverageLuminance       float64            `json:"average_luminance"`
+	LuminanceRange         float64            `json:"luminance_range"`
+	Brightness             float64            `json:"brightness"`
+	Contrast               float64            `json:"contrast"`
+	// Luma violations (broadcast legal: 16-235 for 8-bit)
+	LumaFootroomViolations int                `json:"luma_footroom_violations"`
+	LumaHeadroomViolations int                `json:"luma_headroom_violations"`
+	LumaOutOfRangePercent  float64            `json:"luma_out_of_range_percent"`
+	// Chroma analysis
+	HighestChromaU         float64            `json:"highest_chroma_u"`
+	HighestChromaV         float64            `json:"highest_chroma_v"`
+	LowestChromaU          float64            `json:"lowest_chroma_u"`
+	LowestChromaV          float64            `json:"lowest_chroma_v"`
+	ChromaHeadroomViolations int              `json:"chroma_headroom_violations"`
+	ChromaOutOfRangePercent float64           `json:"chroma_out_of_range_percent"`
+	// Gamut analysis
+	GamutErrors            int                `json:"gamut_errors"`
+	GamutErrorPercent      float64            `json:"gamut_error_percent"`
+	// Broadcast compliance
+	IsBroadcastLegal       bool               `json:"is_broadcast_legal"`
+	LegalRangeMin          int                `json:"legal_range_min"`
+	LegalRangeMax          int                `json:"legal_range_max"`
+	FramesAnalyzed         int                `json:"frames_analyzed"`
+	ViolationFrames        []BasebandViolation `json:"violation_frames,omitempty"`
+	Severity               string             `json:"severity"`
+}
+
+// BasebandViolation represents a frame with baseband violations
+type BasebandViolation struct {
+	FrameNumber    int     `json:"frame_number"`
+	Timestamp      float64 `json:"timestamp"`
+	ViolationType  string  `json:"violation_type"`
+	Value          float64 `json:"value"`
+	Threshold      float64 `json:"threshold"`
+}
+
+// VideoQualityScoreAnalysis provides objective video quality metrics
+type VideoQualityScoreAnalysis struct {
+	// Overall scores
+	OverallScore        float64 `json:"overall_score"`
+	// Per-metric scores (0-100 scale)
+	SharpnessScore      float64 `json:"sharpness_score"`
+	ContrastScore       float64 `json:"contrast_score"`
+	ColorScore          float64 `json:"color_score"`
+	NoiseScore          float64 `json:"noise_score"`
+	BlockinessScore     float64 `json:"blockiness_score"`
+	// Temporal scores
+	TemporalStability   float64 `json:"temporal_stability"`
+	MotionQuality       float64 `json:"motion_quality"`
+	// Quality classification
+	QualityClass        string  `json:"quality_class"`
+	IsBroadcastQuality  bool    `json:"is_broadcast_quality"`
+	// Detailed metrics
+	PSNR                float64 `json:"psnr,omitempty"`
+	SSIM                float64 `json:"ssim,omitempty"`
+	FramesAnalyzed      int     `json:"frames_analyzed"`
+}
+
+// TemporalComplexityAnalysis measures scene complexity over time
+type TemporalComplexityAnalysis struct {
+	AverageComplexity   float64              `json:"average_complexity"`
+	MaxComplexity       float64              `json:"max_complexity"`
+	MinComplexity       float64              `json:"min_complexity"`
+	ComplexityVariance  float64              `json:"complexity_variance"`
+	// Motion analysis
+	AverageMotion       float64              `json:"average_motion"`
+	MaxMotion           float64              `json:"max_motion"`
+	HighMotionPercent   float64              `json:"high_motion_percent"`
+	// Scene changes
+	SceneChangeCount    int                  `json:"scene_change_count"`
+	AverageSceneLength  float64              `json:"average_scene_length_sec"`
+	// Complexity classification
+	ComplexityClass     string               `json:"complexity_class"`
+	EncodingDifficulty  string               `json:"encoding_difficulty"`
+	// High complexity segments
+	HighComplexitySegments []ComplexitySegment `json:"high_complexity_segments,omitempty"`
+	FramesAnalyzed      int                  `json:"frames_analyzed"`
+}
+
+// ComplexitySegment represents a segment with notable complexity
+type ComplexitySegment struct {
+	StartTime      float64 `json:"start_time"`
+	EndTime        float64 `json:"end_time"`
+	Duration       float64 `json:"duration"`
+	Complexity     float64 `json:"complexity"`
+	MotionLevel    float64 `json:"motion_level"`
+}
+
+// FieldDominanceAnalysis detects field order issues in interlaced content
+type FieldDominanceAnalysis struct {
+	IsInterlaced       bool    `json:"is_interlaced"`
+	DetectedFieldOrder string  `json:"detected_field_order"`
+	ExpectedFieldOrder string  `json:"expected_field_order,omitempty"`
+	HasFieldOrderError bool    `json:"has_field_order_error"`
+	// Field analysis
+	TopFieldFirst      int     `json:"top_field_first_count"`
+	BottomFieldFirst   int     `json:"bottom_field_first_count"`
+	Progressive        int     `json:"progressive_count"`
+	Undetermined       int     `json:"undetermined_count"`
+	// Dominance confidence
+	Confidence         float64 `json:"confidence"`
+	DominanceRatio     float64 `json:"dominance_ratio"`
+	// Errors
+	FieldOrderErrors   int     `json:"field_order_errors"`
+	ErrorPercent       float64 `json:"error_percent"`
+	FramesAnalyzed     int     `json:"frames_analyzed"`
+	Severity           string  `json:"severity"`
+}
+
+// DifferentialFrameAnalysis detects frame differences and anomalies
+type DifferentialFrameAnalysis struct {
+	AverageDifference    float64                `json:"average_difference"`
+	MaxDifference        float64                `json:"max_difference"`
+	MinDifference        float64                `json:"min_difference"`
+	// Anomaly detection
+	AnomalousFrames      int                    `json:"anomalous_frames"`
+	AnomalyPercent       float64                `json:"anomaly_percent"`
+	// Duplicate detection
+	DuplicateFrames      int                    `json:"duplicate_frames"`
+	DuplicatePercent     float64                `json:"duplicate_percent"`
+	// Sudden changes
+	SuddenChangeCount    int                    `json:"sudden_change_count"`
+	SuddenChanges        []DifferentialEvent    `json:"sudden_changes,omitempty"`
+	// Frame drops
+	DropDetected         bool                   `json:"drop_detected"`
+	EstimatedDrops       int                    `json:"estimated_drops"`
+	FramesAnalyzed       int                    `json:"frames_analyzed"`
+	IsBroadcastCompliant bool                   `json:"is_broadcast_compliant"`
+}
+
+// DifferentialEvent represents a significant frame difference event
+type DifferentialEvent struct {
+	FrameNumber    int     `json:"frame_number"`
+	Timestamp      float64 `json:"timestamp"`
+	Difference     float64 `json:"difference"`
+	EventType      string  `json:"event_type"`
+}
+
+// LineErrorAnalysis detects luminance and chrominance line errors
+type LineErrorAnalysis struct {
+	// Luminance line errors
+	LuminanceLineErrors    int                `json:"luminance_line_errors"`
+	LuminanceErrorLines    []LineError        `json:"luminance_error_lines,omitempty"`
+	// Chrominance line errors
+	ChrominanceLineErrors  int                `json:"chrominance_line_errors"`
+	ChrominanceErrorLines  []LineError        `json:"chrominance_error_lines,omitempty"`
+	// DigiBeta-style errors
+	DigiBetaErrors         int                `json:"digibeta_errors"`
+	// Statistics
+	TotalLineErrors        int                `json:"total_line_errors"`
+	ErrorPercentage        float64            `json:"error_percentage"`
+	AffectedFrames         int                `json:"affected_frames"`
+	FramesAnalyzed         int                `json:"frames_analyzed"`
+	IsBroadcastCompliant   bool               `json:"is_broadcast_compliant"`
+	Severity               string             `json:"severity"`
+}
+
+// LineError represents a detected line error
+type LineError struct {
+	FrameNumber    int     `json:"frame_number"`
+	Timestamp      float64 `json:"timestamp"`
+	LineNumber     int     `json:"line_number"`
+	ErrorType      string  `json:"error_type"`
+	Severity       float64 `json:"severity"`
+}
+
+// AudioFrequencyAnalysis provides detailed audio frequency analysis
+type AudioFrequencyAnalysis struct {
+	// Dominant frequencies
+	DominantFrequency    float64              `json:"dominant_frequency_hz"`
+	FrequencyRange       [2]float64           `json:"frequency_range_hz"`
+	// Spectrum analysis
+	LowFreqEnergy        float64              `json:"low_freq_energy_percent"`
+	MidFreqEnergy        float64              `json:"mid_freq_energy_percent"`
+	HighFreqEnergy       float64              `json:"high_freq_energy_percent"`
+	// Tone detection
+	HasPureTone          bool                 `json:"has_pure_tone"`
+	PureToneFrequency    float64              `json:"pure_tone_frequency_hz,omitempty"`
+	PureToneLevel        float64              `json:"pure_tone_level_db,omitempty"`
+	// Bandwidth
+	EffectiveBandwidth   float64              `json:"effective_bandwidth_hz"`
+	BandwidthUsage       float64              `json:"bandwidth_usage_percent"`
+	// Quality indicators
+	SpectralFlatness     float64              `json:"spectral_flatness"`
+	SpectralCentroid     float64              `json:"spectral_centroid_hz"`
+	// Detected anomalies
+	FrequencyAnomalies   []FrequencyAnomaly   `json:"frequency_anomalies,omitempty"`
+	FramesAnalyzed       int                  `json:"frames_analyzed"`
+}
+
+// FrequencyAnomaly represents a detected frequency anomaly
+type FrequencyAnomaly struct {
+	StartTime      float64 `json:"start_time"`
+	EndTime        float64 `json:"end_time"`
+	Frequency      float64 `json:"frequency_hz"`
+	Level          float64 `json:"level_db"`
+	AnomalyType    string  `json:"anomaly_type"`
 }

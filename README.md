@@ -2,10 +2,11 @@
 
 **Professional Video Analysis API & CLI - Powered by FFprobe**
 
-A production-ready REST API and CLI tool for comprehensive video/audio file analysis, built on top of FFprobe with 19 professional quality control analysis categories.
+A production-ready REST API and CLI tool for comprehensive video/audio file analysis, built on top of FFprobe with 19 professional QC categories and 26 content analyzers covering 121 industry-standard parameters.
 
 [![Go Version](https://img.shields.io/badge/go-1.24-blue.svg)](https://go.dev/)
-[![QC Analysis](https://img.shields.io/badge/QC-19%20Categories-blue.svg)](#quality-control-features)
+[![QC Parameters](https://img.shields.io/badge/QC-121%20Parameters-blue.svg)](#quality-control-features)
+[![Content Analyzers](https://img.shields.io/badge/Analyzers-26%20Parallel-green.svg)](#content-analysis)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](#quick-start)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -27,7 +28,8 @@ We are grateful to the FFmpeg community for developing and maintaining such a ro
 
 ### Core Capabilities
 - **Comprehensive FFprobe Analysis**: Full format, stream, frame, and packet analysis via FFprobe
-- **19 Professional QC Categories**: Industry-standard quality control analysis
+- **121 Industry-Standard QC Parameters**: Complete broadcast and streaming quality control
+- **26 Parallel Content Analyzers**: Real-time analysis using FFmpeg filters (signalstats, idet, astats, etc.)
 - **REST API** (`rendiff-probe`): HTTP interface for video analysis
 - **CLI Tool** (`rendiffprobe-cli`): Command-line tool for local analysis
 - **GraphQL API**: Flexible query interface for advanced integrations
@@ -40,16 +42,14 @@ We are grateful to the FFmpeg community for developing and maintaining such a ro
 - **Valkey/Redis Caching**: High-performance result caching
 
 ### Quality Control Analysis
-Professional broadcast and streaming QC analysis including:
-- AFD (Active Format Description) Analysis
-- Dead Pixel Detection
-- PSE (Photosensitive Epilepsy) Flash Analysis
-- HDR Analysis (HDR10, Dolby Vision, HLG)
-- Timecode Analysis (SMPTE)
-- MXF Format Validation
-- IMF Compliance Checking
-- Transport Stream Analysis
-- And 10 more categories...
+Professional broadcast and streaming QC analysis covering:
+
+**Header/Format Analysis**: Container validation, codec profiles, resolution, frame rate, bit depth, endianness
+**Video Quality**: Baseband analysis (YMIN/YMAX/YAVG), gamut checking, blockiness, blurriness, noise, line errors
+**Video Content**: Black frames, freeze frames, letterboxing, color bars, safe areas, field dominance, temporal complexity
+**Audio Analysis**: EBU R128 loudness, clipping, silence, phase correlation, channel mapping, frequency analysis
+**Broadcast Compliance**: HDR (HDR10/Dolby Vision/HLG), MXF validation, IMF compliance, transport stream analysis, timecode continuity
+**Safety & Accessibility**: PSE flash detection, AFD analysis, stream disposition, data integrity
 
 ## Quick Start
 
@@ -281,7 +281,7 @@ The CLI provides the same powerful analysis capabilities without requiring a run
 
 | Command | Description |
 |---------|-------------|
-| `analyze` | Full QC analysis with all 19 categories |
+| `analyze` | Full QC analysis with all 26 content analyzers |
 | `categories` | List available QC analysis categories |
 | `info` | Quick file information (basic metadata) |
 | `version` | Show version information |
@@ -343,30 +343,81 @@ make prod
 
 ## Architecture
 
+> **[View Full Architecture Documentation](docs/ARCHITECTURE.md)** - Detailed system design, component diagrams, and implementation patterns.
+
 ```
-                    ┌─────────────────────────────────────────────┐
-                    │              Rendiff Probe                   │
-                    │         (Powered by FFprobe)                 │
-                    └─────────────────────────────────────────────┘
-                                        │
-                    ┌───────────────────┴───────────────────┐
-                    │                                       │
-            ┌───────▼───────┐                       ┌───────▼───────┐
-            │ rendiff-probe │                       │rendiffprobe-cli│
-            │   (API)       │                       │   (CLI)       │
-            └───────┬───────┘                       └───────┬───────┘
-                    │                                       │
-                    └───────────────────┬───────────────────┘
-                                        │
-                                ┌───────▼───────┐
-                                │   FFprobe     │
-                                │   (FFmpeg)    │
-                                └───────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                              CLIENT LAYER                                     │
+│    ┌─────────────┐     ┌─────────────┐     ┌─────────────┐                   │
+│    │  REST API   │     │  GraphQL    │     │   CLI Tool  │                   │
+│    └──────┬──────┘     └──────┬──────┘     └──────┬──────┘                   │
+└───────────┼────────────────────┼────────────────────┼─────────────────────────┘
+            │                    │                    │
+┌───────────▼────────────────────▼────────────────────▼─────────────────────────┐
+│                           MIDDLEWARE LAYER                                     │
+│  [Recovery] → [RequestID] → [Logging] → [RateLimit] → [Auth] → [Validation]  │
+└───────────────────────────────────┬───────────────────────────────────────────┘
+                                    │
+┌───────────────────────────────────▼───────────────────────────────────────────┐
+│                            SERVICE LAYER                                       │
+│   ┌────────────────┐   ┌────────────────┐   ┌────────────────┐               │
+│   │ AnalysisService│   │ ReportService  │   │ SecretRotation │               │
+│   └───────┬────────┘   └────────────────┘   └────────────────┘               │
+└───────────┼───────────────────────────────────────────────────────────────────┘
+            │
+┌───────────▼───────────────────────────────────────────────────────────────────┐
+│                         ANALYSIS ENGINE                                        │
+│  ┌─────────────────────────────────────────────────────────────────────────┐  │
+│  │                   Content Analyzer (26 Parallel Goroutines)             │  │
+│  │   ┌────────────┬────────────┬────────────┬────────────┬────────────┐   │  │
+│  │   │   Video    │   Audio    │   HDR      │  Broadcast │  Integrity │   │  │
+│  │   │  Quality   │  Analysis  │  Analysis  │ Compliance │  Analysis  │   │  │
+│  │   └─────┬──────┴─────┬──────┴─────┬──────┴─────┬──────┴─────┬──────┘   │  │
+│  │         │            │            │            │            │           │  │
+│  │   ┌─────▼────────────▼────────────▼────────────▼────────────▼──────┐   │  │
+│  │   │              FFmpeg Filters (signalstats, idet, ebur128, etc)  │   │  │
+│  │   └────────────────────────────────────────────────────────────────┘   │  │
+│  └─────────────────────────────────────────────────────────────────────────┘  │
+│                                    │                                           │
+│  ┌─────────────────────────────────▼───────────────────────────────────────┐  │
+│  │                      FFprobe / FFmpeg Binaries                          │  │
+│  └─────────────────────────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────────────────────────┘
+                                    │
+┌───────────────────────────────────▼───────────────────────────────────────────┐
+│                             DATA LAYER                                         │
+│   ┌────────────────┐   ┌────────────────┐   ┌────────────────┐               │
+│   │ SQLite (Store) │   │ Valkey (Cache) │   │ File Storage   │               │
+│   └────────────────┘   └────────────────┘   └────────────────┘               │
+└───────────────────────────────────────────────────────────────────────────────┘
 ```
+
+### Key Components
+
+| Layer | Components | Purpose |
+|-------|------------|---------|
+| **Client** | REST API, GraphQL, CLI | Multiple interface options |
+| **Middleware** | Auth, RateLimit, Logging | Request processing pipeline |
+| **Service** | Analysis, Reports, Secrets | Business logic encapsulation |
+| **Analysis Engine** | 26 concurrent analyzers | FFmpeg-based quality analysis |
+| **Data** | SQLite, Valkey, FileStore | Persistence and caching |
 
 ## Quality Control Features
 
-### 19 QC Analysis Categories
+### 26 Content Analyzers (121 Parameters)
+
+| Category | Analyzers | FFmpeg Filters | Standards |
+|----------|-----------|----------------|-----------|
+| **Video Quality** | Baseband, Quality Score, Blockiness, Blurriness, Noise, Line Errors | signalstats, entropy | EBU R103 |
+| **Video Content** | Black Frames, Freeze Frames, Letterbox, Color Bars, Safe Areas, Temporal Complexity, Field Dominance, Differential Frames | blackdetect, freezedetect, cropdetect, idet | ITU-R BT.814 |
+| **Audio Quality** | Loudness (EBU R128), Clipping, Silence, Phase, Channel Mapping, Frequency Analysis | ebur128, astats, volumedetect | EBU R128, ITU-R BS.1770 |
+| **HDR/Color** | HDR10, Dolby Vision, HLG, Color Space, Gamut | signalstats BRNG | Rec.2020, SMPTE ST 2086 |
+| **Broadcast** | Timecode Continuity, MXF Validation, IMF Compliance, Transport Stream | - | SMPTE 12M, ST 377, ST 2067 |
+| **Safety** | PSE Flash Detection, AFD Analysis, Test Tone Detection | - | ITU-R BT.1702, Ofcom |
+| **Format** | Container, Codec, Resolution, Frame Rate, Bit Depth, Endianness | - | - |
+| **Integrity** | Data Integrity, Stream Disposition, Dropout Detection | - | CRC32, MD5 |
+
+### 19 Top-Level QC Categories
 
 | Category | Description | Standards |
 |----------|-------------|-----------|
@@ -385,7 +436,7 @@ make prod
 | MXF Analysis | Broadcast format | SMPTE ST 377 |
 | IMF Compliance | Distribution format | SMPTE ST 2067 |
 | Transport Stream | MPEG-TS analysis | MPEG-TS |
-| Content Analysis | Scene/motion analysis | - |
+| Content Analysis | 26 parallel sub-analyzers | See above |
 | Enhanced Analysis | Quality metrics | - |
 | Stream Disposition | Accessibility | Section 508 |
 | Data Integrity | Error/hash validation | CRC32, MD5 |
@@ -454,9 +505,28 @@ make test-race
 
 ## Documentation
 
-- **[QC Analysis List](docs/QC_ANALYSIS_LIST.md)** - All 19 QC categories
-- **[Changelog](CHANGELOG.md)** - Version history
-- **[TODO](TODO.md)** - Roadmap and tasks
+### Core Documentation
+
+| Document | Description | Audience |
+|----------|-------------|----------|
+| **[User Manual](docs/USER_MANUAL.md)** | Complete guide for using the API and CLI | End Users |
+| **[Developer Guide](docs/DEVELOPER_GUIDE.md)** | Contributing to and extending the codebase | Developers |
+| **[Architecture](docs/ARCHITECTURE.md)** | System design and component diagrams | Architects |
+
+### Reference Documentation
+
+| Document | Description |
+|----------|-------------|
+| **[QC Analysis List](docs/QC_ANALYSIS_LIST.md)** | All 19 QC categories with 121 parameters |
+| **[API Reference](docs/api/)** | OpenAPI/Swagger documentation |
+| **[Changelog](CHANGELOG.md)** | Version history and release notes |
+
+### Quick Links
+
+- [Installation Guide](docs/USER_MANUAL.md#installation)
+- [CLI Quick Start](docs/USER_MANUAL.md#cli-tool-guide)
+- [API Quick Start](docs/USER_MANUAL.md#rest-api-guide)
+- [Contributing](docs/DEVELOPER_GUIDE.md#contributing)
 
 ## Contributing
 

@@ -29,6 +29,10 @@ func NewBatchHandler(analysisService *services.AnalysisService, logger zerolog.L
 	if analysisService == nil {
 		panic("analysisService cannot be nil")
 	}
+
+	// Start cleanup goroutine (only once across all handlers)
+	batchCleanupOnce.Do(initBatchCleanup)
+
 	return &BatchHandler{
 		analysisService: analysisService,
 		maxBatchSize:    100, // Default max batch size
@@ -86,9 +90,88 @@ type BatchStatusResponse struct {
 
 // Batch tracking (in-memory for now, should be in database for production)
 var (
-	batchStore = make(map[uuid.UUID]*BatchStatusResponse)
-	batchMutex sync.RWMutex
+	batchStore        = make(map[uuid.UUID]*BatchStatusResponse)
+	batchMutex        sync.RWMutex
+	batchCleanupOnce  sync.Once
+	batchCleanupDone  chan struct{}
+	batchRetentionTTL = 24 * time.Hour // Keep completed batches for 24 hours
+	batchMaxEntries   = 1000           // Maximum entries before forced cleanup
 )
+
+// initBatchCleanup starts the batch store cleanup goroutine (called once)
+func initBatchCleanup() {
+	batchCleanupDone = make(chan struct{})
+	ticker := time.NewTicker(30 * time.Minute)
+
+	go func() {
+		defer ticker.Stop()
+		for {
+			select {
+			case <-batchCleanupDone:
+				return
+			case <-ticker.C:
+				cleanupExpiredBatches()
+			}
+		}
+	}()
+}
+
+// cleanupExpiredBatches removes completed batches older than the retention TTL
+func cleanupExpiredBatches() {
+	batchMutex.Lock()
+	defer batchMutex.Unlock()
+
+	now := time.Now()
+	var toDelete []uuid.UUID
+
+	for id, batch := range batchStore {
+		// Remove completed/cancelled/failed batches older than retention TTL
+		if batch.CompletedAt != nil && now.Sub(*batch.CompletedAt) > batchRetentionTTL {
+			toDelete = append(toDelete, id)
+		}
+	}
+
+	// If map is too large, force cleanup of oldest completed entries
+	if len(batchStore) > batchMaxEntries {
+		// Find oldest completed entries
+		var oldestCompleted []struct {
+			id   uuid.UUID
+			time time.Time
+		}
+		for id, batch := range batchStore {
+			if batch.CompletedAt != nil {
+				oldestCompleted = append(oldestCompleted, struct {
+					id   uuid.UUID
+					time time.Time
+				}{id, *batch.CompletedAt})
+			}
+		}
+		// Sort by time and mark oldest 20% for deletion
+		for i := 0; i < len(oldestCompleted)/5 && i < len(oldestCompleted); i++ {
+			found := false
+			for _, d := range toDelete {
+				if d == oldestCompleted[i].id {
+					found = true
+					break
+				}
+			}
+			if !found {
+				toDelete = append(toDelete, oldestCompleted[i].id)
+			}
+		}
+	}
+
+	for _, id := range toDelete {
+		delete(batchStore, id)
+	}
+}
+
+// StopBatchCleanup stops the batch cleanup goroutine (for graceful shutdown)
+func StopBatchCleanup() {
+	if batchCleanupDone != nil {
+		close(batchCleanupDone)
+	}
+}
 
 // CreateBatch creates a new batch analysis
 // @Summary Create batch analysis

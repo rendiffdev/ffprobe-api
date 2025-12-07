@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -733,6 +734,32 @@ func calculateStdDev(values []float64) float64 {
 	return math.Sqrt(variance)
 }
 
+// sortFloat64s sorts a slice of float64 in ascending order
+func sortFloat64s(values []float64) {
+	sort.Float64s(values)
+}
+
+// percentile calculates the p-th percentile of sorted values
+func percentile(sortedValues []float64, p float64) float64 {
+	if len(sortedValues) == 0 {
+		return 0
+	}
+	if p <= 0 {
+		return sortedValues[0]
+	}
+	if p >= 100 {
+		return sortedValues[len(sortedValues)-1]
+	}
+	index := (p / 100) * float64(len(sortedValues)-1)
+	lower := int(index)
+	upper := lower + 1
+	if upper >= len(sortedValues) {
+		return sortedValues[lower]
+	}
+	fraction := index - float64(lower)
+	return sortedValues[lower]*(1-fraction) + sortedValues[upper]*fraction
+}
+
 func metricTypesToStrings(metrics []QualityMetricType) []string {
 	strings := make([]string, len(metrics))
 	for i, metric := range metrics {
@@ -741,47 +768,262 @@ func metricTypesToStrings(metrics []QualityMetricType) []string {
 	return strings
 }
 
-// analyzeMSE performs Mean Squared Error analysis
+// analyzeMSE performs Mean Squared Error analysis using FFmpeg's psnr filter
 func (qa *QualityAnalyzer) analyzeMSE(ctx context.Context, analysis *QualityAnalysis) error {
-	// MSE implementation using ffmpeg
-	// This is a placeholder - in practice you would use ffmpeg filters
-	analysis.OverallScore = 25.0 // Example MSE value
-	analysis.MinScore = 15.0
-	analysis.MaxScore = 35.0
-	analysis.MeanScore = 25.0
-	analysis.Percentile1 = 16.0
-	analysis.Percentile5 = 18.0
-	analysis.Percentile95 = 32.0
-	analysis.Percentile99 = 34.0
+	// MSE is calculated alongside PSNR using FFmpeg's psnr filter
+	// The filter outputs mse_avg, mse_y, mse_u, mse_v values
+
+	// Build PSNR/MSE filter - psnr filter outputs both PSNR and MSE
+	psnrFilter := "[0:v][1:v]psnr=stats_file=-"
+
+	// Build FFmpeg command
+	cmd := exec.CommandContext(ctx,
+		qa.ffmpegPath,
+		"-i", analysis.ReferenceFile,
+		"-i", analysis.DistortedFile,
+		"-lavfi", psnrFilter,
+		"-f", "null",
+		"-",
+	)
+
+	qa.logger.Debug().
+		Str("analysis_id", analysis.ID.String()).
+		Str("command", cmd.String()).
+		Msg("Executing MSE analysis")
+
+	// Execute command
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("MSE analysis failed: %w", err)
+	}
+
+	// Parse MSE output from PSNR filter output
+	return qa.parseMSEOutput(analysis, string(output))
+}
+
+// parseMSEOutput parses MSE values from PSNR filter output
+func (qa *QualityAnalyzer) parseMSEOutput(analysis *QualityAnalysis, output string) error {
+	lines := strings.Split(output, "\n")
+
+	var mseValues []float64
+	for _, line := range lines {
+		// Look for lines containing mse_avg or extract MSE from PSNR output
+		// PSNR output format: "n:X mse_avg:Y mse_y:Z mse_u:W mse_v:V"
+		if strings.Contains(line, "mse_avg:") {
+			parts := strings.Fields(line)
+			for _, part := range parts {
+				if strings.HasPrefix(part, "mse_avg:") {
+					valueStr := strings.TrimPrefix(part, "mse_avg:")
+					if value, err := strconv.ParseFloat(valueStr, 64); err == nil {
+						mseValues = append(mseValues, value)
+					}
+				}
+			}
+		}
+		// Alternative: Calculate MSE from PSNR (MSE = 255^2 / 10^(PSNR/10))
+		if strings.Contains(line, "PSNR") && strings.Contains(line, "average:") && len(mseValues) == 0 {
+			parts := strings.Fields(line)
+			for _, part := range parts {
+				if strings.HasPrefix(part, "average:") {
+					valueStr := strings.TrimPrefix(part, "average:")
+					if psnr, err := strconv.ParseFloat(valueStr, 64); err == nil && psnr > 0 {
+						// Convert PSNR to MSE: MSE = MAX^2 / 10^(PSNR/10) where MAX=255
+						mse := math.Pow(255, 2) / math.Pow(10, psnr/10)
+						mseValues = append(mseValues, mse)
+					}
+				}
+			}
+		}
+	}
+
+	if len(mseValues) == 0 {
+		return fmt.Errorf("no MSE values found in output")
+	}
+
+	// Calculate statistics
+	analysis.OverallScore = calculateMean(mseValues)
+	analysis.MinScore = calculateMin(mseValues)
+	analysis.MaxScore = calculateMax(mseValues)
+	analysis.MeanScore = analysis.OverallScore
+	analysis.StdDevScore = calculateStdDev(mseValues)
+
+	// Calculate percentiles
+	sortedValues := make([]float64, len(mseValues))
+	copy(sortedValues, mseValues)
+	sortFloat64s(sortedValues)
+	analysis.Percentile1 = percentile(sortedValues, 1)
+	analysis.Percentile5 = percentile(sortedValues, 5)
+	analysis.Percentile95 = percentile(sortedValues, 95)
+	analysis.Percentile99 = percentile(sortedValues, 99)
+
 	return nil
 }
 
 // analyzeMSSSIM performs MS-SSIM (Multi-Scale SSIM) analysis
 func (qa *QualityAnalyzer) analyzeMSSSIM(ctx context.Context, analysis *QualityAnalysis, config *SSIMConfiguration) error {
-	// MS-SSIM implementation using ffmpeg
-	// This is a placeholder - in practice you would use ffmpeg filters
-	analysis.OverallScore = 0.95 // Example MS-SSIM value
-	analysis.MinScore = 0.90
-	analysis.MaxScore = 0.98
-	analysis.MeanScore = 0.95
-	analysis.Percentile1 = 0.91
-	analysis.Percentile5 = 0.92
-	analysis.Percentile95 = 0.97
-	analysis.Percentile99 = 0.98
+	// MS-SSIM (Multi-Scale SSIM) implementation using FFmpeg
+	// MS-SSIM computes SSIM at multiple scales and combines them with specific weights
+	// Standard scales: 1, 1/2, 1/4, 1/8, 1/16 with weights: 0.0448, 0.2856, 0.3001, 0.2363, 0.1333
+
+	scales := []float64{1.0, 0.5, 0.25, 0.125, 0.0625}
+	weights := []float64{0.0448, 0.2856, 0.3001, 0.2363, 0.1333}
+
+	var scaleSSIMValues [][]float64
+	for scaleIdx, scale := range scales {
+		ssimValues, err := qa.computeSSIMAtScale(ctx, analysis.ReferenceFile, analysis.DistortedFile, scale)
+		if err != nil {
+			qa.logger.Warn().
+				Err(err).
+				Float64("scale", scale).
+				Msg("Failed to compute SSIM at scale, skipping")
+			continue
+		}
+		if len(ssimValues) > 0 {
+			scaleSSIMValues = append(scaleSSIMValues, ssimValues)
+		}
+
+		qa.logger.Debug().
+			Int("scale_idx", scaleIdx).
+			Float64("scale", scale).
+			Int("frame_count", len(ssimValues)).
+			Msg("Computed SSIM at scale")
+	}
+
+	if len(scaleSSIMValues) == 0 {
+		return fmt.Errorf("no SSIM values computed at any scale")
+	}
+
+	// Compute MS-SSIM by combining scales with weights
+	// For each frame, compute weighted product of SSIM across scales
+	minFrames := len(scaleSSIMValues[0])
+	for _, sv := range scaleSSIMValues {
+		if len(sv) < minFrames {
+			minFrames = len(sv)
+		}
+	}
+
+	msssimValues := make([]float64, minFrames)
+	for frameIdx := 0; frameIdx < minFrames; frameIdx++ {
+		// MS-SSIM = product of (SSIM_scale ^ weight_scale) across all scales
+		msssim := 1.0
+		totalWeight := 0.0
+		for scaleIdx := 0; scaleIdx < len(scaleSSIMValues); scaleIdx++ {
+			weight := weights[scaleIdx]
+			ssimVal := scaleSSIMValues[scaleIdx][frameIdx]
+			// Ensure SSIM is positive for power calculation
+			if ssimVal > 0 {
+				msssim *= math.Pow(ssimVal, weight)
+				totalWeight += weight
+			}
+		}
+		// Normalize if not all scales contributed
+		if totalWeight > 0 && totalWeight < 1.0 {
+			msssim = math.Pow(msssim, 1.0/totalWeight)
+		}
+		msssimValues[frameIdx] = msssim
+	}
+
+	// Calculate statistics
+	analysis.OverallScore = calculateMean(msssimValues)
+	analysis.MinScore = calculateMin(msssimValues)
+	analysis.MaxScore = calculateMax(msssimValues)
+	analysis.MeanScore = analysis.OverallScore
+	analysis.StdDevScore = calculateStdDev(msssimValues)
+
+	// Calculate percentiles
+	sortedValues := make([]float64, len(msssimValues))
+	copy(sortedValues, msssimValues)
+	sortFloat64s(sortedValues)
+	analysis.Percentile1 = percentile(sortedValues, 1)
+	analysis.Percentile5 = percentile(sortedValues, 5)
+	analysis.Percentile95 = percentile(sortedValues, 95)
+	analysis.Percentile99 = percentile(sortedValues, 99)
+
+	qa.logger.Info().
+		Float64("ms_ssim_mean", analysis.MeanScore).
+		Float64("ms_ssim_min", analysis.MinScore).
+		Float64("ms_ssim_max", analysis.MaxScore).
+		Int("scales_used", len(scaleSSIMValues)).
+		Msg("MS-SSIM analysis completed")
+
 	return nil
 }
 
+// computeSSIMAtScale computes SSIM at a specific scale by downscaling the videos
+func (qa *QualityAnalyzer) computeSSIMAtScale(ctx context.Context, refFile, distFile string, scale float64) ([]float64, error) {
+	// Build filter for scaling and SSIM computation
+	var filterComplex string
+	if scale < 1.0 {
+		// Downscale both inputs before comparing
+		scaleFilter := fmt.Sprintf("scale=iw*%.4f:ih*%.4f:flags=lanczos", scale, scale)
+		filterComplex = fmt.Sprintf("[0:v]%s[ref];[1:v]%s[dist];[ref][dist]ssim=stats_file=-", scaleFilter, scaleFilter)
+	} else {
+		filterComplex = "[0:v][1:v]ssim=stats_file=-"
+	}
+
+	cmd := exec.CommandContext(ctx,
+		qa.ffmpegPath,
+		"-i", refFile,
+		"-i", distFile,
+		"-filter_complex", filterComplex,
+		"-f", "null",
+		"-",
+	)
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("SSIM at scale %.4f failed: %w", scale, err)
+	}
+
+	return qa.extractSSIMValues(string(output))
+}
+
+// extractSSIMValues extracts raw SSIM values from FFmpeg output
+func (qa *QualityAnalyzer) extractSSIMValues(output string) ([]float64, error) {
+	var ssimValues []float64
+
+	lines := strings.Split(output, "\n")
+	for _, line := range lines {
+		// SSIM output format: "n:X Y:0.XX U:0.XX V:0.XX All:0.XX (XX.XX)"
+		if strings.Contains(line, "All:") {
+			parts := strings.Fields(line)
+			for _, part := range parts {
+				if strings.HasPrefix(part, "All:") {
+					valueStr := strings.TrimPrefix(part, "All:")
+					if ssim, err := strconv.ParseFloat(valueStr, 64); err == nil {
+						ssimValues = append(ssimValues, ssim)
+					}
+				}
+			}
+		}
+	}
+
+	if len(ssimValues) == 0 {
+		return nil, fmt.Errorf("no SSIM values found in output")
+	}
+
+	return ssimValues, nil
+}
+
 // analyzeLPIPS performs LPIPS (Learned Perceptual Image Patch Similarity) analysis
+// LPIPS requires a pre-trained neural network model (VGG, AlexNet, or SqueezeNet)
+// This cannot be implemented with FFmpeg alone - requires PyTorch/TensorFlow with LPIPS library
 func (qa *QualityAnalyzer) analyzeLPIPS(ctx context.Context, analysis *QualityAnalysis) error {
-	// LPIPS implementation - requires neural network model
-	// This is a placeholder - in practice you would use a pre-trained LPIPS model
-	analysis.OverallScore = 0.15 // Example LPIPS value (lower is better)
-	analysis.MinScore = 0.10
-	analysis.MaxScore = 0.25
-	analysis.MeanScore = 0.15
-	analysis.Percentile1 = 0.11
-	analysis.Percentile5 = 0.12
-	analysis.Percentile95 = 0.22
-	analysis.Percentile99 = 0.24
-	return nil
+	// LPIPS (Learned Perceptual Image Patch Similarity) is a deep learning-based metric
+	// that requires a pre-trained neural network model to compute perceptual similarity.
+	//
+	// To use LPIPS, you would need:
+	// 1. Python with torch and lpips packages installed
+	// 2. Pre-trained model weights (VGG, AlexNet, or SqueezeNet)
+	// 3. GPU acceleration (recommended for performance)
+	//
+	// Since FFmpeg cannot compute LPIPS, we return an error indicating this metric
+	// requires external tooling.
+
+	qa.logger.Warn().
+		Str("analysis_id", analysis.ID.String()).
+		Msg("LPIPS analysis requires external neural network model - not available")
+
+	return fmt.Errorf("LPIPS analysis unavailable: requires PyTorch with lpips package and pre-trained model. " +
+		"Install with: pip install lpips torch, then configure external LPIPS analyzer")
 }

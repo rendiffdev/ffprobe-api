@@ -42,6 +42,7 @@ type RateLimitMiddleware struct {
 	counters *RateCounter
 	mu       sync.RWMutex
 	logger   zerolog.Logger
+	done     chan struct{} // Channel to signal cleanup goroutine to stop
 }
 
 // NewRateLimitMiddleware creates a new rate limiting middleware
@@ -70,12 +71,18 @@ func NewRateLimitMiddleware(config RateLimitConfig, logger zerolog.Logger) *Rate
 		config:   config,
 		counters: counters,
 		logger:   logger,
+		done:     make(chan struct{}),
 	}
 
 	// Start cleanup goroutine
 	go middleware.cleanup()
 
 	return middleware
+}
+
+// Stop gracefully shuts down the rate limiter and stops the cleanup goroutine
+func (rl *RateLimitMiddleware) Stop() {
+	close(rl.done)
 }
 
 // RateLimit middleware function
@@ -142,6 +149,7 @@ func (rl *RateLimitMiddleware) RateLimit() gin.HandlerFunc {
 }
 
 // incrementCounter increments a specific window counter and returns the new count
+// Must be called with rl.counters.mutex held
 func (rl *RateLimitMiddleware) incrementCounter(windowMap map[string]*WindowCounter, identifier string, now time.Time, duration time.Duration) int {
 	counter, exists := windowMap[identifier]
 
@@ -161,10 +169,9 @@ func (rl *RateLimitMiddleware) incrementCounter(windowMap map[string]*WindowCoun
 		counter.Count = 1
 		counter.ResetTime = now.Add(duration)
 		return 1
-	} else {
-		counter.Count++
-		return counter.Count
 	}
+	counter.Count++
+	return counter.Count
 }
 
 // getRetryAfter gets retry after time for identifier
@@ -231,39 +238,60 @@ func (rl *RateLimitMiddleware) cleanup() {
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 
-	for range ticker.C {
-		now := time.Now()
+	for {
+		select {
+		case <-rl.done:
+			rl.logger.Debug().Msg("Rate limiter cleanup goroutine stopped")
+			return
+		case <-ticker.C:
+			now := time.Now()
 
-		rl.counters.mutex.Lock()
+			rl.counters.mutex.Lock()
 
-		// Clean minute counters
-		for id, counter := range rl.counters.Minute {
-			counter.mutex.RLock()
-			if now.After(counter.ResetTime.Add(time.Minute)) {
+			// Clean minute counters - collect keys to delete first to avoid holding counter lock during delete
+			var minuteToDelete []string
+			for id, counter := range rl.counters.Minute {
+				counter.mutex.RLock()
+				expired := now.After(counter.ResetTime.Add(time.Minute))
+				counter.mutex.RUnlock()
+				if expired {
+					minuteToDelete = append(minuteToDelete, id)
+				}
+			}
+			for _, id := range minuteToDelete {
 				delete(rl.counters.Minute, id)
 			}
-			counter.mutex.RUnlock()
-		}
 
-		// Clean hour counters
-		for id, counter := range rl.counters.Hour {
-			counter.mutex.RLock()
-			if now.After(counter.ResetTime.Add(time.Hour)) {
+			// Clean hour counters
+			var hourToDelete []string
+			for id, counter := range rl.counters.Hour {
+				counter.mutex.RLock()
+				expired := now.After(counter.ResetTime.Add(time.Hour))
+				counter.mutex.RUnlock()
+				if expired {
+					hourToDelete = append(hourToDelete, id)
+				}
+			}
+			for _, id := range hourToDelete {
 				delete(rl.counters.Hour, id)
 			}
-			counter.mutex.RUnlock()
-		}
 
-		// Clean day counters
-		for id, counter := range rl.counters.Day {
-			counter.mutex.RLock()
-			if now.After(counter.ResetTime.Add(24 * time.Hour)) {
+			// Clean day counters
+			var dayToDelete []string
+			for id, counter := range rl.counters.Day {
+				counter.mutex.RLock()
+				expired := now.After(counter.ResetTime.Add(24 * time.Hour))
+				counter.mutex.RUnlock()
+				if expired {
+					dayToDelete = append(dayToDelete, id)
+				}
+			}
+			for _, id := range dayToDelete {
 				delete(rl.counters.Day, id)
 			}
-			counter.mutex.RUnlock()
-		}
 
-		rl.counters.mutex.Unlock()
+			rl.counters.mutex.Unlock()
+		}
 	}
 }
 
@@ -359,6 +387,10 @@ func (rl *RateLimitMiddleware) checkRateLimitWithLimits(identifier string, limit
 	now := time.Now()
 	key := identifier
 
+	// Hold the mutex while incrementing counters to prevent race conditions
+	rl.counters.mutex.Lock()
+	defer rl.counters.mutex.Unlock()
+
 	// Check per-minute limit
 	minuteKey := fmt.Sprintf("%s:minute:%d", key, now.Unix()/60)
 	minuteCount := rl.incrementCounter(rl.counters.Minute, minuteKey, now, time.Minute)
@@ -392,15 +424,19 @@ func (rl *RateLimitMiddleware) getRemainingRequestsWithLimits(identifier string,
 	now := time.Now()
 	minuteKey := fmt.Sprintf("%s:minute:%d", identifier, now.Unix()/60)
 
-	rl.mu.RLock()
-	count, exists := rl.counters.Minute[minuteKey]
-	rl.mu.RUnlock()
-
+	rl.counters.mutex.RLock()
+	counter, exists := rl.counters.Minute[minuteKey]
 	if !exists {
+		rl.counters.mutex.RUnlock()
 		return limits.RequestsPerMinute
 	}
 
-	remaining := limits.RequestsPerMinute - count.Count
+	counter.mutex.RLock()
+	count := counter.Count
+	counter.mutex.RUnlock()
+	rl.counters.mutex.RUnlock()
+
+	remaining := limits.RequestsPerMinute - count
 	if remaining < 0 {
 		return 0
 	}

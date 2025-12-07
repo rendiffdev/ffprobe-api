@@ -2,9 +2,56 @@
 
 ## Overview
 
-The FFprobe API provides **19 comprehensive QC analysis categories** covering all essential professional video analysis requirements from basic technical validation to advanced broadcast compliance.
+The Rendiff Probe API provides **19 top-level QC categories** with **26 parallel content analyzers** covering **121 industry-standard parameters** for professional video analysis. All analyzers use real FFmpeg filters (signalstats, idet, ebur128, astats, etc.) for accurate broadcast and streaming quality control.
 
-## Current QC Analysis Categories (19)
+## Content Analysis (26 Parallel Analyzers)
+
+The Content Analysis category runs 26 analyzers in parallel for comprehensive real-time quality assessment:
+
+### Video Quality Analyzers
+| Analyzer | FFmpeg Filter | Parameters | Description |
+|----------|---------------|------------|-------------|
+| Baseband Analysis | signalstats | YMIN, YMAX, YAVG, UMIN, UMAX, VMIN, VMAX, BRNG, TOUT, VREP | Broadcast legal range checking (Y: 16-235, C: 16-240) |
+| Video Quality Score | signalstats + entropy | Sharpness, Contrast, Entropy, Color, Noise | Objective quality scoring (0-100) |
+| Blockiness Analysis | signalstats | Compression artifact detection | DCT block boundary artifacts |
+| Blurriness Analysis | signalstats | Focus/motion blur metrics | Sharpness and edge detection |
+| Noise Analysis | signalstats | SNR, temporal noise | Signal-to-noise ratio measurement |
+| Line Error Detection | signalstats TOUT/VREP/BRNG | Luma/chroma line errors, DigiBeta errors | Horizontal line defect detection |
+
+### Video Content Analyzers
+| Analyzer | FFmpeg Filter | Parameters | Description |
+|----------|---------------|------------|-------------|
+| Black Frame Detection | blackdetect | Duration, threshold, positions | Dead or black frame identification |
+| Freeze Frame Detection | freezedetect | Duration, positions | Static frame detection |
+| Letterbox Detection | cropdetect | Aspect ratio, pillarbox/letterbox | Content boundary analysis |
+| Color Bars Detection | signalstats | SMPTE bars, EBU bars | Test pattern identification |
+| Safe Area Analysis | cropdetect | Title/action safe margins | Broadcast safe area compliance |
+| Temporal Complexity | signalstats YDIF + scene | Motion complexity, scene changes | Content complexity metrics |
+| Field Dominance | idet | TFF/BFF, interlace detection | Field order and interlace analysis |
+| Differential Frames | signalstats YDIF | Frame difference anomalies | Jump cut and flash detection |
+| Interlace Analysis | idet | Progressive/interlaced ratio | Scan type detection |
+
+### Audio Analyzers
+| Analyzer | FFmpeg Filter | Parameters | Description |
+|----------|---------------|------------|-------------|
+| Loudness Metering | ebur128 | Integrated, Momentary, Short-term, LRA, True Peak | EBU R128 compliance |
+| Audio Clipping | astats | Peak levels, clip count | Digital clipping detection |
+| Silence Detection | silencedetect | Duration, positions | Mute/silence identification |
+| Phase Correlation | aphasemeter | L/R phase, mono compatibility | Stereo phase analysis |
+| Channel Mapping | astats | Channel layout, routing | Multi-channel configuration |
+| Audio Frequency | astats | Spectrum analysis, anomalies | Frequency range analysis |
+| Test Tone Detection | astats | 1kHz tone, calibration signals | Audio test pattern detection |
+
+### Additional Analyzers
+| Analyzer | FFmpeg Filter | Parameters | Description |
+|----------|---------------|------------|-------------|
+| HDR Analysis | signalstats + metadata | HDR10, Dolby Vision, HLG, MaxCLL, MaxFALL | High dynamic range validation |
+| Timecode Continuity | metadata | SMPTE timecode, discontinuities | Timecode stream analysis |
+| Dropout Detection | signalstats | Signal loss, corruption | Video signal dropout detection |
+
+---
+
+## Top-Level QC Categories (19)
 
 The following categories are currently implemented and validated:
 
@@ -232,6 +279,8 @@ The following categories are currently implemented and validated:
 
 ---
 
-**Total QC Categories**: 19 (All Production-Ready)
-**Compliance Standards**: 10+ international and regional standards
-**Industry Applications**: Broadcast, Streaming, Post-Production, Archival
+**Total QC Categories**: 19 top-level + 26 content analyzers
+**Total Parameters**: 121 industry-standard parameters
+**FFmpeg Filters Used**: signalstats, idet, ebur128, astats, blackdetect, freezedetect, cropdetect, silencedetect, aphasemeter, entropy
+**Compliance Standards**: EBU R128, ITU-R BS.1770, ITU-R BT.1702, SMPTE 12M/ST 377/ST 2067, Rec.2020
+**Industry Applications**: Broadcast, Streaming, Post-Production, Archival, QC Workflows

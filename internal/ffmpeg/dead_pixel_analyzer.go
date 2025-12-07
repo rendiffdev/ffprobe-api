@@ -5,6 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"os/exec"
+	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -13,13 +17,23 @@ import (
 // DeadPixelAnalyzer handles computer vision-based dead pixel detection
 type DeadPixelAnalyzer struct {
 	ffprobePath string
+	ffmpegPath  string
 	logger      zerolog.Logger
 }
 
 // NewDeadPixelAnalyzer creates a new dead pixel analyzer
 func NewDeadPixelAnalyzer(ffprobePath string, logger zerolog.Logger) *DeadPixelAnalyzer {
+	// Derive ffmpeg path from ffprobe path
+	ffmpegPath := "ffmpeg"
+	if ffprobePath != "" && ffprobePath != "ffprobe" {
+		// If ffprobePath is a full path, replace ffprobe with ffmpeg
+		if len(ffprobePath) > 7 && ffprobePath[len(ffprobePath)-7:] == "ffprobe" {
+			ffmpegPath = ffprobePath[:len(ffprobePath)-7] + "ffmpeg"
+		}
+	}
 	return &DeadPixelAnalyzer{
 		ffprobePath: ffprobePath,
+		ffmpegPath:  ffmpegPath,
 		logger:      logger,
 	}
 }
@@ -251,8 +265,8 @@ func (dpa *DeadPixelAnalyzer) AnalyzeDeadPixels(ctx context.Context, filePath st
 		return analysis, nil
 	}
 
-	// Step 2: Analyze each frame for pixel defects
-	if err := dpa.analyzeFramesForDefects(ctx, frames, analysis); err != nil {
+	// Step 2: Analyze each frame for pixel defects using FFmpeg signalstats
+	if err := dpa.analyzeFramesForDefects(ctx, filePath, frames, analysis); err != nil {
 		dpa.logger.Warn().Err(err).Msg("Failed to analyze frames for defects")
 	}
 
@@ -360,102 +374,246 @@ type FrameData struct {
 	KeyFrame    bool   `json:"key_frame"`
 }
 
-// analyzeFramesForDefects analyzes frames for pixel defects using statistical methods
-func (dpa *DeadPixelAnalyzer) analyzeFramesForDefects(ctx context.Context, frames []FrameData, analysis *DeadPixelAnalysis) error {
+// analyzeFramesForDefects analyzes frames for pixel defects using FFmpeg signalstats filter
+func (dpa *DeadPixelAnalyzer) analyzeFramesForDefects(ctx context.Context, filePath string, frames []FrameData, analysis *DeadPixelAnalysis) error {
 	if len(frames) == 0 {
 		return fmt.Errorf("no frames to analyze")
 	}
 
-	// Since we can't directly access pixel data with ffprobe, we'll use statistical analysis
-	// based on frame characteristics and metadata to infer potential dead pixels
+	// Use FFmpeg signalstats filter for real pixel analysis
+	// signalstats outputs per-frame statistics including BRNG (out-of-range pixels)
+	analysis.AnalysisMethod = "FFmpeg signalstats filter"
 
-	// Simulate dead pixel detection using frame statistics
-	dpa.simulateDeadPixelDetection(frames, analysis)
+	// Run signalstats analysis on the actual video file
+	stats, err := dpa.runSignalStatsAnalysis(ctx, filePath, frames)
+	if err != nil {
+		dpa.logger.Warn().Err(err).Msg("Signalstats analysis failed, reporting no defects detected")
+		// Return clean result rather than error for graceful degradation
+		analysis.DetectionConfidence = 0.0
+		analysis.RecommendedActions = append(analysis.RecommendedActions,
+			"Signalstats analysis unavailable - manual inspection recommended")
+		return nil
+	}
+
+	// Analyze the statistics for defect indicators
+	dpa.analyzeSignalStats(stats, frames, analysis)
 
 	return nil
 }
 
-// simulateDeadPixelDetection simulates dead pixel detection using available metadata
-func (dpa *DeadPixelAnalyzer) simulateDeadPixelDetection(frames []FrameData, analysis *DeadPixelAnalysis) {
-	// This is a simplified simulation since we don't have direct pixel access
-	// In a real implementation, this would use computer vision libraries like OpenCV
+// SignalStats holds parsed signalstats output
+type SignalStats struct {
+	FrameNumber int
+	YMIN        float64 // Minimum luminance
+	YMAX        float64 // Maximum luminance
+	YLOW        float64 // Low luminance count
+	YHIGH       float64 // High luminance count
+	BRNG        float64 // Broadcast range violations (percentage)
+	SATMIN      float64 // Minimum saturation
+	SATMAX      float64 // Maximum saturation
+}
 
-	totalPixels := int64(0)
-	if len(frames) > 0 {
-		totalPixels = int64(frames[0].Width * frames[0].Height)
+// runSignalStatsAnalysis runs FFmpeg signalstats filter and parses output
+func (dpa *DeadPixelAnalyzer) runSignalStatsAnalysis(ctx context.Context, filePath string, frames []FrameData) ([]SignalStats, error) {
+	if filePath == "" {
+		return nil, fmt.Errorf("file path required for signalstats analysis")
 	}
 
-	// Simulate finding some defects based on content characteristics
-	if totalPixels > 0 {
-		// Simulate dead pixels (typically 0.01% of total pixels in consumer displays)
-		estimatedDeadPixels := int(float64(totalPixels) * 0.0001)
+	// Run FFmpeg signalstats filter to get per-frame pixel statistics
+	// signalstats outputs: YMIN, YMAX, YLOW, YHIGH, BRNG, etc.
+	cmd := exec.CommandContext(ctx,
+		dpa.ffmpegPath,
+		"-i", filePath,
+		"-vf", "signalstats=stat=brng+vrep+tout,metadata=mode=print",
+		"-f", "null",
+		"-t", "10", // Analyze first 10 seconds for performance
+		"-",
+	)
 
-		// Generate simulated dead pixel locations
-		for i := 0; i < estimatedDeadPixels; i++ {
-			defect := PixelDefect{
-				X:                  i * 13 % frames[0].Width, // Pseudo-random distribution
-				Y:                  i * 17 % frames[0].Height,
-				DefectType:         "dead",
-				Color:              "black",
-				Intensity:          0.0,
-				FirstDetectedFrame: 1,
-				LastDetectedFrame:  len(frames),
-				FrameCount:         len(frames),
-				Confidence:         0.85,
-				SurroundingContext: &SurroundingContext{
-					ContextVariance: 0.1,
-					EdgeDetection:   false,
-					TextDetection:   false,
-					MotionDetection: false,
-				},
-				TemporalBehavior: &TemporalBehavior{
-					Persistence:        "permanent",
-					VariationPattern:   "constant",
-					IntensityVariation: 0.0,
-					FrameConsistency:   1.0,
-				},
-			}
-			analysis.DeadPixelMap = append(analysis.DeadPixelMap, defect)
-		}
+	dpa.logger.Debug().
+		Str("file", filePath).
+		Str("ffmpeg_path", dpa.ffmpegPath).
+		Msg("Running signalstats analysis")
 
-		// Simulate stuck pixels (usually fewer than dead pixels)
-		estimatedStuckPixels := estimatedDeadPixels / 3
-		for i := 0; i < estimatedStuckPixels; i++ {
-			defect := PixelDefect{
-				X:                  (i * 19) % frames[0].Width,
-				Y:                  (i * 23) % frames[0].Height,
-				DefectType:         "stuck",
-				Color:              dpa.getRandomStuckColor(),
-				Intensity:          1.0,
-				FirstDetectedFrame: 1,
-				LastDetectedFrame:  len(frames),
-				FrameCount:         len(frames),
-				Confidence:         0.80,
-				SurroundingContext: &SurroundingContext{
-					ContextVariance: 0.2,
-					EdgeDetection:   false,
-					TextDetection:   false,
-					MotionDetection: false,
-				},
-				TemporalBehavior: &TemporalBehavior{
-					Persistence:        "permanent",
-					VariationPattern:   "constant",
-					IntensityVariation: 0.05,
-					FrameConsistency:   0.95,
-				},
-			}
-			analysis.StuckPixelMap = append(analysis.StuckPixelMap, defect)
-		}
-
-		// Update counts and flags
-		analysis.DeadPixelCount = len(analysis.DeadPixelMap)
-		analysis.StuckPixelCount = len(analysis.StuckPixelMap)
-		analysis.HotPixelCount = len(analysis.HotPixelMap)
-
-		analysis.HasDeadPixels = analysis.DeadPixelCount > 0
-		analysis.HasStuckPixels = analysis.StuckPixelCount > 0
-		analysis.HasHotPixels = analysis.HotPixelCount > 0
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		// Log but don't fail completely - signalstats might not be available
+		dpa.logger.Warn().
+			Err(err).
+			Str("output", string(output)).
+			Msg("FFmpeg signalstats failed")
+		return nil, fmt.Errorf("signalstats filter failed: %w", err)
 	}
+
+	// Parse signalstats output
+	return dpa.parseSignalStatsOutput(string(output), frames)
+}
+
+// parseSignalStatsOutput parses FFmpeg signalstats metadata output
+func (dpa *DeadPixelAnalyzer) parseSignalStatsOutput(output string, frames []FrameData) ([]SignalStats, error) {
+	var stats []SignalStats
+
+	// signalstats with metadata=mode=print outputs lines like:
+	// [Parsed_metadata_1 @ 0x...] frame:0    pts:0       pts_time:0
+	// [Parsed_metadata_1 @ 0x...] lavfi.signalstats.YMIN=16
+	// [Parsed_metadata_1 @ 0x...] lavfi.signalstats.YMAX=235
+	// [Parsed_metadata_1 @ 0x...] lavfi.signalstats.BRNG=0.001234
+
+	lines := strings.Split(output, "\n")
+	var currentStats *SignalStats
+	frameNum := 0
+
+	// Regex patterns for parsing
+	yminRe := regexp.MustCompile(`signalstats\.YMIN=(\d+\.?\d*)`)
+	ymaxRe := regexp.MustCompile(`signalstats\.YMAX=(\d+\.?\d*)`)
+	brngRe := regexp.MustCompile(`signalstats\.BRNG=(\d+\.?\d*)`)
+	frameRe := regexp.MustCompile(`frame:\s*(\d+)`)
+
+	for _, line := range lines {
+		// Check for new frame
+		if match := frameRe.FindStringSubmatch(line); len(match) > 1 {
+			// Save previous frame stats if any
+			if currentStats != nil {
+				stats = append(stats, *currentStats)
+			}
+			frameNum, _ = strconv.Atoi(match[1])
+			currentStats = &SignalStats{FrameNumber: frameNum}
+		}
+
+		if currentStats == nil {
+			currentStats = &SignalStats{FrameNumber: 0}
+		}
+
+		// Parse YMIN
+		if match := yminRe.FindStringSubmatch(line); len(match) > 1 {
+			currentStats.YMIN, _ = strconv.ParseFloat(match[1], 64)
+		}
+
+		// Parse YMAX
+		if match := ymaxRe.FindStringSubmatch(line); len(match) > 1 {
+			currentStats.YMAX, _ = strconv.ParseFloat(match[1], 64)
+		}
+
+		// Parse BRNG (broadcast range violations)
+		if match := brngRe.FindStringSubmatch(line); len(match) > 1 {
+			currentStats.BRNG, _ = strconv.ParseFloat(match[1], 64)
+		}
+	}
+
+	// Add last frame stats
+	if currentStats != nil && (currentStats.YMIN != 0 || currentStats.YMAX != 0 || currentStats.BRNG != 0) {
+		stats = append(stats, *currentStats)
+	}
+
+	if len(stats) == 0 {
+		dpa.logger.Debug().Msg("No signalstats data parsed from output")
+		return nil, fmt.Errorf("no signalstats data found in output")
+	}
+
+	dpa.logger.Debug().
+		Int("frames_analyzed", len(stats)).
+		Msg("Successfully parsed signalstats output")
+
+	return stats, nil
+}
+
+// analyzeSignalStats interprets signalstats data for defect detection
+func (dpa *DeadPixelAnalyzer) analyzeSignalStats(stats []SignalStats, frames []FrameData, analysis *DeadPixelAnalysis) {
+	if len(stats) == 0 {
+		// No stats available - report clean result
+		analysis.DetectionConfidence = 0.0
+		analysis.HasDeadPixels = false
+		analysis.HasStuckPixels = false
+		analysis.HasHotPixels = false
+		analysis.DeadPixelCount = 0
+		analysis.StuckPixelCount = 0
+		analysis.HotPixelCount = 0
+		return
+	}
+
+	// Analyze BRNG (broadcast range violations) across frames
+	// High BRNG values indicate pixels outside normal range
+	var totalBRNG float64
+	var maxBRNG float64
+	var framesWithHighBRNG int
+
+	for _, stat := range stats {
+		totalBRNG += stat.BRNG
+		if stat.BRNG > maxBRNG {
+			maxBRNG = stat.BRNG
+		}
+		if stat.BRNG > 0.01 { // More than 0.01% out of range
+			framesWithHighBRNG++
+		}
+	}
+
+	avgBRNG := totalBRNG / float64(len(stats))
+
+	// Detect potential defects based on consistent BRNG patterns
+	// Consistent BRNG across frames suggests stuck/dead pixels
+	if avgBRNG > 0.001 && framesWithHighBRNG >= len(stats)/2 {
+		// Estimate defect count based on BRNG percentage
+		totalPixels := 0
+		if len(frames) > 0 {
+			totalPixels = frames[0].Width * frames[0].Height
+		}
+
+		// BRNG is a percentage - convert to pixel count
+		estimatedDefects := int(avgBRNG * float64(totalPixels) / 100.0)
+
+		if estimatedDefects > 0 {
+			// We can detect that defects exist but not their exact locations
+			// Mark as detected with appropriate confidence
+			analysis.HasDeadPixels = true
+			analysis.DeadPixelCount = estimatedDefects
+			analysis.DetectionConfidence = math.Min(90.0, avgBRNG*1000) // Higher BRNG = higher confidence
+
+			dpa.logger.Info().
+				Float64("avg_brng", avgBRNG).
+				Float64("max_brng", maxBRNG).
+				Int("estimated_defects", estimatedDefects).
+				Msg("Detected potential pixel defects via signalstats BRNG")
+		}
+	} else {
+		// No significant defects detected
+		analysis.HasDeadPixels = false
+		analysis.HasStuckPixels = false
+		analysis.HasHotPixels = false
+		analysis.DeadPixelCount = 0
+		analysis.StuckPixelCount = 0
+		analysis.HotPixelCount = 0
+		analysis.DetectionConfidence = 85.0 // High confidence in clean result
+	}
+
+	// Analyze luminance extremes for stuck pixels
+	var framesWithMinLuma int
+	var framesWithMaxLuma int
+	for _, stat := range stats {
+		if stat.YMIN == 0 {
+			framesWithMinLuma++
+		}
+		if stat.YMAX >= 254 {
+			framesWithMaxLuma++
+		}
+	}
+
+	// If all frames have exactly 0 minimum or 255 maximum consistently,
+	// this could indicate stuck black or white pixels
+	if framesWithMinLuma == len(stats) {
+		analysis.HasDeadPixels = true
+		if analysis.DeadPixelCount == 0 {
+			analysis.DeadPixelCount = 1 // At least one dead pixel detected
+		}
+	}
+	if framesWithMaxLuma == len(stats) {
+		analysis.HasStuckPixels = true
+		if analysis.StuckPixelCount == 0 {
+			analysis.StuckPixelCount = 1 // At least one stuck pixel detected
+		}
+	}
+
+	// Update counts
+	analysis.HotPixelCount = len(analysis.HotPixelMap)
 }
 
 // performTemporalAnalysis analyzes pixel behavior over time
