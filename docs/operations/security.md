@@ -259,14 +259,14 @@ go mod tidy
 
 # Docker base image updates
 docker pull alpine:latest
-docker build --no-cache -t ffprobe-api .
+docker build --no-cache -t rendiff-probe .
 ```
 
 ### Security Scanning
 
 ```bash
 # Container scanning
-trivy image ffprobe-api:latest
+trivy image rendiff-probe:latest
 
 # Code scanning
 gosec ./...

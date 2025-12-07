@@ -451,7 +451,7 @@ Week 13: Revoke old keys
 For issues or questions regarding secret rotation:
 
 1. Check the [Troubleshooting](#troubleshooting) section
-2. Review logs in `/var/log/ffprobe-api/`
+2. Review logs in `/var/log/rendiff-probe/`
 3. Contact security team for urgent issues
 4. File a ticket for non-urgent requests
 

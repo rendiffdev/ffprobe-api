@@ -191,7 +191,7 @@ TRUSTED_PROXIES=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
 ```yaml
 version: '3.8'
 services:
-  ffprobe-api:
+  rendiff-probe:
     build: .
     ports:
       - "8080:8080"

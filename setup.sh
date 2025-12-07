@@ -204,7 +204,7 @@ HOST=0.0.0.0
 
 # Database
 DB_TYPE=sqlite
-DB_PATH=/app/data/ffprobe.db
+DB_PATH=/app/data/rendiff-probe.db
 
 # Cache
 VALKEY_HOST=valkey

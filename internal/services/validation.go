@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/rendiffdev/ffprobe-api/internal/models"
+	"github.com/rendiffdev/rendiff-probe/internal/models"
 )
 
 // ValidateAnalysisRequest validates an analysis creation request

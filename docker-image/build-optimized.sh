@@ -17,7 +17,7 @@ readonly BUILD_USER="${USER:-builder}"
 readonly BUILD_HOST="${HOSTNAME:-localhost}"
 
 # Default values
-IMAGE_NAME="${IMAGE_NAME:-ffprobe-api}"
+IMAGE_NAME="${IMAGE_NAME:-rendiff-probe}"
 VERSION="${VERSION:-latest}"
 TARGET="${TARGET:-production}"
 PLATFORM="${PLATFORM:-linux/amd64}"
@@ -86,7 +86,7 @@ USAGE:
 
 OPTIONS:
     Build Configuration:
-        -n, --name NAME           Docker image name (default: ffprobe-api)
+        -n, --name NAME           Docker image name (default: rendiff-probe)
         -v, --version VERSION     Image version tag (default: latest)
         -t, --target TARGET       Build target (production|development|test|minimal|security-scan)
         -r, --registry REGISTRY   Container registry URL
@@ -563,7 +563,7 @@ run_performance_tests() {
     log_info "Testing container startup time..."
     local start_time=$(date +%s%N)
     
-    if docker run --rm --name "perf-test-$$" "${FULL_IMAGE_NAME}" /app/ffprobe-api --version &> /dev/null; then
+    if docker run --rm --name "perf-test-$$" "${FULL_IMAGE_NAME}" /app/rendiff-probe --version &> /dev/null; then
         local end_time=$(date +%s%N)
         local startup_ms=$(( (end_time - start_time) / 1000000 ))
         log_success "Container startup time: ${startup_ms}ms"

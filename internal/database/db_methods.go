@@ -6,7 +6,7 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
-	"github.com/rendiffdev/ffprobe-api/internal/models"
+	"github.com/rendiffdev/rendiff-probe/internal/models"
 )
 
 var (

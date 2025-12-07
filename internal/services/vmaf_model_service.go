@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
-	"github.com/rendiffdev/ffprobe-api/internal/repositories"
+	"github.com/rendiffdev/rendiff-probe/internal/repositories"
 	"github.com/rs/zerolog"
 )
 

@@ -25,11 +25,11 @@
         "gridPos": {"h": 4, "w": 24, "x": 0, "y": 0},
         "targets": [
           {
-            "expr": "sum(up{job=\"ffprobe-api\"})",
+            "expr": "sum(up{job=\"rendiff-probe\"})",
             "legendFormat": "API Instances"
           },
           {
-            "expr": "rate(http_requests_total{job=\"ffprobe-api\"}[5m])",
+            "expr": "rate(http_requests_total{job=\"rendiff-probe\"}[5m])",
             "legendFormat": "Request Rate"
           },
           {
@@ -62,11 +62,11 @@
         "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
         "targets": [
           {
-            "expr": "sum(rate(http_requests_total{job=\"ffprobe-api\"}[5m])) by (instance)",
+            "expr": "sum(rate(http_requests_total{job=\"rendiff-probe\"}[5m])) by (instance)",
             "legendFormat": "{{instance}} - Requests/sec"
           },
           {
-            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"ffprobe-api\"}[5m])) by (le, instance)) * 1000",
+            "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"rendiff-probe\"}[5m])) by (le, instance)) * 1000",
             "legendFormat": "{{instance}} - 95th percentile (ms)"
           }
         ],
@@ -87,11 +87,11 @@
         "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
         "targets": [
           {
-            "expr": "sum(rate(http_requests_total{job=\"ffprobe-api\",status=~\"4..\"}[5m])) by (status)",
+            "expr": "sum(rate(http_requests_total{job=\"rendiff-probe\",status=~\"4..\"}[5m])) by (status)",
             "legendFormat": "4xx Errors"
           },
           {
-            "expr": "sum(rate(http_requests_total{job=\"ffprobe-api\",status=~\"5..\"}[5m])) by (status)",
+            "expr": "sum(rate(http_requests_total{job=\"rendiff-probe\",status=~\"5..\"}[5m])) by (status)",
             "legendFormat": "5xx Errors"
           }
         ]
@@ -123,11 +123,11 @@
         "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
         "targets": [
           {
-            "expr": "rate(process_cpu_seconds_total{job=\"ffprobe-api\"}[5m]) * 100",
+            "expr": "rate(process_cpu_seconds_total{job=\"rendiff-probe\"}[5m]) * 100",
             "legendFormat": "{{instance}} - CPU %"
           },
           {
-            "expr": "process_resident_memory_bytes{job=\"ffprobe-api\"} / 1024 / 1024",
+            "expr": "process_resident_memory_bytes{job=\"rendiff-probe\"} / 1024 / 1024",
             "legendFormat": "{{instance}} - Memory MB"
           }
         ]
@@ -253,14 +253,14 @@
           "allValue": null,
           "current": {"isNone": true, "selected": false, "text": "All", "value": "$__all"},
           "datasource": "Prometheus",
-          "definition": "label_values(up{job=\"ffprobe-api\"}, instance)",
+          "definition": "label_values(up{job=\"rendiff-probe\"}, instance)",
           "hide": 0,
           "includeAll": true,
           "label": "Instance",
           "multi": true,
           "name": "instance",
           "options": [],
-          "query": "label_values(up{job=\"ffprobe-api\"}, instance)",
+          "query": "label_values(up{job=\"rendiff-probe\"}, instance)",
           "refresh": 1,
           "regex": "",
           "skipUrlSync": false,

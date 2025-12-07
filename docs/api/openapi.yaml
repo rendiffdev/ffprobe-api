@@ -34,7 +34,7 @@ info:
   version: "2.0.0"
   contact:
     name: FFprobe API Support
-    url: https://github.com/rendiffdev/ffprobe-api
+    url: https://github.com/rendiffdev/rendiff-probe
     email: dev@rendiff.dev
   license:
     name: MIT

@@ -18,7 +18,7 @@ This guide covers the **new production-grade Docker infrastructure** that transf
 
 ```bash
 git clone <your-repo-url>
-cd ffprobe-api
+cd rendiff-probe
 ```
 
 ### 2. Build Production Image
@@ -49,7 +49,7 @@ cd ffprobe-api
 export DOMAIN=api.yourcompany.com
 export SSL_EMAIL=admin@yourcompany.com
 export ENVIRONMENT=production
-export DATA_PATH=/opt/ffprobe-api/data
+export DATA_PATH=/opt/rendiff-probe/data
 ```
 
 ### 5. Deploy Production Stack
@@ -183,10 +183,10 @@ docker network create --driver overlay --internal backend
 docker stack deploy \
   -c docker-image/compose.production.optimized.yaml \
   -c docker-image/security/docker-security.yaml \
-  ffprobe-api
+  rendiff-probe
 
 # Scale services
-docker service scale ffprobe-api_api=5
+docker service scale rendiff-probe_api=5
 ```
 
 ### Kubernetes (Enterprise)
@@ -195,11 +195,11 @@ Enterprise container orchestration with Helm:
 
 ```bash
 # Create namespace
-kubectl create namespace ffprobe-api
+kubectl create namespace rendiff-probe
 
 # Deploy with Helm (requires helm charts)
-helm upgrade --install ffprobe-api ./helm/ffprobe-api \
-  --namespace ffprobe-api \
+helm upgrade --install rendiff-probe ./helm/rendiff-probe \
+  --namespace rendiff-probe \
   --set environment=production \
   --set domain=api.yourcompany.com
 ```
@@ -275,7 +275,7 @@ Pre-built dashboards for:
 ```yaml
 # Example alert rules
 - alert: FFprobeAPIDown
-  expr: up{job="ffprobe-api"} == 0
+  expr: up{job="rendiff-probe"} == 0
   for: 1m
   labels:
     severity: critical
@@ -336,7 +336,7 @@ curl https://api.yourdomain.com/health
 ./docker-image/scripts/backup/create-backup.sh
 
 # List backups
-ls -la /opt/ffprobe-api/data/backups/
+ls -la /opt/rendiff-probe/data/backups/
 ```
 
 #### **Backup Restoration**
@@ -387,7 +387,7 @@ docker-compose up -d
 
 ```bash
 # Scale API service
-docker service scale ffprobe-api_api=10
+docker service scale rendiff-probe_api=10
 
 # Scale with Docker Compose
 docker-compose up -d --scale api=5
@@ -448,7 +448,7 @@ docker stats
 ./docker-image/scripts/secrets-manager.sh verify
 
 # Check disk space
-df -h /opt/ffprobe-api/data
+df -h /opt/rendiff-probe/data
 ```
 
 #### **SSL Certificate Issues**
@@ -472,7 +472,7 @@ openssl s_client -connect api.yourcompany.com:443 -servername api.yourcompany.co
 curl http://localhost:9090/metrics | grep ffprobe
 
 # Check database performance
-sqlite3 /opt/ffprobe-api/data/app/ffprobe.db ".schema"
+sqlite3 /opt/rendiff-probe/data/app/rendiff-probe.db ".schema"
 
 # Analyze slow queries
 docker-compose logs api | grep "slow query"
@@ -508,7 +508,7 @@ curl http://localhost:11434/api/version    # Ollama
 
 # Database connectivity
 docker-compose exec valkey valkey-cli ping
-sqlite3 /opt/ffprobe-api/data/app/ffprobe.db ".tables"
+sqlite3 /opt/rendiff-probe/data/app/rendiff-probe.db ".tables"
 
 # Resource monitoring
 docker system df
@@ -563,9 +563,9 @@ Before going live, ensure:
 - **[Disaster Recovery](./DISASTER-RECOVERY.md)** - Recovery procedures
 
 ### Community
-- **Issues**: [GitHub Issues](https://github.com/yourorg/ffprobe-api/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourorg/ffprobe-api/discussions)
-- **Wiki**: [Project Wiki](https://github.com/yourorg/ffprobe-api/wiki)
+- **Issues**: [GitHub Issues](https://github.com/yourorg/rendiff-probe/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourorg/rendiff-probe/discussions)
+- **Wiki**: [Project Wiki](https://github.com/yourorg/rendiff-probe/wiki)
 
 ### Professional Support
 For enterprise support and consulting:

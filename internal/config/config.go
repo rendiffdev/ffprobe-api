@@ -105,7 +105,7 @@ func Load() (*Config, error) {
 		BaseURL:                getEnv("BASE_URL", ""),
 		LogLevel:               getEnv("LOG_LEVEL", "info"),
 		DatabaseType:           getEnv("DB_TYPE", "sqlite"),
-		DatabasePath:           getEnv("DB_PATH", "./data/ffprobe.db"),
+		DatabasePath:           getEnv("DB_PATH", "./data/rendiff-probe.db"),
 		ValkeyHost:             getEnv("VALKEY_HOST", "localhost"),
 		ValkeyPort:             getEnvAsInt("VALKEY_PORT", 6379),
 		ValkeyPassword:         getEnv("VALKEY_PASSWORD", ""),

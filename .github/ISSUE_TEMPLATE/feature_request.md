@@ -182,4 +182,4 @@ If you're willing to contribute, what are your technical skills?
 
 ---
 
-**Note:** Feature requests are evaluated based on alignment with project goals, technical feasibility, and community interest. Please check our [roadmap](https://github.com/rendiffdev/ffprobe-api/projects) for planned features.
+**Note:** Feature requests are evaluated based on alignment with project goals, technical feasibility, and community interest. Please check our [roadmap](https://github.com/rendiffdev/rendiff-probe/projects) for planned features.

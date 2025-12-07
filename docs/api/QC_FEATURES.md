@@ -280,7 +280,7 @@ Content-Type: application/json
 # compose.yml
 services:
   qc-api:
-    image: ffprobe-api:latest
+    image: rendiff-probe:latest
     environment:
       - QC_PROFILE=broadcast_compliance
       - ENABLE_ADVANCED_QC=true

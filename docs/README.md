@@ -87,7 +87,7 @@ See [TODO.md](../TODO.md) for the complete roadmap.
 
 ## Getting Help
 
-- **[GitHub Issues](https://github.com/rendiffdev/ffprobe-api/issues)** - Bug reports
+- **[GitHub Issues](https://github.com/rendiffdev/rendiff-probe/issues)** - Bug reports
 - **Documentation** - Check the docs folder for guides
 
 ---

@@ -163,10 +163,10 @@ docker network create --driver overlay --internal backend
 docker stack deploy \
   -c docker-image/compose.production.optimized.yaml \
   -c docker-image/security/docker-security.yaml \
-  ffprobe-api
+  rendiff-probe
 
 # Scale services
-docker service scale ffprobe-api_api=5
+docker service scale rendiff-probe_api=5
 ```
 
 ### Kubernetes (Enterprise)
@@ -175,11 +175,11 @@ Kubernetes deployment with Helm charts:
 
 ```bash
 # Create namespace
-kubectl create namespace ffprobe-api
+kubectl create namespace rendiff-probe
 
 # Deploy with Helm
-helm upgrade --install ffprobe-api ./helm/ffprobe-api \
-  --namespace ffprobe-api \
+helm upgrade --install rendiff-probe ./helm/rendiff-probe \
+  --namespace rendiff-probe \
   --set environment=production \
   --set domain=api.yourcompany.com
 ```
@@ -330,7 +330,7 @@ Key production configuration variables:
 # Core settings
 ENVIRONMENT=production
 DOMAIN=api.yourcompany.com
-DATA_PATH=/opt/ffprobe-api/data
+DATA_PATH=/opt/rendiff-probe/data
 
 # Performance tuning
 API_REPLICAS=3
@@ -429,7 +429,7 @@ docker-compose logs api | grep -i error
 #### Database Issues
 ```bash
 # Check SQLite database
-sqlite3 /opt/ffprobe-api/data/app/ffprobe.db ".tables"
+sqlite3 /opt/rendiff-probe/data/app/rendiff-probe.db ".tables"
 
 # Check Valkey cache
 docker-compose exec valkey valkey-cli ping
@@ -477,7 +477,7 @@ export OLLAMA_KEEP_ALIVE=30m
 
 ```bash
 # Scale API service
-docker service scale ffprobe-api_api=10
+docker service scale rendiff-probe_api=10
 
 # Scale with Docker Compose
 docker-compose up -d --scale api=5
@@ -551,8 +551,8 @@ Automated health checks monitor:
 ## 🤝 Support
 
 For production deployment support:
-- **Issues**: [GitHub Issues](https://github.com/yourorg/ffprobe-api/issues)
-- **Documentation**: [Wiki](https://github.com/yourorg/ffprobe-api/wiki)
+- **Issues**: [GitHub Issues](https://github.com/yourorg/rendiff-probe/issues)
+- **Documentation**: [Wiki](https://github.com/yourorg/rendiff-probe/wiki)
 - **Security**: security@yourcompany.com
 
 ---

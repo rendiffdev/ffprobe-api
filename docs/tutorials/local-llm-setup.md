@@ -35,8 +35,8 @@ docker compose -f docker-image/compose.yaml up -d
 ### 1. **Start Everything** 
 ```bash
 # Clone and start - that's all!
-git clone https://github.com/rendiffdev/ffprobe-api.git
-cd ffprobe-api
+git clone https://github.com/rendiffdev/rendiff-probe.git
+cd rendiff-probe
 
 # Copy environment (optional customization)
 cp .env.example .env
@@ -160,7 +160,7 @@ ollama:
 docker compose ps
 
 # Expected output:
-# ffprobe-api     Up (healthy)
+# rendiff-probe     Up (healthy)
 # postgres        Up (healthy)  
 # redis           Up (healthy)
 # ollama          Up (healthy)
@@ -207,7 +207,7 @@ curl -X POST http://localhost:8080/api/v1/probe/file \
 ```bash
 # Check logs
 docker compose logs ollama
-docker compose logs ffprobe-api
+docker compose logs rendiff-probe
 
 # Common issues:
 # - Insufficient RAM (need 4GB minimum)
@@ -235,10 +235,10 @@ docker compose up -d
 curl http://localhost:11434/api/tags
 
 # Verify API can reach Ollama
-docker compose exec ffprobe-api curl http://ollama:11434/api/version
+docker compose exec rendiff-probe curl http://ollama:11434/api/version
 
 # Check environment variables
-docker compose exec ffprobe-api env | grep OLLAMA
+docker compose exec rendiff-probe env | grep OLLAMA
 ```
 
 ## 🎯 Production Considerations
@@ -246,7 +246,7 @@ docker compose exec ffprobe-api env | grep OLLAMA
 ### **For Production Deployment**
 ```bash
 # Use production Dockerfile
-docker build -f Dockerfile.production -t ffprobe-api:prod .
+docker build -f Dockerfile.production -t rendiff-probe:prod .
 
 # Production environment
 cp .env.example .env.production

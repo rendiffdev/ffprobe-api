@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/rendiffdev/ffprobe-api/internal/ffmpeg"
+	"github.com/rendiffdev/rendiff-probe/internal/ffmpeg"
 )
 
 // ValidateBatchRequest validates a batch analysis request

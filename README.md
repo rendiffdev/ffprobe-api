@@ -1,20 +1,35 @@
-# FFprobe API
+# Rendiff Probe
 
-**Professional Video Analysis API with Advanced QC Capabilities**
+**Professional Video Analysis API & CLI - Powered by FFprobe**
 
-A production-ready REST API for comprehensive video/audio file analysis using FFprobe, with 19 professional quality control analysis categories.
+A production-ready REST API and CLI tool for comprehensive video/audio file analysis, built on top of FFprobe with 19 professional quality control analysis categories.
 
-[![Go Version](https://img.shields.io/badge/go-1.25.5-blue.svg)](https://go.dev/)
+[![Go Version](https://img.shields.io/badge/go-1.24-blue.svg)](https://go.dev/)
 [![QC Analysis](https://img.shields.io/badge/QC-19%20Categories-blue.svg)](#quality-control-features)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](#quick-start)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
+---
+
+## Acknowledgements
+
+**Rendiff Probe uses [FFprobe](https://ffmpeg.org/ffprobe.html)** from the FFmpeg project as its core media analysis engine. FFprobe is a powerful multimedia stream analyzer that provides detailed information about media files.
+
+- FFprobe is part of the [FFmpeg Project](https://ffmpeg.org/)
+- FFprobe is licensed under the [LGPL/GPL license](https://ffmpeg.org/legal.html)
+- This project wraps FFprobe functionality with enhanced QC analysis, REST API, and CLI interfaces
+
+We are grateful to the FFmpeg community for developing and maintaining such a robust media analysis tool.
+
+---
+
 ## Features
 
 ### Core Capabilities
-- **Comprehensive FFprobe Analysis**: Full format, stream, frame, and packet analysis
+- **Comprehensive FFprobe Analysis**: Full format, stream, frame, and packet analysis via FFprobe
 - **19 Professional QC Categories**: Industry-standard quality control analysis
-- **REST API**: Simple HTTP interface for video analysis
+- **REST API** (`rendiff-probe`): HTTP interface for video analysis
+- **CLI Tool** (`rendiffprobe-cli`): Command-line tool for local analysis
 - **GraphQL API**: Flexible query interface for advanced integrations
 - **URL & HLS Analysis**: Direct URL probing and HLS stream analysis
 - **Batch Processing**: Process multiple files/URLs in parallel
@@ -36,32 +51,47 @@ Professional broadcast and streaming QC analysis including:
 - Transport Stream Analysis
 - And 10 more categories...
 
-📋 **[Complete QC Analysis List](docs/QC_ANALYSIS_LIST.md)**
-
 ## Quick Start
 
 ### Prerequisites
-- Docker 24.0+ with Docker Compose
+- Docker 24.0+ with Docker Compose (for API)
+- Go 1.24+ (for CLI)
+- FFprobe installed (for CLI)
 - 2GB RAM minimum (4GB recommended)
-- 5GB disk space
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/rendiffdev/ffprobe-api.git
-cd ffprobe-api
+git clone https://github.com/rendiffdev/rendiff-probe.git
+cd rendiff-probe
 
-# Quick start (development mode)
+# Quick start API (development mode)
 make quick
 
-# Or minimal deployment
-make minimal
+# Or build CLI for local use
+go build -o rendiffprobe-cli ./cmd/rendiffprobe-cli
 ```
 
-Your API is now running at **http://localhost:8080**
+### Using the CLI (`rendiffprobe-cli`)
 
-### Verify Installation
+```bash
+# Analyze a video file with full QC report
+rendiffprobe-cli analyze video.mp4 --format report
+
+# Get JSON output for automation
+rendiffprobe-cli analyze video.mp4 --format json --output result.json
+
+# Quick file info
+rendiffprobe-cli info video.mp4
+
+# List all QC categories
+rendiffprobe-cli categories
+```
+
+### Using the API (`rendiff-probe`)
+
+Your API is now running at **http://localhost:8080**
 
 ```bash
 # Check health
@@ -70,8 +100,9 @@ curl http://localhost:8080/health
 # Expected response:
 {
   "status": "healthy",
-  "service": "ffprobe-api",
+  "service": "rendiff-probe",
   "version": "2.0.0",
+  "powered_by": "FFprobe (FFmpeg)",
   "features": {
     "file_probe": true,
     "url_probe": true,
@@ -82,7 +113,7 @@ curl http://localhost:8080/health
     "llm_insights": true
   },
   "qc_tools": ["AFD Analysis", "Dead Pixel Detection", ...],
-  "ffmpeg_validated": true
+  "ffprobe_validated": true
 }
 ```
 
@@ -100,7 +131,8 @@ Returns service health status and available QC tools.
 ```json
 {
   "status": "healthy",
-  "service": "ffprobe-api-core",
+  "service": "rendiff-probe",
+  "powered_by": "FFprobe (FFmpeg)",
   "qc_tools": [
     "AFD Analysis",
     "Dead Pixel Detection",
@@ -122,7 +154,7 @@ Returns service health status and available QC tools.
     "Stream Disposition Analysis",
     "Data Integrity Analysis"
   ],
-  "ffmpeg_validated": true
+  "ffprobe_validated": true
 }
 ```
 
@@ -133,7 +165,7 @@ POST /api/v1/probe/file
 Content-Type: multipart/form-data
 ```
 
-Upload a video/audio file for comprehensive analysis.
+Upload a video/audio file for comprehensive analysis using FFprobe.
 
 **Request:**
 ```bash
@@ -232,36 +264,6 @@ GET  /api/v1/batch/status/:id # Get job status
 
 Process multiple files or URLs in parallel.
 
-**Request:**
-```bash
-curl -X POST \
-  -H "Content-Type: application/json" \
-  -d '{
-    "urls": ["https://example.com/video1.mp4", "https://example.com/video2.mp4"],
-    "include_llm": false
-  }' \
-  http://localhost:8080/api/v1/batch/analyze
-```
-
-**Response:**
-```json
-{
-  "status": "accepted",
-  "job_id": "550e8400-e29b-41d4-a716-446655440000",
-  "total": 2,
-  "status_url": "/api/v1/batch/status/550e8400-e29b-41d4-a716-446655440000",
-  "ws_url": "/api/v1/ws/progress/550e8400-e29b-41d4-a716-446655440000"
-}
-```
-
-### WebSocket Progress
-
-```bash
-GET /api/v1/ws/progress/:id
-```
-
-Connect via WebSocket to receive real-time progress updates for batch jobs.
-
 ### GraphQL API
 
 ```bash
@@ -271,46 +273,45 @@ GET  /api/v1/graphql  # GraphiQL interface
 
 Query and mutate via GraphQL for flexible data access.
 
-**Example Query:**
-```graphql
-query {
-  health {
-    status
-    version
-  }
-}
+## CLI Tool (`rendiffprobe-cli`)
 
-mutation {
-  analyzeURL(url: "https://example.com/video.mp4", include_llm: true) {
-    id
-    filename
-    status
-    llm_report
-  }
-}
-```
+The CLI provides the same powerful analysis capabilities without requiring a running API server.
 
-### LLM Insights
+### Commands
 
-Add `include_llm=true` to any analysis endpoint to get AI-powered insights:
+| Command | Description |
+|---------|-------------|
+| `analyze` | Full QC analysis with all 19 categories |
+| `categories` | List available QC analysis categories |
+| `info` | Quick file information (basic metadata) |
+| `version` | Show version information |
+
+### Output Formats
+
+- **report**: Human-readable comprehensive QC report
+- **json**: Machine-readable JSON output
+- **text**: Concise text summary
+
+### Examples
 
 ```bash
-# With file upload
-curl -X POST -F "file=@video.mp4" -F "include_llm=true" \
-  http://localhost:8080/api/v1/probe/file
+# Full comprehensive report
+rendiffprobe-cli analyze video.mp4 --format report
 
-# With URL
-curl -X POST -H "Content-Type: application/json" \
-  -d '{"url": "https://example.com/video.mp4", "include_llm": true}' \
-  http://localhost:8080/api/v1/probe/url
-```
+# JSON for automation/scripting
+rendiffprobe-cli analyze video.mp4 --format json
 
-### FFmpeg Version Management (Admin)
+# Save output to file
+rendiffprobe-cli analyze video.mp4 --format json --output result.json
 
-```bash
-GET  /admin/ffmpeg/version     # Get current FFmpeg version
-POST /admin/ffmpeg/check       # Check for updates
-POST /admin/ffmpeg/update      # Update FFmpeg
+# Analyze multiple files
+rendiffprobe-cli analyze video1.mp4 video2.mp4 --format text
+
+# Quick metadata check
+rendiffprobe-cli info video.mp4
+
+# Set timeout for large files
+rendiffprobe-cli analyze large_video.mp4 --timeout 300
 ```
 
 ## Deployment Modes
@@ -331,14 +332,6 @@ make quick
 - No authentication required
 - Best for: Quick testing, demos
 
-### Development
-```bash
-make dev
-```
-- Hot reload enabled
-- Admin tools included
-- Best for: Development
-
 ### Production
 ```bash
 make prod
@@ -351,16 +344,24 @@ make prod
 ## Architecture
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   FFprobe API   │───▶│     SQLite      │    │     Valkey      │
-│   (Go/Gin)      │    │ (Embedded DB)   │    │ (Redis Cache)   │
-└────────┬────────┘    └─────────────────┘    └─────────────────┘
-         │
-         ▼
-┌─────────────────┐    ┌─────────────────┐
-│     Ollama      │    │     FFmpeg      │
-│  (AI Models)    │    │   (BtbN Build)  │
-└─────────────────┘    └─────────────────┘
+                    ┌─────────────────────────────────────────────┐
+                    │              Rendiff Probe                   │
+                    │         (Powered by FFprobe)                 │
+                    └─────────────────────────────────────────────┘
+                                        │
+                    ┌───────────────────┴───────────────────┐
+                    │                                       │
+            ┌───────▼───────┐                       ┌───────▼───────┐
+            │ rendiff-probe │                       │rendiffprobe-cli│
+            │   (API)       │                       │   (CLI)       │
+            └───────┬───────┘                       └───────┬───────┘
+                    │                                       │
+                    └───────────────────┬───────────────────┘
+                                        │
+                                ┌───────▼───────┐
+                                │   FFprobe     │
+                                │   (FFmpeg)    │
+                                └───────────────┘
 ```
 
 ## Quality Control Features
@@ -398,7 +399,7 @@ make prod
 | `PORT` | `8080` | API port |
 | `LOG_LEVEL` | `info` | Log level (debug, info, warn, error) |
 | `FFPROBE_PATH` | `ffprobe` | Path to FFprobe binary |
-| `DB_PATH` | `./data/ffprobe.db` | SQLite database path |
+| `DB_PATH` | `./data/rendiff-probe.db` | SQLite database path |
 | `VALKEY_URL` | `valkey:6379` | Valkey/Redis connection |
 
 ### Security Configuration
@@ -425,6 +426,10 @@ make test-unit       # Run unit tests
 make test-coverage   # Run tests with coverage
 make lint            # Run linter
 
+# Build
+go build -o rendiff-probe ./cmd/rendiff-probe
+go build -o rendiffprobe-cli ./cmd/rendiffprobe-cli
+
 # Maintenance
 make update     # Update services
 make backup     # Create backup
@@ -447,70 +452,11 @@ go test -v ./internal/ffmpeg/...
 make test-race
 ```
 
-Current test coverage:
-- config: 50.3%
-- middleware: 22.3%
-- ffmpeg: 6.0%
-
-## Troubleshooting
-
-### Services Won't Start
-
-```bash
-# Check Docker
-docker --version
-docker compose version
-
-# View logs
-make logs
-
-# Reset everything
-make clean && make quick
-```
-
-### Port Conflicts
-
-```bash
-# Check port usage
-lsof -i :8080
-
-# Use different port
-PORT=8081 make quick
-```
-
-### FFprobe Validation Fails
-
-```bash
-# Check FFprobe in container
-docker compose exec api ffprobe -version
-
-# Rebuild container
-make clean && make quick
-```
-
 ## Documentation
 
 - **[QC Analysis List](docs/QC_ANALYSIS_LIST.md)** - All 19 QC categories
 - **[Changelog](CHANGELOG.md)** - Version history
 - **[TODO](TODO.md)** - Roadmap and tasks
-
-## Roadmap
-
-### Completed Features (v2.0.0)
-
-- [x] GraphQL API endpoint
-- [x] URL-based file analysis
-- [x] HLS stream analysis endpoint
-- [x] Batch processing API
-- [x] WebSocket progress streaming
-- [x] LLM-powered analysis insights
-
-### Planned Features
-
-- [ ] Webhook callbacks for async processing
-- [ ] DASH stream analysis
-- [ ] Compare multiple files side-by-side
-- [ ] Custom QC rule definitions
 
 ## Contributing
 
@@ -526,11 +472,17 @@ make clean && make quick
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
+### Third-Party Licenses
+
+- **FFprobe/FFmpeg**: Licensed under LGPL/GPL - see [FFmpeg License](https://ffmpeg.org/legal.html)
+
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/rendiffdev/ffprobe-api/issues)
+- **Issues**: [GitHub Issues](https://github.com/rendiffdev/rendiff-probe/issues)
 - **Documentation**: [docs/](docs/)
 
 ---
 
-**Built for the video processing community**
+**Rendiff Probe** - Professional Video Analysis, Powered by FFprobe
+
+Built for the video processing community

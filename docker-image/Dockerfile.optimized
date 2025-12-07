@@ -44,11 +44,11 @@ RUN CGO_ENABLED=1 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
     -buildmode=pie \
     -tags="netgo,osusergo,static_build" \
     -installsuffix=netgo \
-    -o ffprobe-api \
-    ./cmd/ffprobe-api
+    -o rendiff-probe \
+    ./cmd/rendiff-probe
 
 # Verify binary
-RUN file ffprobe-api && ldd ffprobe-api || true
+RUN file rendiff-probe && ldd rendiff-probe || true
 
 # =============================================================================
 # FFmpeg Stage - Latest Static Builds with Security Verification
@@ -88,7 +88,7 @@ LABEL maintainer="FFprobe API Team" \
       org.opencontainers.image.description="Production-grade FFprobe API service" \
       org.opencontainers.image.vendor="FFprobe API" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.source="https://github.com/ffprobe-api/ffprobe-api" \
+      org.opencontainers.image.source="https://github.com/rendiff-probe/rendiff-probe" \
       security.scan.enabled="true"
 
 # Install minimal runtime dependencies with security updates
@@ -111,9 +111,9 @@ COPY --from=ffmpeg --chown=nonroot:nonroot /tmp/bin/ffprobe /usr/local/bin/
 RUN chmod 755 /usr/local/bin/ffmpeg /usr/local/bin/ffprobe
 
 # Copy application binary and migrations
-COPY --from=builder --chown=nonroot:nonroot /src/ffprobe-api /app/
+COPY --from=builder --chown=nonroot:nonroot /src/rendiff-probe /app/
 COPY --from=builder --chown=nonroot:nonroot /src/migrations /app/migrations/
-RUN chmod 755 /app/ffprobe-api
+RUN chmod 755 /app/rendiff-probe
 
 # Create optimized health check script
 COPY --chown=nonroot:nonroot <<'EOF' /app/healthcheck.sh
@@ -142,7 +142,7 @@ ENV GO_ENV=production \
     LOG_LEVEL=info \
     LOG_FORMAT=json \
     DB_TYPE=sqlite \
-    DB_PATH=/app/data/ffprobe.db \
+    DB_PATH=/app/data/rendiff-probe.db \
     UPLOAD_DIR=/app/uploads \
     REPORTS_DIR=/app/reports \
     TEMP_DIR=/app/temp \
@@ -173,7 +173,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 --start-
 ENTRYPOINT ["/sbin/tini", "--"]
 
 # Application startup
-CMD ["/app/ffprobe-api"]
+CMD ["/app/rendiff-probe"]
 
 # =============================================================================
 # Development Stage - Enhanced Development Environment
@@ -250,7 +250,7 @@ COPY --from=alpine:3.19 /etc/passwd /etc/passwd
 COPY --from=alpine:3.19 /etc/group /etc/group
 
 # Application and FFmpeg binaries
-COPY --from=builder /src/ffprobe-api /ffprobe-api
+COPY --from=builder /src/rendiff-probe /rendiff-probe
 COPY --from=ffmpeg /tmp/bin/ffmpeg /usr/local/bin/ffmpeg
 COPY --from=ffmpeg /tmp/bin/ffprobe /usr/local/bin/ffprobe
 
@@ -267,7 +267,7 @@ ENV PATH="/usr/local/bin:$PATH" \
 EXPOSE 8080
 
 # Direct execution (no init system in scratch)
-ENTRYPOINT ["/ffprobe-api"]
+ENTRYPOINT ["/rendiff-probe"]
 
 # =============================================================================
 # Security Scanning Stage - Vulnerability Assessment

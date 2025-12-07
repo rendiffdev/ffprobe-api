@@ -2,7 +2,7 @@
 # Modern Docker Compose for production deployment
 # Usage: docker compose --profile production up
 
-name: ffprobe-api-prod
+name: rendiff-probe-prod
 
 # Production-specific service configurations
 services:
@@ -11,16 +11,16 @@ services:
     extends:
       file: compose.yaml
       service: api
-    image: ffprobe-api:latest
-    container_name: ffprobe-api-prod
-    hostname: ffprobe-api-prod
+    image: rendiff-probe:latest
+    container_name: rendiff-probe-prod
+    hostname: rendiff-probe-prod
     environment:
       GO_ENV: production
       GIN_MODE: release
       LOG_LEVEL: info
       # Database Configuration (SQLite embedded)
       DB_TYPE: sqlite
-      DB_PATH: /app/data/ffprobe.db
+      DB_PATH: /app/data/rendiff-probe.db
       # Cache Configuration (Valkey - Redis compatible)
       VALKEY_HOST: valkey-prod
       VALKEY_PORT: 6379
@@ -391,7 +391,7 @@ services:
     hostname: backup
     environment:
       DB_TYPE: sqlite
-      DB_PATH: /app/data/ffprobe.db
+      DB_PATH: /app/data/rendiff-probe.db
       BACKUP_RETENTION_DAYS: 30
       BACKUP_ENCRYPTION_KEY: ${BACKUP_ENCRYPTION_KEY}
       S3_BUCKET: ${BACKUP_S3_BUCKET}
@@ -441,9 +441,9 @@ volumes:
       o: bind
       device: ${DATA_PATH}/sqlite
     labels:
-      - "com.ffprobe-api.volume=production-database"
-      - "com.ffprobe-api.backup=daily"
-      - "com.ffprobe-api.type=sqlite"
+      - "com.rendiff-probe.volume=production-database"
+      - "com.rendiff-probe.backup=daily"
+      - "com.rendiff-probe.type=sqlite"
   valkey_prod_data:
     driver: local
     driver_opts:
@@ -451,9 +451,9 @@ volumes:
       o: bind
       device: ${DATA_PATH}/valkey
     labels:
-      - "com.ffprobe-api.volume=production-cache"
-      - "com.ffprobe-api.backup=weekly"
-      - "com.ffprobe-api.type=valkey"
+      - "com.rendiff-probe.volume=production-cache"
+      - "com.rendiff-probe.backup=weekly"
+      - "com.rendiff-probe.type=valkey"
   ollama_prod_data:
     driver: local
     driver_opts:
@@ -461,13 +461,13 @@ volumes:
       o: bind
       device: ${DATA_PATH}/ollama
     labels:
-      - "com.ffprobe-api.volume=production-ai-models"
-      - "com.ffprobe-api.backup=monthly"
+      - "com.rendiff-probe.volume=production-ai-models"
+      - "com.rendiff-probe.backup=monthly"
   traefik_acme:
     driver: local
     labels:
-      - "com.ffprobe-api.volume=acme-certificates"
-      - "com.ffprobe-api.backup=daily"
+      - "com.rendiff-probe.volume=acme-certificates"
+      - "com.rendiff-probe.backup=daily"
   prometheus_data:
     driver: local
     driver_opts:
@@ -475,8 +475,8 @@ volumes:
       o: bind
       device: ${DATA_PATH}/prometheus
     labels:
-      - "com.ffprobe-api.volume=metrics-data"
-      - "com.ffprobe-api.retention=30d"
+      - "com.rendiff-probe.volume=metrics-data"
+      - "com.rendiff-probe.retention=30d"
   grafana_data:
     driver: local
     driver_opts:
@@ -484,12 +484,12 @@ volumes:
       o: bind
       device: ${DATA_PATH}/grafana
     labels:
-      - "com.ffprobe-api.volume=dashboards-data"
-      - "com.ffprobe-api.backup=weekly"
+      - "com.rendiff-probe.volume=dashboards-data"
+      - "com.rendiff-probe.backup=weekly"
   backup_scripts:
     driver: local
     labels:
-      - "com.ffprobe-api.volume=backup-scripts"
+      - "com.rendiff-probe.volume=backup-scripts"
 
 # Production networks with security and monitoring
 networks:
@@ -508,9 +508,9 @@ networks:
       com.docker.network.bridge.enable_icc: "true"
       com.docker.network.bridge.enable_ip_masquerade: "true"
     labels:
-      - "com.ffprobe-api.network=production"
-      - "com.ffprobe-api.environment=production"
-      - "com.ffprobe-api.security=high"
+      - "com.rendiff-probe.network=production"
+      - "com.rendiff-probe.environment=production"
+      - "com.rendiff-probe.security=high"
 
   traefik-network:
     driver: bridge
@@ -523,8 +523,8 @@ networks:
     driver_opts:
       com.docker.network.bridge.name: traefik-br0
     labels:
-      - "com.ffprobe-api.network=edge"
-      - "com.ffprobe-api.purpose=reverse-proxy"
+      - "com.rendiff-probe.network=edge"
+      - "com.rendiff-probe.purpose=reverse-proxy"
 
 # Production-specific configurations
 x-production-variables: &prod-variables

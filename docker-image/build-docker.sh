@@ -12,7 +12,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Default values
-IMAGE_NAME="ffprobe-api"
+IMAGE_NAME="rendiff-probe"
 VERSION="latest"
 TARGET="production"
 PLATFORM="linux/amd64"
@@ -44,7 +44,7 @@ show_usage() {
     echo "Usage: $0 [OPTIONS]"
     echo ""
     echo "Options:"
-    echo "  -n, --name NAME         Docker image name (default: ffprobe-api)"
+    echo "  -n, --name NAME         Docker image name (default: rendiff-probe)"
     echo "  -v, --version VERSION   Image version tag (default: latest)"
     echo "  -t, --target TARGET     Build target (production|development|test|minimal) (default: production)"
     echo "  -p, --platform PLATFORM Build platform (default: linux/amd64)"

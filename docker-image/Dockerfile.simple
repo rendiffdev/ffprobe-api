@@ -14,7 +14,7 @@ RUN apk add --no-cache \
 WORKDIR /build
 
 # Initialize a simple Go module and handle dependencies
-RUN go mod init ffprobe-api-simple && \
+RUN go mod init rendiff-probe-simple && \
     go get github.com/gin-gonic/gin@latest && \
     go mod tidy
 
@@ -58,7 +58,7 @@ func main() {
         
         c.JSON(http.StatusOK, gin.H{
             "status": "healthy",
-            "service": "ffprobe-api",
+            "service": "rendiff-probe",
             "version": "v1.0.0",
             "ffmpeg": "available",
         })
@@ -93,7 +93,7 @@ func main() {
     // Version endpoint
     r.GET("/api/v1/version", func(c *gin.Context) {
         c.JSON(http.StatusOK, gin.H{
-            "service": "ffprobe-api",
+            "service": "rendiff-probe",
             "version": "v1.0.0",
             "build": "docker",
         })
@@ -112,7 +112,7 @@ func main() {
 EOF
 
 # Build simplified application
-RUN CGO_ENABLED=1 GOOS=linux go build -ldflags='-w -s' -o ffprobe-api /build/main.go
+RUN CGO_ENABLED=1 GOOS=linux go build -ldflags='-w -s' -o rendiff-probe /build/main.go
 
 # =============================================================================
 # FFmpeg Stage - Latest Static Builds
@@ -162,7 +162,7 @@ COPY --from=ffmpeg /tmp/bin/ffprobe /usr/local/bin/
 RUN chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe
 
 # Copy application
-COPY --from=builder /build/ffprobe-api /app/
+COPY --from=builder /build/rendiff-probe /app/
 
 # Create directories
 RUN mkdir -p /app/{data,uploads,reports,temp} && \
@@ -189,4 +189,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 USER appuser:appgroup
 
-CMD ["/app/ffprobe-api"]
+CMD ["/app/rendiff-probe"]

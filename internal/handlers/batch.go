@@ -9,11 +9,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/rendiffdev/ffprobe-api/internal/errors"
-	"github.com/rendiffdev/ffprobe-api/internal/ffmpeg"
-	"github.com/rendiffdev/ffprobe-api/internal/models"
-	"github.com/rendiffdev/ffprobe-api/internal/services"
-	"github.com/rendiffdev/ffprobe-api/internal/validator"
+	"github.com/rendiffdev/rendiff-probe/internal/errors"
+	"github.com/rendiffdev/rendiff-probe/internal/ffmpeg"
+	"github.com/rendiffdev/rendiff-probe/internal/models"
+	"github.com/rendiffdev/rendiff-probe/internal/services"
+	"github.com/rendiffdev/rendiff-probe/internal/validator"
 	"github.com/rs/zerolog"
 )
 

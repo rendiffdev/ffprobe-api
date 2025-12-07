@@ -1,6 +1,11 @@
-// rendiff-cli - Professional Media QC Analysis Tool
+// rendiffprobe-cli - Professional Media QC Analysis Tool
+// Part of the Rendiff Probe project - Powered by FFprobe (FFmpeg)
+//
 // A command-line interface for comprehensive video/audio quality control analysis
 // using FFprobe with enhanced QC capabilities across 19 analysis categories.
+//
+// FFprobe is part of the FFmpeg project (https://ffmpeg.org/)
+// and is licensed under the LGPL/GPL license.
 
 package main
 
@@ -14,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rendiffdev/ffprobe-api/internal/ffmpeg"
+	"github.com/rendiffdev/rendiff-probe/internal/ffmpeg"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 )
@@ -64,9 +69,9 @@ var allCategories = []QCCategory{
 
 func main() {
 	rootCmd := &cobra.Command{
-		Use:   "rendiff-cli",
+		Use:   "rendiffprobe-cli",
 		Short: "Professional Media QC Analysis Tool",
-		Long: `rendiff-cli - Professional Media Quality Control Analysis Tool
+		Long: `rendiffprobe-cli - Professional Media Quality Control Analysis Tool
 
 A comprehensive command-line tool for analyzing video and audio files
 using FFprobe with enhanced QC capabilities across 19 analysis categories.
@@ -78,10 +83,10 @@ Features:
   - Professional broadcast compliance checks
 
 Examples:
-  rendiff-cli analyze video.mp4
-  rendiff-cli analyze video.mp4 --format json --output result.json
-  rendiff-cli analyze video.mp4 --format report
-  rendiff-cli categories`,
+  rendiffprobe-cli analyze video.mp4
+  rendiffprobe-cli analyze video.mp4 --format json --output result.json
+  rendiffprobe-cli analyze video.mp4 --format report
+  rendiffprobe-cli categories`,
 		Version: version,
 	}
 
@@ -131,7 +136,7 @@ Performs analysis across 19 QC categories including:
 		Use:   "version",
 		Short: "Show version information",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("rendiff-cli version %s\n", version)
+			fmt.Printf("rendiffprobe-cli version %s\n", version)
 			fmt.Printf("Build date: %s\n", buildDate)
 			fmt.Printf("QC Categories: 19\n")
 		},
@@ -258,7 +263,7 @@ func analyzeFile(ctx context.Context, ffprobe *ffmpeg.FFprobe, filePath string) 
 		"timestamp":              time.Now().Format(time.RFC3339),
 		"status":                 "success",
 		"qc_categories_analyzed": 19,
-		"tool":                   "rendiff-cli",
+		"tool":                   "rendiffprobe-cli",
 		"version":                version,
 		"analysis":               analysisMap,
 	}
@@ -713,9 +718,9 @@ func runCategories(cmd *cobra.Command, args []string) {
 
 	fmt.Println()
 	fmt.Println("Usage:")
-	fmt.Println("  rendiff-cli analyze video.mp4")
-	fmt.Println("  rendiff-cli analyze video.mp4 --format json")
-	fmt.Println("  rendiff-cli analyze video.mp4 --format report")
+	fmt.Println("  rendiffprobe-cli analyze video.mp4")
+	fmt.Println("  rendiffprobe-cli analyze video.mp4 --format json")
+	fmt.Println("  rendiffprobe-cli analyze video.mp4 --format report")
 }
 
 func runInfo(cmd *cobra.Command, args []string) {

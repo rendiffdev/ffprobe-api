@@ -89,7 +89,7 @@ status: ## Show service status
 health: ## Check health of all services
 	@echo "🏥 Health Check:"
 	@echo "API:        $(shell curl -s http://localhost:8080/health | grep -o '"status":"[^"]*"' || echo '❌ Down')"
-	@echo "Database:   $(shell test -f ./data/sqlite/ffprobe.db && echo '✅ Ready (SQLite)' || echo '❌ Down')"
+	@echo "Database:   $(shell test -f ./data/sqlite/rendiff-probe.db && echo '✅ Ready (SQLite)' || echo '❌ Down')"
 	@echo "Valkey:     $(shell docker compose exec -T valkey valkey-cli ping 2>/dev/null || echo '❌ Down')"
 	@echo "Ollama:     $(shell curl -s http://localhost:11434/api/version >/dev/null && echo '✅ Ready' || echo '❌ Down')"
 
@@ -182,7 +182,7 @@ backup: ## Create backup of data and configuration
 
 migrate: ## Run database migrations
 	@echo "🔄 Running migrations..."
-	@docker compose -f docker-image/compose.yaml exec api ./ffprobe-api migrate up
+	@docker compose -f docker-image/compose.yaml exec api ./rendiff-probe migrate up
 	@echo "✅ Migrations complete"
 
 # === DEVELOPMENT ===
@@ -195,7 +195,7 @@ shell: ## Open shell in API container
 	@docker compose -f docker-image/compose.yaml exec api /bin/bash
 
 db-shell: ## Open SQLite shell
-	@docker compose -f docker-image/compose.yaml exec api sqlite3 /app/data/ffprobe.db
+	@docker compose -f docker-image/compose.yaml exec api sqlite3 /app/data/rendiff-probe.db
 
 valkey-shell: ## Open Valkey shell
 	@docker compose -f docker-image/compose.yaml exec valkey valkey-cli -a $$VALKEY_PASSWORD
@@ -286,7 +286,7 @@ migrate-down:
 # Generate API documentation
 docs:
 	@echo "Generating API documentation..."
-	swag init -g cmd/ffprobe-api/main.go -o docs/
+	swag init -g cmd/rendiff-probe/main.go -o docs/
 
 # Security scan
 security:
@@ -301,7 +301,7 @@ benchmark:
 # Profile application
 profile:
 	@echo "Running with profiling..."
-	go run -tags profile ./cmd/ffprobe-api
+	go run -tags profile ./cmd/rendiff-probe
 
 # Check dependencies for vulnerabilities
 vuln-check:

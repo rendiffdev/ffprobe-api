@@ -102,7 +102,7 @@ func NewWithConfig(cfg Config) zerolog.Logger {
 
 	// Add service information
 	logger = logger.With().
-		Str("service", "ffprobe-api").
+		Str("service", "rendiff-probe").
 		Str("version", getVersion()).
 		Logger()
 

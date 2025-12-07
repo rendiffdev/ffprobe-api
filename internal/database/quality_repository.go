@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/rendiffdev/ffprobe-api/internal/quality"
+	"github.com/rendiffdev/rendiff-probe/internal/quality"
 )
 
 // QualityRepository handles quality metrics database operations

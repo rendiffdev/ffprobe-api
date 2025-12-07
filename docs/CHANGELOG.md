@@ -221,8 +221,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 📞 Support Channels
 - **Documentation**: [Complete API Reference](./docs/README.md)
-- **Issues**: [GitHub Issues](https://github.com/rendiffdev/ffprobe-api/issues)
-- **Discussions**: [Community Forum](https://github.com/rendiffdev/ffprobe-api/discussions)
+- **Issues**: [GitHub Issues](https://github.com/rendiffdev/rendiff-probe/issues)
+- **Discussions**: [Community Forum](https://github.com/rendiffdev/rendiff-probe/discussions)
 - **Security**: dev@rendiff.dev
 
 ---

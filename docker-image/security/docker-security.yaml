@@ -15,7 +15,7 @@ services:
       # Use custom seccomp profile
       - seccomp:./security/seccomp-profile.json
       # Enable AppArmor (if available)
-      - apparmor:docker-ffprobe-api
+      - apparmor:docker-rendiff-probe
     
     # Drop all capabilities and add only required ones
     cap_drop:

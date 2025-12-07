@@ -34,8 +34,8 @@ RUN go mod tidy && \
 RUN CGO_ENABLED=1 GOOS=linux go build \
     -ldflags='-w -s -extldflags "-static"' \
     -a -installsuffix cgo \
-    -o ffprobe-api \
-    ./cmd/ffprobe-api
+    -o rendiff-probe \
+    ./cmd/rendiff-probe
 
 # =============================================================================
 # FFmpeg 8.0 Stage - Using Official Static Builds
@@ -86,7 +86,7 @@ COPY --from=ffmpeg /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
 COPY --from=ffmpeg /usr/local/bin/ffprobe /usr/local/bin/ffprobe
 
 # Copy application binary from builder stage
-COPY --from=builder /build/ffprobe-api /app/
+COPY --from=builder /build/rendiff-probe /app/
 
 # Verify FFmpeg 8.0 installation and show version
 RUN /usr/local/bin/ffmpeg -version | head -1 && \
@@ -122,7 +122,7 @@ ENV GO_ENV=production \
     API_HOST=0.0.0.0 \
     LOG_LEVEL=info \
     DB_TYPE=sqlite \
-    DB_PATH=/app/data/ffprobe.db \
+    DB_PATH=/app/data/rendiff-probe.db \
     UPLOAD_DIR=/app/uploads \
     REPORTS_DIR=/app/reports \
     FFMPEG_PATH=/usr/local/bin/ffmpeg \
@@ -156,7 +156,7 @@ ENTRYPOINT ["/usr/bin/dumb-init", "--"]
 USER appuser:appgroup
 
 # Start application
-CMD ["/app/ffprobe-api"]
+CMD ["/app/rendiff-probe"]
 
 # =============================================================================
 # Development Stage - Hot Reload Support
@@ -245,7 +245,7 @@ COPY --from=alpine:3.19 /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=alpine:3.19 /usr/share/zoneinfo /usr/share/zoneinfo
 
 # Copy application binary
-COPY --from=builder /build/ffprobe-api /ffprobe-api
+COPY --from=builder /build/rendiff-probe /rendiff-probe
 
 # Copy FFmpeg 8.0 binaries and libraries
 COPY --from=ffmpeg /usr/local/bin/ffmpeg /usr/local/bin/ffmpeg
@@ -263,4 +263,4 @@ ENV FFPROBE_PATH=/usr/local/bin/ffprobe
 EXPOSE 8080
 
 # Start application
-ENTRYPOINT ["/ffprobe-api"]
+ENTRYPOINT ["/rendiff-probe"]

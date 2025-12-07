@@ -17,7 +17,7 @@ readonly DEPLOYMENT_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 DEPLOYMENT_MODE="${DEPLOYMENT_MODE:-compose}"
 ENVIRONMENT="${ENVIRONMENT:-production}"
 DOMAIN="${DOMAIN:-localhost}"
-DATA_PATH="${DATA_PATH:-/opt/ffprobe-api/data}"
+DATA_PATH="${DATA_PATH:-/opt/rendiff-probe/data}"
 BACKUP_ENABLED="${BACKUP_ENABLED:-true}"
 MONITORING_ENABLED="${MONITORING_ENABLED:-true}"
 SSL_ENABLED="${SSL_ENABLED:-true}"
@@ -284,7 +284,7 @@ MAX_CONCURRENT_JOBS=${MAX_CONCURRENT_JOBS:-8}
 
 # Database Configuration
 DB_TYPE=sqlite
-DB_PATH=/app/data/ffprobe.db
+DB_PATH=/app/data/rendiff-probe.db
 
 # Cache Configuration
 VALKEY_PASSWORD_FILE=/run/secrets/valkey_password
@@ -391,7 +391,7 @@ deploy_swarm() {
         stack_cmd+=" -c ${SCRIPT_DIR}/security/docker-security.yaml"
     fi
     
-    stack_cmd+=" ffprobe-api"
+    stack_cmd+=" rendiff-probe"
     
     if [[ "${DRY_RUN}" == "true" ]]; then
         log_info "DRY RUN: Would execute: ${stack_cmd}"
@@ -415,14 +415,14 @@ deploy_kubernetes() {
     if [[ "${DRY_RUN}" == "true" ]]; then
         log_info "DRY RUN: Would create Kubernetes namespace"
     else
-        kubectl create namespace ffprobe-api --dry-run=client -o yaml | kubectl apply -f -
+        kubectl create namespace rendiff-probe --dry-run=client -o yaml | kubectl apply -f -
     fi
     
     # Deploy with Helm (if charts exist)
-    local helm_chart="${SCRIPT_DIR}/helm/ffprobe-api"
+    local helm_chart="${SCRIPT_DIR}/helm/rendiff-probe"
     if [[ -d "${helm_chart}" ]]; then
-        local helm_cmd="helm upgrade --install ffprobe-api ${helm_chart}"
-        helm_cmd+=" --namespace ffprobe-api"
+        local helm_cmd="helm upgrade --install rendiff-probe ${helm_chart}"
+        helm_cmd+=" --namespace rendiff-probe"
         helm_cmd+=" --set environment=${ENVIRONMENT}"
         helm_cmd+=" --set domain=${DOMAIN}"
         
@@ -470,12 +470,12 @@ wait_for_services() {
                     fi
                     ;;
                 "swarm")
-                    if docker service ps "ffprobe-api_${service}" --format "{{.CurrentState}}" | grep -q "Running"; then
+                    if docker service ps "rendiff-probe_${service}" --format "{{.CurrentState}}" | grep -q "Running"; then
                         break
                     fi
                     ;;
                 "kubernetes")
-                    if kubectl get pods -n ffprobe-api -l app="${service}" --field-selector=status.phase=Running | grep -q "${service}"; then
+                    if kubectl get pods -n rendiff-probe -l app="${service}" --field-selector=status.phase=Running | grep -q "${service}"; then
                         break
                     fi
                     ;;
@@ -576,14 +576,14 @@ scale_services() {
             if [[ "${DRY_RUN}" == "true" ]]; then
                 log_info "DRY RUN: Would scale API service to ${replicas}"
             else
-                docker service scale ffprobe-api_api="${replicas}"
+                docker service scale rendiff-probe_api="${replicas}"
             fi
             ;;
         "kubernetes")
             if [[ "${DRY_RUN}" == "true" ]]; then
                 log_info "DRY RUN: Would scale API deployment to ${replicas}"
             else
-                kubectl scale deployment api --replicas="${replicas}" -n ffprobe-api
+                kubectl scale deployment api --replicas="${replicas}" -n rendiff-probe
             fi
             ;;
     esac
@@ -606,16 +606,16 @@ show_logs() {
             ;;
         "swarm")
             if [[ -n "${service}" ]]; then
-                docker service logs -f "ffprobe-api_${service}"
+                docker service logs -f "rendiff-probe_${service}"
             else
-                docker stack ps ffprobe-api
+                docker stack ps rendiff-probe
             fi
             ;;
         "kubernetes")
             if [[ -n "${service}" ]]; then
-                kubectl logs -f -l app="${service}" -n ffprobe-api
+                kubectl logs -f -l app="${service}" -n rendiff-probe
             else
-                kubectl logs -f --all-containers=true -n ffprobe-api
+                kubectl logs -f --all-containers=true -n rendiff-probe
             fi
             ;;
     esac

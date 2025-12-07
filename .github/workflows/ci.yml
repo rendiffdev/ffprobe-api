@@ -160,8 +160,8 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: ffprobe-api-binary
-        path: bin/ffprobe-api
+        name: rendiff-probe-binary
+        path: bin/rendiff-probe
 
   docker:
     name: Docker Build
@@ -186,7 +186,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: rendiffdev/ffprobe-api
+        images: rendiffdev/rendiff-probe
         tags: |
           type=ref,event=branch
           type=ref,event=pr

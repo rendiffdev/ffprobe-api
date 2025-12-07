@@ -71,7 +71,7 @@ Paste any relevant log output here (remove sensitive information)
 **Docker Logs (if applicable):**
 ```bash
 # Command used to get logs
-docker compose logs ffprobe-api
+docker compose logs rendiff-probe
 
 # Log output
 [paste logs here]
@@ -115,4 +115,4 @@ What have you tried to resolve this issue?
 
 ---
 
-**Note:** Please ensure you've checked the [documentation](../docs/README.md) and [existing issues](https://github.com/rendiffdev/ffprobe-api/issues) before submitting.
+**Note:** Please ensure you've checked the [documentation](../docs/README.md) and [existing issues](https://github.com/rendiffdev/rendiff-probe/issues) before submitting.

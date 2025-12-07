@@ -226,7 +226,7 @@ sequenceDiagram
 ```yaml
 # docker-compose.scale.yml
 services:
-  ffprobe-api:
+  rendiff-probe:
     deploy:
       replicas: 3
       resources:
@@ -241,7 +241,7 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf
     depends_on:
-      - ffprobe-api
+      - rendiff-probe
 ```
 
 ### Load Balancing
@@ -249,9 +249,9 @@ services:
 ```nginx
 upstream ffprobe_api {
     least_conn;
-    server ffprobe-api-1:8080 weight=1;
-    server ffprobe-api-2:8080 weight=1;
-    server ffprobe-api-3:8080 weight=1;
+    server rendiff-probe-1:8080 weight=1;
+    server rendiff-probe-2:8080 weight=1;
+    server rendiff-probe-3:8080 weight=1;
 }
 
 server {
@@ -465,13 +465,13 @@ func TestAPI_Integration(t *testing.T) {
 FROM golang:1.21 AS builder
 WORKDIR /app
 COPY . .
-RUN CGO_ENABLED=0 go build -o ffprobe-api
+RUN CGO_ENABLED=0 go build -o rendiff-probe
 
 FROM alpine:3.19
 RUN apk add --no-cache ffmpeg
-COPY --from=builder /app/ffprobe-api /usr/local/bin/
+COPY --from=builder /app/rendiff-probe /usr/local/bin/
 EXPOSE 8080
-CMD ["ffprobe-api"]
+CMD ["rendiff-probe"]
 ```
 
 ### Kubernetes Architecture
@@ -480,20 +480,20 @@ CMD ["ffprobe-api"]
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ffprobe-api
+  name: rendiff-probe
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: ffprobe-api
+      app: rendiff-probe
   template:
     metadata:
       labels:
-        app: ffprobe-api
+        app: rendiff-probe
     spec:
       containers:
-      - name: ffprobe-api
-        image: ffprobe-api:latest
+      - name: rendiff-probe
+        image: rendiff-probe:latest
         ports:
         - containerPort: 8080
         env:

@@ -13,8 +13,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/rendiffdev/ffprobe-api/internal/cache"
-	"github.com/rendiffdev/ffprobe-api/internal/errors"
+	"github.com/rendiffdev/rendiff-probe/internal/cache"
+	"github.com/rendiffdev/rendiff-probe/internal/errors"
 	"github.com/rs/zerolog"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -465,7 +465,7 @@ func (m *AuthMiddleware) generateTokens(userID, username string, roles []string)
 			ExpiresAt: jwt.NewNumericDate(now.Add(m.config.TokenExpiry)),
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
-			Issuer:    "ffprobe-api",
+			Issuer:    "rendiff-probe",
 			Subject:   userID,
 			ID:        uuid.New().String(),
 		},
@@ -486,7 +486,7 @@ func (m *AuthMiddleware) generateTokens(userID, username string, roles []string)
 			ExpiresAt: jwt.NewNumericDate(now.Add(m.config.RefreshExpiry)),
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
-			Issuer:    "ffprobe-api",
+			Issuer:    "rendiff-probe",
 			Subject:   userID,
 			ID:        uuid.New().String(),
 		},

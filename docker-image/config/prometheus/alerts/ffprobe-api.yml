@@ -2,28 +2,28 @@
 # Comprehensive alerting for application health, performance, and business metrics
 
 groups:
-  - name: ffprobe-api.rules
+  - name: rendiff-probe.rules
     interval: 30s
     rules:
       # Application Health Alerts
       - alert: FFprobeAPIDown
-        expr: up{job="ffprobe-api"} == 0
+        expr: up{job="rendiff-probe"} == 0
         for: 1m
         labels:
           severity: critical
-          service: ffprobe-api
+          service: rendiff-probe
           category: availability
         annotations:
           summary: "FFprobe API instance is down"
           description: "FFprobe API instance {{ $labels.instance }} has been down for more than 1 minute."
-          runbook_url: "https://runbooks.company.com/ffprobe-api/instance-down"
+          runbook_url: "https://runbooks.company.com/rendiff-probe/instance-down"
 
       - alert: FFprobeAPIHealthCheckFailing
         expr: ffprobe_health_check_status != 1
         for: 2m
         labels:
           severity: warning
-          service: ffprobe-api
+          service: rendiff-probe
           category: health
         annotations:
           summary: "FFprobe API health check failing"
@@ -31,22 +31,22 @@ groups:
 
       # Performance Alerts
       - alert: FFprobeAPIHighResponseTime
-        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="ffprobe-api"}[5m])) > 5
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="rendiff-probe"}[5m])) > 5
         for: 3m
         labels:
           severity: warning
-          service: ffprobe-api
+          service: rendiff-probe
           category: performance
         annotations:
           summary: "FFprobe API high response time"
           description: "95th percentile response time for {{ $labels.instance }} is {{ $value }}s, exceeding 5s threshold."
 
       - alert: FFprobeAPIHighErrorRate
-        expr: rate(http_requests_total{job="ffprobe-api",status=~"5.."}[5m]) / rate(http_requests_total{job="ffprobe-api"}[5m]) > 0.05
+        expr: rate(http_requests_total{job="rendiff-probe",status=~"5.."}[5m]) / rate(http_requests_total{job="rendiff-probe"}[5m]) > 0.05
         for: 2m
         labels:
           severity: critical
-          service: ffprobe-api
+          service: rendiff-probe
           category: errors
         annotations:
           summary: "FFprobe API high error rate"
@@ -57,7 +57,7 @@ groups:
         for: 5m
         labels:
           severity: warning
-          service: ffprobe-api
+          service: rendiff-probe
           category: capacity
         annotations:
           summary: "FFprobe API high concurrency"
@@ -65,22 +65,22 @@ groups:
 
       # Resource Utilization Alerts
       - alert: FFprobeAPIHighMemoryUsage
-        expr: process_resident_memory_bytes{job="ffprobe-api"} / container_spec_memory_limit_bytes > 0.8
+        expr: process_resident_memory_bytes{job="rendiff-probe"} / container_spec_memory_limit_bytes > 0.8
         for: 5m
         labels:
           severity: warning
-          service: ffprobe-api
+          service: rendiff-probe
           category: resources
         annotations:
           summary: "FFprobe API high memory usage"
           description: "Memory usage for {{ $labels.instance }} is {{ $value | humanizePercentage }}, exceeding 80% of limit."
 
       - alert: FFprobeAPIHighCPUUsage
-        expr: rate(process_cpu_seconds_total{job="ffprobe-api"}[5m]) > 1.5
+        expr: rate(process_cpu_seconds_total{job="rendiff-probe"}[5m]) > 1.5
         for: 5m
         labels:
           severity: warning
-          service: ffprobe-api
+          service: rendiff-probe
           category: resources
         annotations:
           summary: "FFprobe API high CPU usage"
@@ -92,7 +92,7 @@ groups:
         for: 3m
         labels:
           severity: warning
-          service: ffprobe-api
+          service: rendiff-probe
           category: processing
         annotations:
           summary: "High FFmpeg processing failure rate"
@@ -103,7 +103,7 @@ groups:
         for: 5m
         labels:
           severity: warning
-          service: ffprobe-api
+          service: rendiff-probe
           category: processing
         annotations:
           summary: "FFmpeg processing queue backlog"
@@ -114,7 +114,7 @@ groups:
         for: 1m
         labels:
           severity: warning
-          service: ffprobe-api
+          service: rendiff-probe
           category: processing
         annotations:
           summary: "Long-running FFmpeg job detected"
@@ -148,7 +148,7 @@ groups:
         for: 5m
         labels:
           severity: critical
-          service: ffprobe-api
+          service: rendiff-probe
           category: storage
         annotations:
           summary: "SQLite database disk space low"
@@ -183,7 +183,7 @@ groups:
         for: 2m
         labels:
           severity: warning
-          service: ffprobe-api
+          service: rendiff-probe
           category: security
         annotations:
           summary: "High authentication failure rate"
@@ -194,7 +194,7 @@ groups:
         for: 3m
         labels:
           severity: warning
-          service: ffprobe-api
+          service: rendiff-probe
           category: security
         annotations:
           summary: "High unauthorized access attempts"
@@ -228,7 +228,7 @@ groups:
         for: 5m
         labels:
           severity: warning
-          service: ffprobe-api
+          service: rendiff-probe
           category: business
         annotations:
           summary: "Video quality analysis failures increasing"
@@ -239,7 +239,7 @@ groups:
         for: 10m
         labels:
           severity: warning
-          service: ffprobe-api
+          service: rendiff-probe
           category: business
         annotations:
           summary: "Low video processing throughput"
@@ -250,24 +250,24 @@ groups:
         for: 1h
         labels:
           severity: warning
-          service: ffprobe-api
+          service: rendiff-probe
           category: capacity
         annotations:
           summary: "Storage will be full soon"
           description: "Upload storage is predicted to be full within 24 hours based on current growth rate."
 
-  - name: ffprobe-api.recording-rules
+  - name: rendiff-probe.recording-rules
     interval: 30s
     rules:
       # Recording rules for efficient querying and alerting
       - record: ffprobe:request_rate_5m
-        expr: rate(http_requests_total{job="ffprobe-api"}[5m])
+        expr: rate(http_requests_total{job="rendiff-probe"}[5m])
 
       - record: ffprobe:error_rate_5m
-        expr: rate(http_requests_total{job="ffprobe-api",status=~"5.."}[5m])
+        expr: rate(http_requests_total{job="rendiff-probe",status=~"5.."}[5m])
 
       - record: ffprobe:response_time_95p_5m
-        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="ffprobe-api"}[5m]))
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="rendiff-probe"}[5m]))
 
       - record: ffprobe:concurrent_jobs_avg_5m
         expr: avg_over_time(ffprobe_concurrent_jobs[5m])
@@ -279,7 +279,7 @@ groups:
         expr: rate(cache_hits_total[5m]) / (rate(cache_hits_total[5m]) + rate(cache_misses_total[5m]))
 
       - record: ffprobe:memory_usage_percent
-        expr: process_resident_memory_bytes{job="ffprobe-api"} / container_spec_memory_limit_bytes * 100
+        expr: process_resident_memory_bytes{job="rendiff-probe"} / container_spec_memory_limit_bytes * 100
 
       - record: ffprobe:cpu_usage_percent
-        expr: rate(process_cpu_seconds_total{job="ffprobe-api"}[5m]) * 100
+        expr: rate(process_cpu_seconds_total{job="rendiff-probe"}[5m]) * 100

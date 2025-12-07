@@ -1,7 +1,7 @@
 # FFprobe API - SQLite-only Deployment (Zero External Dependencies)
 # Minimal Docker Compose with embedded SQLite database
 
-name: ffprobe-api-sqlite
+name: rendiff-probe-sqlite
 
 services:
   # Main API service with SQLite database
@@ -10,9 +10,9 @@ services:
       context: .
       dockerfile: docker-image/Dockerfile
       target: production
-    image: ffprobe-api:sqlite
-    container_name: ffprobe-api-sqlite
-    hostname: ffprobe-api
+    image: rendiff-probe:sqlite
+    container_name: rendiff-probe-sqlite
+    hostname: rendiff-probe
     ports:
       - "8080:8080"
     environment:
@@ -22,7 +22,7 @@ services:
       
       # SQLite Database Configuration
       DB_TYPE: sqlite
-      DB_PATH: /app/data/ffprobe.db
+      DB_PATH: /app/data/rendiff-probe.db
       
       # Optional Valkey (can be disabled for file-based cache)
       VALKEY_HOST: ${VALKEY_HOST:-valkey}

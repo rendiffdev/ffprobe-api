@@ -127,7 +127,7 @@ RATE_LIMIT_PER_DAY=10000
 
 # Database (SQLite embedded)
 DB_TYPE=sqlite
-DB_PATH=/app/data/ffprobe.db
+DB_PATH=/app/data/rendiff-probe.db
 
 # Connection pool
 DB_MAX_OPEN_CONNS=25

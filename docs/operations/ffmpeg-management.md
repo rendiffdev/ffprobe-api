@@ -209,19 +209,19 @@ The system maintains a list of problematic versions:
 
 ```bash
 # Use latest BtbN build (recommended)
-docker build -f Dockerfile.btbn -t ffprobe-api:latest .
+docker build -f Dockerfile.btbn -t rendiff-probe:latest .
 
 # Use specific FFmpeg version
 docker build \
   --build-arg FFMPEG_VERSION=6.1.1 \
   -f Dockerfile.btbn \
-  -t ffprobe-api:6.1.1 .
+  -t rendiff-probe:6.1.1 .
 
 # Use nightly builds (not recommended for production)
 docker build \
   --build-arg FFMPEG_BUILD=nightly \
   -f Dockerfile.btbn \
-  -t ffprobe-api:nightly .
+  -t rendiff-probe:nightly .
 ```
 
 ## Best Practices

@@ -39,7 +39,7 @@ check_database() {
     print_info "Checking database..."
     
     # For SQLite, check if file exists and is accessible
-    if docker compose exec -T api test -f /app/data/ffprobe.db 2>/dev/null; then
+    if docker compose exec -T api test -f /app/data/rendiff-probe.db 2>/dev/null; then
         print_success "Database accessible"
         return 0
     else

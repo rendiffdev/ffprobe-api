@@ -5,7 +5,7 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
   external_labels:
-    cluster: 'ffprobe-api-prod'
+    cluster: 'rendiff-probe-prod'
     environment: 'production'
     region: '${REGION:-us-east-1}'
 
@@ -33,7 +33,7 @@ scrape_configs:
     metrics_path: '/metrics'
 
   # FFprobe API instances
-  - job_name: 'ffprobe-api'
+  - job_name: 'rendiff-probe'
     dns_sd_configs:
       - names:
           - 'api'
@@ -144,7 +144,7 @@ remote_write:
       send_interval: 30s
     headers:
       X-Environment: "production"
-      X-Service: "ffprobe-api"
+      X-Service: "rendiff-probe"
 
 # Remote read configuration for federated queries
 remote_read:

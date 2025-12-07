@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rendiffdev/ffprobe-api/internal/services"
+	"github.com/rendiffdev/rendiff-probe/internal/services"
 	"github.com/rs/zerolog"
 )
 

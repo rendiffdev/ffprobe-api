@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rendiffdev/ffprobe-api/internal/circuitbreaker"
-	"github.com/rendiffdev/ffprobe-api/internal/config"
-	"github.com/rendiffdev/ffprobe-api/internal/models"
+	"github.com/rendiffdev/rendiff-probe/internal/circuitbreaker"
+	"github.com/rendiffdev/rendiff-probe/internal/config"
+	"github.com/rendiffdev/rendiff-probe/internal/models"
 	"github.com/rs/zerolog"
 )
 
@@ -310,7 +310,7 @@ func (s *LLMService) generateWithOpenRouter(ctx context.Context, prompt string) 
 
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", "Bearer "+s.config.OpenRouterAPIKey)
-		req.Header.Set("HTTP-Referer", "https://ffprobe-api.local")
+		req.Header.Set("HTTP-Referer", "https://rendiff-probe.local")
 		req.Header.Set("X-Title", "FFprobe API")
 
 		// Send request

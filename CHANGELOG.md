@@ -217,7 +217,7 @@ git pull origin main
 
 ## Earlier Versions
 
-See [GitHub Releases](https://github.com/yourorg/ffprobe-api/releases) for complete version history.
+See [GitHub Releases](https://github.com/yourorg/rendiff-probe/releases) for complete version history.
 
 ---
 
@@ -272,6 +272,6 @@ For upgrades from versions earlier than v1.9.0, please:
 
 For questions about upgrades or new features:
 - **Documentation**: [docs/](docs/)
-- **Issues**: [GitHub Issues](https://github.com/yourorg/ffprobe-api/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourorg/ffprobe-api/discussions)
+- **Issues**: [GitHub Issues](https://github.com/yourorg/rendiff-probe/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourorg/rendiff-probe/discussions)
 - **Professional Support**: support@yourcompany.com

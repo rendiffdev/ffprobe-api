@@ -9,7 +9,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/rendiffdev/ffprobe-api/internal/config"
+	"github.com/rendiffdev/rendiff-probe/internal/config"
 	"github.com/rs/zerolog"
 )
 

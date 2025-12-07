@@ -38,7 +38,7 @@ Returns service health status and available QC analysis tools.
 ```json
 {
   "status": "healthy",
-  "service": "ffprobe-api-core",
+  "service": "rendiff-probe-core",
   "qc_tools": [
     "AFD Analysis",
     "Dead Pixel Detection",

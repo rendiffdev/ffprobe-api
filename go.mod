@@ -1,4 +1,4 @@
-module github.com/rendiffdev/ffprobe-api
+module github.com/rendiffdev/rendiff-probe
 
 go 1.24.0
 

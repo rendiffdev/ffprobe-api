@@ -118,9 +118,9 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'ffprobe-api'
+  - job_name: 'rendiff-probe'
     static_configs:
-      - targets: ['ffprobe-api:8080']
+      - targets: ['rendiff-probe:8080']
     metrics_path: '/metrics'
 ```
 
@@ -171,7 +171,7 @@ All logs use structured JSON format:
 {
   "timestamp": "2024-01-15T10:30:00Z",
   "level": "info",
-  "service": "ffprobe-api",
+  "service": "rendiff-probe",
   "request_id": "550e8400-e29b-41d4-a716-446655440000",
   "user_id": "user-123",
   "method": "POST",
@@ -223,7 +223,7 @@ filter {
 output {
   elasticsearch {
     hosts => ["elasticsearch:9200"]
-    index => "ffprobe-api-%{+YYYY.MM.dd}"
+    index => "rendiff-probe-%{+YYYY.MM.dd}"
   }
 }
 ```
@@ -259,7 +259,7 @@ output {
 ```yaml
 # alerts.yml
 groups:
-  - name: ffprobe-api
+  - name: rendiff-probe
     rules:
       - alert: HighErrorRate
         expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
@@ -367,7 +367,7 @@ func InitTracer() {
     tp := trace.NewTracerProvider(
         trace.WithBatcher(exp),
         trace.WithResource(resource.NewWithAttributes(
-            semconv.ServiceNameKey.String("ffprobe-api"),
+            semconv.ServiceNameKey.String("rendiff-probe"),
         )),
     )
     
@@ -442,7 +442,7 @@ predict_linear(rate(http_requests_total[7d])[7d:1h], 86400 * 7)
 curl http://prometheus:9090/api/v1/targets
 
 # Verify metrics endpoint
-curl http://ffprobe-api:8080/metrics
+curl http://rendiff-probe:8080/metrics
 ```
 
 ### High Memory Usage
@@ -457,11 +457,11 @@ curl http://prometheus:9090/api/v1/query?query=prometheus_tsdb_symbol_table_size
 ### Log Overflow
 ```bash
 # Check log volume
-docker compose -f docker-image/compose.yaml logs ffprobe-api | wc -l
+docker compose -f docker-image/compose.yaml logs rendiff-probe | wc -l
 
 # Adjust log level
 export LOG_LEVEL=warn
-docker compose -f docker-image/compose.yaml restart ffprobe-api
+docker compose -f docker-image/compose.yaml restart rendiff-probe
 ```
 
 ---

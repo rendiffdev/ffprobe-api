@@ -8,12 +8,12 @@ Thank you for your interest in contributing to FFprobe API! This document provid
 ## 🚀 Quick Start
 
 1. **Fork** the repository
-2. **Clone** your fork: `git clone https://github.com/YOUR-USERNAME/ffprobe-api.git`
-3. **Add upstream**: `git remote add upstream https://github.com/rendiffdev/ffprobe-api.git`
+2. **Clone** your fork: `git clone https://github.com/YOUR-USERNAME/rendiff-probe.git`
+3. **Add upstream**: `git remote add upstream https://github.com/rendiffdev/rendiff-probe.git`
 3. **Read** [Technical Guidelines](CONTRIBUTOR-GUIDELINES.md) for detailed setup instructions
 4. **Install** dependencies: `docker compose -f docker-image/compose.yaml up -d` 
 5. **Run** tests: `go test ./...`
-6. **Start** development: `go run cmd/ffprobe-api/main.go`
+6. **Start** development: `go run cmd/rendiff-probe/main.go`
 
 ## 🛠️ Development Setup
 
@@ -27,8 +27,8 @@ Thank you for your interest in contributing to FFprobe API! This document provid
 
 ```bash
 # Clone and setup
-git clone https://github.com/rendiffdev/ffprobe-api.git
-cd ffprobe-api
+git clone https://github.com/rendiffdev/rendiff-probe.git
+cd rendiff-probe
 
 # Start development environment (includes PostgreSQL, Redis, FFmpeg)
 docker compose -f docker-image/compose.yaml -f docker-image/compose.development.yaml up -d
@@ -46,10 +46,10 @@ For detailed setup instructions, see [Technical Guidelines](CONTRIBUTOR-GUIDELIN
 
 ### 1. Find Something to Work On
 
-- Check [Good First Issues](https://github.com/rendiffdev/ffprobe-api/labels/good%20first%20issue) for beginners
-- Browse [Help Wanted](https://github.com/rendiffdev/ffprobe-api/labels/help%20wanted) issues
-- Review our [Project Roadmap](https://github.com/rendiffdev/ffprobe-api/projects)
-- Propose new features via [GitHub Discussions](https://github.com/rendiffdev/ffprobe-api/discussions)
+- Check [Good First Issues](https://github.com/rendiffdev/rendiff-probe/labels/good%20first%20issue) for beginners
+- Browse [Help Wanted](https://github.com/rendiffdev/rendiff-probe/labels/help%20wanted) issues
+- Review our [Project Roadmap](https://github.com/rendiffdev/rendiff-probe/projects)
+- Propose new features via [GitHub Discussions](https://github.com/rendiffdev/rendiff-probe/discussions)
 
 ### 2. Create a Feature Branch
 
@@ -183,7 +183,7 @@ For detailed security guidelines, see [Security Guidelines](CONTRIBUTOR-GUIDELIN
 
 ### Before Reporting
 
-1. Check [existing issues](https://github.com/rendiffdev/ffprobe-api/issues)
+1. Check [existing issues](https://github.com/rendiffdev/rendiff-probe/issues)
 2. Ensure you're using the latest version
 3. Test in a clean environment (Docker)
 
@@ -217,8 +217,8 @@ Include relevant log output (remove sensitive information).
 
 ### Before Requesting
 
-1. Check [existing discussions](https://github.com/rendiffdev/ffprobe-api/discussions)
-2. Review our [roadmap](https://github.com/rendiffdev/ffprobe-api/projects)
+1. Check [existing discussions](https://github.com/rendiffdev/rendiff-probe/discussions)
+2. Review our [roadmap](https://github.com/rendiffdev/rendiff-probe/projects)
 3. Consider if this fits the project scope
 
 ### Feature Request Template
@@ -340,9 +340,9 @@ We follow the [Contributor Covenant](https://www.contributor-covenant.org/). In 
 ### 🆕 Good First Issues
 
 Look for issues labeled with:
-- [`good first issue`](https://github.com/rendiffdev/ffprobe-api/labels/good%20first%20issue)
-- [`help wanted`](https://github.com/rendiffdev/ffprobe-api/labels/help%20wanted)
-- [`documentation`](https://github.com/rendiffdev/ffprobe-api/labels/documentation)
+- [`good first issue`](https://github.com/rendiffdev/rendiff-probe/labels/good%20first%20issue)
+- [`help wanted`](https://github.com/rendiffdev/rendiff-probe/labels/help%20wanted)
+- [`documentation`](https://github.com/rendiffdev/rendiff-probe/labels/documentation)
 
 ## 📚 Resources
 

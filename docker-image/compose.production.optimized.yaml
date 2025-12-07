@@ -3,7 +3,7 @@
 # Version: 3.9 (Docker Compose File Format)
 
 version: '3.9'
-name: ffprobe-api-prod
+name: rendiff-probe-prod
 
 # =============================================================================
 # Production Services with Enhanced Configuration
@@ -21,9 +21,9 @@ services:
         BUILD_DATE: ${BUILD_DATE}
         BUILDKIT_INLINE_CACHE: 1
       cache_from:
-        - ffprobe-api:latest
-        - ffprobe-api:cache
-    image: ffprobe-api:${VERSION:-latest}
+        - rendiff-probe:latest
+        - rendiff-probe:cache
+    image: rendiff-probe:${VERSION:-latest}
     hostname: api-{{.Task.Slot}}
     networks:
       - frontend
@@ -43,7 +43,7 @@ services:
       
       # Database configuration
       DB_TYPE: sqlite
-      DB_PATH: /app/data/ffprobe.db
+      DB_PATH: /app/data/rendiff-probe.db
       DB_MAX_CONNECTIONS: 25
       DB_CONNECTION_LIFETIME: 1h
       
@@ -80,7 +80,7 @@ services:
       METRICS_PORT: 9090
       TRACING_ENABLED: true
       JAEGER_ENDPOINT: http://jaeger:14268/api/traces
-      OTEL_SERVICE_NAME: ffprobe-api
+      OTEL_SERVICE_NAME: rendiff-probe
       OTEL_SERVICE_VERSION: ${VERSION:-latest}
       
       # Feature flags
@@ -200,9 +200,9 @@ services:
       - "traefik.http.middlewares.secure-headers.headers.browserXssFilter=true"
       - "traefik.http.middlewares.secure-headers.headers.referrerPolicy=strict-origin-when-cross-origin"
       # Service metadata
-      - "com.ffprobe-api.service=api"
-      - "com.ffprobe-api.version=${VERSION:-latest}"
-      - "com.ffprobe-api.environment=production"
+      - "com.rendiff-probe.service=api"
+      - "com.rendiff-probe.version=${VERSION:-latest}"
+      - "com.rendiff-probe.environment=production"
 
   # High-Performance Valkey Cache Cluster
   valkey:
@@ -273,9 +273,9 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=100M
     labels:
-      - "com.ffprobe-api.service=cache"
-      - "com.ffprobe-api.component=valkey"
-      - "com.ffprobe-api.environment=production"
+      - "com.rendiff-probe.service=cache"
+      - "com.rendiff-probe.component=valkey"
+      - "com.rendiff-probe.environment=production"
 
   # Optimized Ollama AI Service with GPU Support
   ollama:
@@ -334,9 +334,9 @@ services:
     security_opt:
       - no-new-privileges:true
     labels:
-      - "com.ffprobe-api.service=ai"
-      - "com.ffprobe-api.component=ollama"
-      - "com.ffprobe-api.environment=production"
+      - "com.rendiff-probe.service=ai"
+      - "com.rendiff-probe.component=ollama"
+      - "com.rendiff-probe.environment=production"
 
   # Production Traefik with Enhanced Security
   traefik:
@@ -628,8 +628,8 @@ networks:
     attachable: false
     scope: swarm
     labels:
-      - "com.ffprobe-api.network.type=frontend"
-      - "com.ffprobe-api.network.security=high"
+      - "com.rendiff-probe.network.type=frontend"
+      - "com.rendiff-probe.network.security=high"
 
   backend:
     driver: overlay
@@ -639,16 +639,16 @@ networks:
     driver_opts:
       encrypted: "true"
     labels:
-      - "com.ffprobe-api.network.type=backend"
-      - "com.ffprobe-api.network.security=critical"
+      - "com.rendiff-probe.network.type=backend"
+      - "com.rendiff-probe.network.security=critical"
 
   monitoring:
     driver: overlay
     attachable: false
     scope: swarm
     labels:
-      - "com.ffprobe-api.network.type=monitoring"
-      - "com.ffprobe-api.network.security=medium"
+      - "com.rendiff-probe.network.type=monitoring"
+      - "com.rendiff-probe.network.security=medium"
 
 # =============================================================================
 # Production Volumes with Backup Labels
@@ -661,8 +661,8 @@ volumes:
       o: bind
       device: ${DATA_PATH}/app
     labels:
-      - "com.ffprobe-api.backup=daily"
-      - "com.ffprobe-api.volume.type=application-data"
+      - "com.rendiff-probe.backup=daily"
+      - "com.rendiff-probe.volume.type=application-data"
 
   app_uploads:
     driver: local
@@ -671,8 +671,8 @@ volumes:
       o: bind
       device: ${DATA_PATH}/uploads
     labels:
-      - "com.ffprobe-api.backup=daily"
-      - "com.ffprobe-api.volume.type=user-uploads"
+      - "com.rendiff-probe.backup=daily"
+      - "com.rendiff-probe.volume.type=user-uploads"
 
   app_reports:
     driver: local
@@ -681,14 +681,14 @@ volumes:
       o: bind
       device: ${DATA_PATH}/reports
     labels:
-      - "com.ffprobe-api.backup=weekly"
-      - "com.ffprobe-api.volume.type=generated-reports"
+      - "com.rendiff-probe.backup=weekly"
+      - "com.rendiff-probe.volume.type=generated-reports"
 
   app_cache:
     driver: local
     labels:
-      - "com.ffprobe-api.backup=none"
-      - "com.ffprobe-api.volume.type=cache"
+      - "com.rendiff-probe.backup=none"
+      - "com.rendiff-probe.volume.type=cache"
 
   valkey_data:
     driver: local
@@ -697,8 +697,8 @@ volumes:
       o: bind
       device: ${DATA_PATH}/valkey
     labels:
-      - "com.ffprobe-api.backup=daily"
-      - "com.ffprobe-api.volume.type=cache-data"
+      - "com.rendiff-probe.backup=daily"
+      - "com.rendiff-probe.volume.type=cache-data"
 
   ollama_models:
     driver: local
@@ -707,14 +707,14 @@ volumes:
       o: bind
       device: ${DATA_PATH}/ollama
     labels:
-      - "com.ffprobe-api.backup=weekly"
-      - "com.ffprobe-api.volume.type=ai-models"
+      - "com.rendiff-probe.backup=weekly"
+      - "com.rendiff-probe.volume.type=ai-models"
 
   traefik_acme:
     driver: local
     labels:
-      - "com.ffprobe-api.backup=daily"
-      - "com.ffprobe-api.volume.type=certificates"
+      - "com.rendiff-probe.backup=daily"
+      - "com.rendiff-probe.volume.type=certificates"
 
   prometheus_data:
     driver: local
@@ -723,8 +723,8 @@ volumes:
       o: bind
       device: ${DATA_PATH}/prometheus
     labels:
-      - "com.ffprobe-api.backup=weekly"
-      - "com.ffprobe-api.volume.type=metrics"
+      - "com.rendiff-probe.backup=weekly"
+      - "com.rendiff-probe.volume.type=metrics"
 
   grafana_data:
     driver: local
@@ -733,8 +733,8 @@ volumes:
       o: bind
       device: ${DATA_PATH}/grafana
     labels:
-      - "com.ffprobe-api.backup=weekly"
-      - "com.ffprobe-api.volume.type=dashboards"
+      - "com.rendiff-probe.backup=weekly"
+      - "com.rendiff-probe.volume.type=dashboards"
 
 # =============================================================================
 # Production Secrets Management

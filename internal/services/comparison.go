@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/rendiffdev/ffprobe-api/internal/database"
-	"github.com/rendiffdev/ffprobe-api/internal/models"
-	"github.com/rendiffdev/ffprobe-api/internal/repositories"
+	"github.com/rendiffdev/rendiff-probe/internal/database"
+	"github.com/rendiffdev/rendiff-probe/internal/models"
+	"github.com/rendiffdev/rendiff-probe/internal/repositories"
 )
 
 // ComparisonService handles video comparison operations

@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/rendiffdev/ffprobe-api/internal/database"
-	"github.com/rendiffdev/ffprobe-api/internal/ffmpeg"
-	"github.com/rendiffdev/ffprobe-api/internal/models"
+	"github.com/rendiffdev/rendiff-probe/internal/database"
+	"github.com/rendiffdev/rendiff-probe/internal/ffmpeg"
+	"github.com/rendiffdev/rendiff-probe/internal/models"
 	"github.com/rs/zerolog"
 )
 

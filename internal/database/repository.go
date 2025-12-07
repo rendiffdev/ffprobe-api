@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/rendiffdev/ffprobe-api/internal/models"
+	"github.com/rendiffdev/rendiff-probe/internal/models"
 )
 
 // Repository defines the interface for database operations

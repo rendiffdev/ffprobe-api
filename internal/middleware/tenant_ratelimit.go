@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rendiffdev/ffprobe-api/internal/cache"
+	"github.com/rendiffdev/rendiff-probe/internal/cache"
 	"github.com/rs/zerolog"
 )
 

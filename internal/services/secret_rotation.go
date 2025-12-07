@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	"github.com/rendiffdev/ffprobe-api/internal/cache"
+	"github.com/rendiffdev/rendiff-probe/internal/cache"
 	"github.com/rs/zerolog"
 	"golang.org/x/crypto/bcrypt"
 )

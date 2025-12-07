@@ -2,7 +2,7 @@
 # Uses latest Docker Compose Application Model
 # https://docs.docker.com/compose/intro/compose-application-model/
 
-name: ffprobe-api
+name: rendiff-probe
 
 # Service definitions using latest features
 services:
@@ -14,11 +14,11 @@ services:
       args:
         - BUILDKIT_INLINE_CACHE=1
       cache_from:
-        - ffprobe-api:latest
+        - rendiff-probe:latest
       target: production
-    image: ffprobe-api:latest
-    container_name: ffprobe-api
-    hostname: ffprobe-api
+    image: rendiff-probe:latest
+    container_name: rendiff-probe
+    hostname: rendiff-probe
     ports:
       - target: 8080
         published: 8080
@@ -30,7 +30,7 @@ services:
       HOST: 0.0.0.0
       # Database Configuration (SQLite embedded)
       DB_TYPE: ${DB_TYPE:-sqlite}
-      DB_PATH: ${DB_PATH:-/app/data/ffprobe.db}
+      DB_PATH: ${DB_PATH:-/app/data/rendiff-probe.db}
       
       # Cache Configuration (Valkey)
       VALKEY_HOST: ${VALKEY_HOST:-valkey}
@@ -93,8 +93,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.rule=Host(`localhost`)"
-      - "com.ffprobe-api.service=api"
-      - "com.ffprobe-api.version=latest"
+      - "com.rendiff-probe.service=api"
+      - "com.rendiff-probe.version=latest"
     networks:
       - ffprobe-network
     profiles:
@@ -158,8 +158,8 @@ services:
         max-size: "5m"
         max-file: "3"
     labels:
-      - "com.ffprobe-api.service=cache"
-      - "com.ffprobe-api.version=8"
+      - "com.rendiff-probe.service=cache"
+      - "com.rendiff-probe.version=8"
     networks:
       - ffprobe-network
     profiles:
@@ -219,8 +219,8 @@ services:
         max-size: "20m"
         max-file: "3"
     labels:
-      - "com.ffprobe-api.service=ai"
-      - "com.ffprobe-api.models=${OLLAMA_MODEL:-gemma3:270m},${OLLAMA_FALLBACK_MODEL:-phi3:mini}"
+      - "com.rendiff-probe.service=ai"
+      - "com.rendiff-probe.models=${OLLAMA_MODEL:-gemma3:270m},${OLLAMA_FALLBACK_MODEL:-phi3:mini}"
     networks:
       - ffprobe-network
     profiles:
@@ -276,8 +276,8 @@ volumes:
       o: bind
       device: ${DATA_PATH:-./data}/valkey
     labels:
-      - "com.ffprobe-api.volume=cache"
-      - "com.ffprobe-api.backup=weekly"
+      - "com.rendiff-probe.volume=cache"
+      - "com.rendiff-probe.backup=weekly"
   ollama_data:
     driver: local
     driver_opts:
@@ -285,8 +285,8 @@ volumes:
       o: bind
       device: ${DATA_PATH:-./data}/ollama
     labels:
-      - "com.ffprobe-api.volume=ai-models"
-      - "com.ffprobe-api.backup=monthly"
+      - "com.rendiff-probe.volume=ai-models"
+      - "com.rendiff-probe.backup=monthly"
   uploads:
     driver: local
     driver_opts:
@@ -294,8 +294,8 @@ volumes:
       o: bind
       device: ${DATA_PATH:-./data}/uploads
     labels:
-      - "com.ffprobe-api.volume=user-data"
-      - "com.ffprobe-api.backup=daily"
+      - "com.rendiff-probe.volume=user-data"
+      - "com.rendiff-probe.backup=daily"
   reports:
     driver: local
     driver_opts:
@@ -303,18 +303,18 @@ volumes:
       o: bind
       device: ${DATA_PATH:-./data}/reports
     labels:
-      - "com.ffprobe-api.volume=generated-reports"
-      - "com.ffprobe-api.backup=weekly"
+      - "com.rendiff-probe.volume=generated-reports"
+      - "com.rendiff-probe.backup=weekly"
   temp:
     driver: local
     labels:
-      - "com.ffprobe-api.volume=temporary"
-      - "com.ffprobe-api.cleanup=daily"
+      - "com.rendiff-probe.volume=temporary"
+      - "com.rendiff-probe.cleanup=daily"
   cache:
     driver: local
     labels:
-      - "com.ffprobe-api.volume=cache"
-      - "com.ffprobe-api.cleanup=weekly"
+      - "com.rendiff-probe.volume=cache"
+      - "com.rendiff-probe.cleanup=weekly"
   sqlite_data:
     driver: local
     driver_opts:
@@ -322,8 +322,8 @@ volumes:
       o: bind
       device: ${DATA_PATH:-./data}/sqlite
     labels:
-      - "com.ffprobe-api.volume=sqlite-database"
-      - "com.ffprobe-api.backup=daily"
+      - "com.rendiff-probe.volume=sqlite-database"
+      - "com.rendiff-probe.backup=daily"
 
 # Modern network configuration with custom driver and IPAM
 networks:
@@ -340,8 +340,8 @@ networks:
       com.docker.network.bridge.name: ffprobe-br0
       com.docker.network.driver.mtu: 1500
     labels:
-      - "com.ffprobe-api.network=main"
-      - "com.ffprobe-api.environment=${GO_ENV:-development}"
+      - "com.rendiff-probe.network=main"
+      - "com.rendiff-probe.environment=${GO_ENV:-development}"
 
 # Configuration for different environments using profiles
 # Usage: docker compose --profile development up

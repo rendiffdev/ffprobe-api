@@ -1,3 +1,12 @@
+// Rendiff Probe - Professional Video Analysis API
+// Powered by FFprobe (FFmpeg)
+//
+// This API provides comprehensive video/audio file analysis with 19 professional
+// quality control analysis categories. It uses FFprobe as its core media analysis engine.
+//
+// FFprobe is part of the FFmpeg project (https://ffmpeg.org/)
+// and is licensed under the LGPL/GPL license.
+
 package main
 
 import (
@@ -21,14 +30,14 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
-	"github.com/rendiffdev/ffprobe-api/internal/config"
-	"github.com/rendiffdev/ffprobe-api/internal/database"
-	"github.com/rendiffdev/ffprobe-api/internal/ffmpeg"
-	"github.com/rendiffdev/ffprobe-api/internal/hls"
-	"github.com/rendiffdev/ffprobe-api/internal/models"
-	"github.com/rendiffdev/ffprobe-api/internal/services"
-	"github.com/rendiffdev/ffprobe-api/internal/validator"
-	"github.com/rendiffdev/ffprobe-api/pkg/logger"
+	"github.com/rendiffdev/rendiff-probe/internal/config"
+	"github.com/rendiffdev/rendiff-probe/internal/database"
+	"github.com/rendiffdev/rendiff-probe/internal/ffmpeg"
+	"github.com/rendiffdev/rendiff-probe/internal/hls"
+	"github.com/rendiffdev/rendiff-probe/internal/models"
+	"github.com/rendiffdev/rendiff-probe/internal/services"
+	"github.com/rendiffdev/rendiff-probe/internal/validator"
+	"github.com/rendiffdev/rendiff-probe/pkg/logger"
 	"github.com/rs/zerolog"
 )
 
@@ -112,7 +121,7 @@ func main() {
 	appLogger = logger.New(cfg.LogLevel)
 	appLogger.Info().
 		Bool("cloud_mode", cfg.CloudMode).
-		Msg("Starting ffprobe-api with full feature set")
+		Msg("Starting rendiff-probe with full feature set")
 
 	// Initialize shutdown context
 	shutdownCtx, shutdownCancel = context.WithCancel(context.Background())
@@ -366,7 +375,7 @@ func setupRoutes(router *gin.Engine, cfg *config.Config) {
 func healthHandler(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"status":  "healthy",
-		"service": "ffprobe-api",
+		"service": "rendiff-probe",
 		"version": "2.0.0",
 		"features": gin.H{
 			"file_probe":       true,
@@ -811,7 +820,7 @@ func downloadURL(ctx context.Context, urlStr string) (string, string, error) {
 	}
 
 	// Set reasonable headers
-	req.Header.Set("User-Agent", "ffprobe-api/2.0")
+	req.Header.Set("User-Agent", "rendiff-probe/2.0")
 
 	client := &http.Client{
 		Timeout: 5 * time.Minute,

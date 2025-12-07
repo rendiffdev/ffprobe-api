@@ -23,7 +23,7 @@ FFprobe API supports multiple deployment strategies to meet different scales and
 ```bash
 # Clone repository
 git clone <your-repo-url>
-cd ffprobe-api
+cd rendiff-probe
 
 # Start all services
 docker compose -f docker-image/compose.yaml up -d
@@ -57,7 +57,7 @@ docker compose -f docker-image/compose.yaml ps
 docker compose -f docker-image/compose.yaml -f docker-image/compose.production.yaml up -d
 
 # Scale API instances
-docker compose -f docker-image/compose.yaml -f docker-image/compose.production.yaml up -d --scale ffprobe-api=2
+docker compose -f docker-image/compose.yaml -f docker-image/compose.production.yaml up -d --scale rendiff-probe=2
 ```
 
 **Resources**: 8GB RAM, 4 CPU cores, 50GB storage  
@@ -70,7 +70,7 @@ docker compose -f docker-image/compose.yaml -f docker-image/compose.production.y
 ```bash
 # Enterprise deployment with full monitoring stack
 docker compose -f docker-image/compose.yaml -f docker-image/compose.production.yaml up -d \
-  --scale ffprobe-api=3 \
+  --scale rendiff-probe=3 \
   --scale ollama=2
 ```
 
@@ -91,7 +91,7 @@ docker compose -f docker-image/compose.yaml -f docker-image/compose.production.y
 
 ```bash
 # Horizontal scaling
-docker compose -f docker-image/compose.yaml up -d --scale ffprobe-api=3
+docker compose -f docker-image/compose.yaml up -d --scale rendiff-probe=3
 
 # Resource limits (production)
 docker compose -f docker-image/compose.yaml -f docker-image/compose.production.yaml up -d
@@ -149,8 +149,8 @@ ALLOWED_ORIGINS=*
 ```yaml
 version: '3.8'
 services:
-  ffprobe-api:
-    image: ffprobe-api:latest
+  rendiff-probe:
+    image: rendiff-probe:latest
     ports:
       - "8080:8080"
     environment:
@@ -184,20 +184,20 @@ volumes:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ffprobe-api
+  name: rendiff-probe
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: ffprobe-api
+      app: rendiff-probe
   template:
     metadata:
       labels:
-        app: ffprobe-api
+        app: rendiff-probe
     spec:
       containers:
-      - name: ffprobe-api
-        image: ffprobe-api:latest
+      - name: rendiff-probe
+        image: rendiff-probe:latest
         ports:
         - containerPort: 8080
         env:
@@ -302,7 +302,7 @@ Available at `http://localhost:8080/metrics`:
 
 ```bash
 # View application logs
-docker compose -f docker-image/compose.yaml logs -f ffprobe-api
+docker compose -f docker-image/compose.yaml logs -f rendiff-probe
 
 # Monitor specific service
 docker compose -f docker-image/compose.yaml logs -f postgres
@@ -371,7 +371,7 @@ Database migrations run automatically on startup. For manual migration:
 
 ```bash
 # Run migrations manually
-docker compose -f docker-image/compose.yaml exec ffprobe-api ./migrate -path ./migrations -database "postgres://..." up
+docker compose -f docker-image/compose.yaml exec rendiff-probe ./migrate -path ./migrations -database "postgres://..." up
 ```
 
 ---

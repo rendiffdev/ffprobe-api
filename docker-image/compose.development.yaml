@@ -2,7 +2,7 @@
 # Modern Docker Compose for development workflow
 # Usage: docker compose --profile development up
 
-name: ffprobe-api-dev
+name: rendiff-probe-dev
 
 # Development-specific service configurations
 services:
@@ -14,10 +14,10 @@ services:
     build:
       target: development
       cache_from:
-        - ffprobe-api:dev
-        - ffprobe-api:latest
-    image: ffprobe-api:dev
-    container_name: ffprobe-api-dev
+        - rendiff-probe:dev
+        - rendiff-probe:latest
+    image: rendiff-probe:dev
+    container_name: rendiff-probe-dev
     environment:
       GO_ENV: development
       DEV_ENABLE_DEBUG: true
@@ -27,7 +27,7 @@ services:
       API_PORT: 8080
       # Database Configuration (SQLite embedded)
       DB_TYPE: sqlite
-      DB_PATH: /app/data/ffprobe.db
+      DB_PATH: /app/data/rendiff-probe.db
       # Cache Configuration (Valkey - Redis compatible)
       VALKEY_HOST: valkey-dev
       VALKEY_PORT: 6379
@@ -194,7 +194,7 @@ services:
       retries: 3
     restart: unless-stopped
     labels:
-      - "com.ffprobe-api.service=valkey-admin"
+      - "com.rendiff-probe.service=valkey-admin"
       - "traefik.enable=true"
       - "traefik.http.routers.valkey-commander.rule=Host(`valkey.localhost`)"
     profiles:
@@ -234,7 +234,7 @@ services:
       retries: 3
     restart: unless-stopped
     labels:
-      - "com.ffprobe-api.service=file-browser"
+      - "com.rendiff-probe.service=file-browser"
       - "traefik.enable=true"
       - "traefik.http.routers.filebrowser.rule=Host(`files.localhost`)"
     profiles:
@@ -250,28 +250,28 @@ volumes:
   valkey_dev_data:
     driver: local
     labels:
-      - "com.ffprobe-api.volume=dev-cache"
-      - "com.ffprobe-api.environment=development"
-      - "com.ffprobe-api.type=valkey"
+      - "com.rendiff-probe.volume=dev-cache"
+      - "com.rendiff-probe.environment=development"
+      - "com.rendiff-probe.type=valkey"
   ollama_dev_data:
     driver: local
     labels:
-      - "com.ffprobe-api.volume=dev-ai-models"
-      - "com.ffprobe-api.environment=development"
+      - "com.rendiff-probe.volume=dev-ai-models"
+      - "com.rendiff-probe.environment=development"
   go_mod_cache:
     driver: local
     labels:
-      - "com.ffprobe-api.volume=go-mod-cache"
-      - "com.ffprobe-api.cleanup=weekly"
+      - "com.rendiff-probe.volume=go-mod-cache"
+      - "com.rendiff-probe.cleanup=weekly"
   go_build_cache:
     driver: local
     labels:
-      - "com.ffprobe-api.volume=go-build-cache"
-      - "com.ffprobe-api.cleanup=daily"
+      - "com.rendiff-probe.volume=go-build-cache"
+      - "com.rendiff-probe.cleanup=daily"
   filebrowser_data:
     driver: local
     labels:
-      - "com.ffprobe-api.volume=filebrowser-config"
+      - "com.rendiff-probe.volume=filebrowser-config"
 
 # Development network with custom DNS
 networks:
@@ -287,8 +287,8 @@ networks:
       com.docker.network.bridge.name: ffprobe-dev-br0
       com.docker.network.driver.mtu: 1500
     labels:
-      - "com.ffprobe-api.network=development"
-      - "com.ffprobe-api.environment=development"
+      - "com.rendiff-probe.network=development"
+      - "com.rendiff-probe.environment=development"
 
 # Development-specific configurations
 x-development-variables: &dev-variables
