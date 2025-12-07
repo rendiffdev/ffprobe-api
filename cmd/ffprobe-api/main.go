@@ -312,9 +312,17 @@ func securityHeadersMiddleware() gin.HandlerFunc {
 }
 
 // requestSizeLimitMiddleware limits request body size
+// Note: Multipart form requests (file uploads) are excluded - they use maxFileSize limit
 func requestSizeLimitMiddleware(maxBytes int64) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxBytes)
+		// Skip limit for multipart form data (file uploads)
+		contentType := c.GetHeader("Content-Type")
+		if strings.HasPrefix(contentType, "multipart/form-data") {
+			// For file uploads, use the much larger maxFileSize limit
+			c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxFileSize)
+		} else {
+			c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxBytes)
+		}
 		c.Next()
 	}
 }
