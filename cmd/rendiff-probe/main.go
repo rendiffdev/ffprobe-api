@@ -43,14 +43,16 @@ import (
 
 // Production constants
 const (
-	maxFileSize       = 5 * 1024 * 1024 * 1024 // 5GB max file size
-	maxRequestBodyMB  = 10                      // 10MB max JSON request body
-	maxBatchItems     = 100                     // Max items in batch processing
-	defaultTimeout    = 60 * time.Second
-	maxTimeout        = 30 * time.Minute
-	shutdownTimeout   = 30 * time.Second
-	wsReadBufferSize  = 1024
-	wsWriteBufferSize = 1024
+	maxFileSize        = 5 * 1024 * 1024 * 1024 // 5GB max file size
+	maxRequestBodyMB   = 10                      // 10MB max JSON request body
+	maxBatchItems      = 100                     // Max items in batch processing
+	defaultTimeout     = 60 * time.Second
+	maxTimeout         = 30 * time.Minute
+	shutdownTimeout    = 30 * time.Second
+	wsReadBufferSize   = 1024
+	wsWriteBufferSize  = 1024
+	batchJobTTL        = 1 * time.Hour  // TTL for completed batch jobs before cleanup
+	batchCleanupPeriod = 5 * time.Minute // How often to run batch job cleanup
 )
 
 // Global instances for services
@@ -166,6 +168,10 @@ func main() {
 	appLogger.Info().Msg("LLM Service initialized")
 
 	appLogger.Info().Msg("All services initialized successfully")
+
+	// Start batch job cleanup goroutine
+	go cleanupBatchJobs()
+	appLogger.Info().Dur("ttl", batchJobTTL).Dur("period", batchCleanupPeriod).Msg("Batch job cleanup started")
 
 	// Create Gin router with production settings
 	router := gin.New()
@@ -283,6 +289,44 @@ func closeAllWebSocketConnections() {
 		conn.Close()
 	}
 	wsConnections = make(map[string]*websocket.Conn)
+}
+
+// cleanupBatchJobs periodically removes expired batch jobs to prevent memory leaks
+func cleanupBatchJobs() {
+	ticker := time.NewTicker(batchCleanupPeriod)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-shutdownCtx.Done():
+			appLogger.Debug().Msg("Batch job cleanup goroutine stopped")
+			return
+		case <-ticker.C:
+			now := time.Now()
+			var toDelete []string
+
+			batchLock.RLock()
+			for id, job := range batchJobs {
+				// Remove completed/cancelled/failed jobs older than TTL
+				if job.Status == "completed" || job.Status == "cancelled" || job.Status == "failed" {
+					if now.Sub(job.UpdatedAt) > batchJobTTL {
+						toDelete = append(toDelete, id)
+					}
+				}
+			}
+			batchLock.RUnlock()
+
+			if len(toDelete) > 0 {
+				batchLock.Lock()
+				for _, id := range toDelete {
+					delete(batchJobs, id)
+					appLogger.Debug().Str("job_id", id).Msg("Cleaned up expired batch job")
+				}
+				batchLock.Unlock()
+				appLogger.Info().Int("count", len(toDelete)).Msg("Batch job cleanup completed")
+			}
+		}
+	}
 }
 
 // requestLoggingMiddleware logs HTTP requests

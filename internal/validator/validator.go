@@ -90,8 +90,9 @@ func ValidateURL(urlStr string) error {
 		return fmt.Errorf("invalid URL: %w", err)
 	}
 
-	// Check scheme
-	validSchemes := []string{"http", "https", "rtmp", "rtsp", "s3", "gs", "file"}
+	// Check scheme - SECURITY: file:// scheme is blocked to prevent SSRF/local file access
+	// rtmp/rtsp are allowed for streaming URLs but require careful validation
+	validSchemes := []string{"http", "https", "rtmp", "rtsp", "s3", "gs"}
 	schemeValid := false
 	for _, scheme := range validSchemes {
 		if parsedURL.Scheme == scheme {
@@ -101,7 +102,7 @@ func ValidateURL(urlStr string) error {
 	}
 
 	if !schemeValid {
-		return fmt.Errorf("unsupported URL scheme: %s", parsedURL.Scheme)
+		return fmt.Errorf("unsupported URL scheme: %s (file:// is blocked for security)", parsedURL.Scheme)
 	}
 
 	// Block localhost and private IPs for security

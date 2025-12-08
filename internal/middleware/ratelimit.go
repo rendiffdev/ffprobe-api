@@ -40,7 +40,6 @@ type WindowCounter struct {
 type RateLimitMiddleware struct {
 	config   RateLimitConfig
 	counters *RateCounter
-	mu       sync.RWMutex
 	logger   zerolog.Logger
 	done     chan struct{} // Channel to signal cleanup goroutine to stop
 }
@@ -445,45 +444,93 @@ func (rl *RateLimitMiddleware) getRemainingRequestsWithLimits(identifier string,
 }
 
 // DynamicRateLimit allows different limits based on user tier
+// This is a thread-safe implementation that doesn't modify shared state
 func (rl *RateLimitMiddleware) DynamicRateLimit() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Skip rate limiting for health checks
+		if c.Request.URL.Path == "/health" {
+			c.Next()
+			return
+		}
+
 		// Skip if whitelisted
 		if c.GetBool("skip_rate_limit") {
 			c.Next()
 			return
 		}
 
-		// Adjust limits based on user roles
-		config := rl.config
+		var identifier string
+
+		// Determine identifier based on configuration
+		if rl.config.EnablePerUser {
+			if userID := c.GetString("user_id"); userID != "" {
+				identifier = "user:" + userID
+			}
+		}
+
+		if identifier == "" && rl.config.EnablePerIP {
+			identifier = "ip:" + c.ClientIP()
+		}
+
+		if identifier == "" {
+			identifier = "global"
+		}
+
+		// Get role-based limits (thread-safe - returns new struct, doesn't modify shared state)
+		limits := rl.getLimitsForRole(c)
+
+		// Apply multipliers based on roles without modifying shared config
 		if roles, exists := c.Get("roles"); exists {
 			if roleList, ok := roles.([]string); ok {
 				for _, role := range roleList {
 					switch role {
 					case "admin":
-						config.RequestsPerMinute *= 10
-						config.RequestsPerHour *= 10
-						config.RequestsPerDay *= 10
+						limits.RequestsPerMinute *= 10
+						limits.RequestsPerHour *= 10
+						limits.RequestsPerDay *= 10
 					case "premium":
-						config.RequestsPerMinute *= 5
-						config.RequestsPerHour *= 5
-						config.RequestsPerDay *= 5
+						limits.RequestsPerMinute *= 5
+						limits.RequestsPerHour *= 5
+						limits.RequestsPerDay *= 5
 					case "pro":
-						config.RequestsPerMinute *= 3
-						config.RequestsPerHour *= 3
-						config.RequestsPerDay *= 3
+						limits.RequestsPerMinute *= 3
+						limits.RequestsPerHour *= 3
+						limits.RequestsPerDay *= 3
 					}
+					break // Only apply highest role multiplier
 				}
 			}
 		}
 
-		// Apply rate limiting with adjusted config
-		originalConfig := rl.config
-		rl.config = config
+		// Check rate limits with role-based limits (thread-safe)
+		if !rl.checkRateLimitWithLimits(identifier, limits) {
+			rl.logger.Warn().
+				Str("identifier", identifier).
+				Str("path", c.Request.URL.Path).
+				Msg("Rate limit exceeded (dynamic)")
 
-		// Continue with normal rate limiting
-		rl.RateLimit()(c)
+			retryAfter := rl.getRetryAfter(identifier)
 
-		// Restore original config
-		rl.config = originalConfig
+			c.Header("X-RateLimit-Limit", strconv.Itoa(limits.RequestsPerMinute))
+			c.Header("X-RateLimit-Remaining", "0")
+			c.Header("X-RateLimit-Reset", strconv.FormatInt(retryAfter.Unix(), 10))
+			c.Header("Retry-After", strconv.FormatInt(int64(time.Until(retryAfter).Seconds()), 10))
+
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"error":       "Rate limit exceeded",
+				"code":        "RATE_LIMIT_EXCEEDED",
+				"retry_after": retryAfter.Unix(),
+			})
+			c.Abort()
+			return
+		}
+
+		// Add rate limit headers
+		remaining := rl.getRemainingRequestsWithLimits(identifier, limits)
+		c.Header("X-RateLimit-Limit", strconv.Itoa(limits.RequestsPerMinute))
+		c.Header("X-RateLimit-Remaining", strconv.Itoa(remaining))
+		c.Header("X-RateLimit-Reset", strconv.FormatInt(rl.getResetTime(identifier).Unix(), 10))
+
+		c.Next()
 	}
 }

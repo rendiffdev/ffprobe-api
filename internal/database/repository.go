@@ -416,11 +416,9 @@ func (r *SQLiteRepository) ListHLSAnalyses(ctx context.Context, userID *uuid.UUI
 	baseQuery := `FROM hls_analyses h JOIN analyses a ON h.analysis_id = a.id`
 	whereClause := ""
 	args := []interface{}{}
-	argCount := 0
 
 	if userID != nil {
-		argCount++
-		whereClause = fmt.Sprintf(" WHERE a.user_id = $%d", argCount)
+		whereClause = " WHERE a.user_id = ?"
 		args = append(args, *userID)
 	}
 
@@ -431,13 +429,8 @@ func (r *SQLiteRepository) ListHLSAnalyses(ctx context.Context, userID *uuid.UUI
 		return nil, 0, err
 	}
 
-	// Get paginated results
-	argCount++
-	limitArg := argCount
-	args = append(args, limit)
-	argCount++
-	offsetArg := argCount
-	args = append(args, offset)
+	// Get paginated results - SQLite uses ? placeholders
+	paginatedArgs := append(args, limit, offset)
 
 	query := fmt.Sprintf(`
 		SELECT h.id, h.analysis_id, h.manifest_path, h.manifest_type, h.manifest_data,
@@ -445,10 +438,10 @@ func (r *SQLiteRepository) ListHLSAnalyses(ctx context.Context, userID *uuid.UUI
 			h.playlist_version, h.status, h.processing_time, h.created_at, h.completed_at, h.error_msg
 		%s %s
 		ORDER BY h.created_at DESC
-		LIMIT $%d OFFSET $%d
-	`, baseQuery, whereClause, limitArg, offsetArg)
+		LIMIT ? OFFSET ?
+	`, baseQuery, whereClause)
 
-	err = r.db.DB.SelectContext(ctx, &analyses, query, args...)
+	err = r.db.DB.SelectContext(ctx, &analyses, query, paginatedArgs...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -575,31 +568,26 @@ func (r *SQLiteRepository) ListReports(ctx context.Context, userID *uuid.UUID, a
 	baseQuery := "FROM reports"
 	whereConditions := []string{}
 	args := []interface{}{}
-	argCount := 0
 
 	if userID != nil {
-		argCount++
-		whereConditions = append(whereConditions, fmt.Sprintf("user_id = $%d", argCount))
+		whereConditions = append(whereConditions, "user_id = ?")
 		args = append(args, *userID)
 	}
 
 	if analysisID != "" {
 		if analysisUUID, err := uuid.Parse(analysisID); err == nil {
-			argCount++
-			whereConditions = append(whereConditions, fmt.Sprintf("analysis_id = $%d", argCount))
+			whereConditions = append(whereConditions, "analysis_id = ?")
 			args = append(args, analysisUUID)
 		}
 	}
 
 	if reportType != "" {
-		argCount++
-		whereConditions = append(whereConditions, fmt.Sprintf("report_type = $%d", argCount))
+		whereConditions = append(whereConditions, "report_type = ?")
 		args = append(args, reportType)
 	}
 
 	if format != "" {
-		argCount++
-		whereConditions = append(whereConditions, fmt.Sprintf("format = $%d", argCount))
+		whereConditions = append(whereConditions, "format = ?")
 		args = append(args, format)
 	}
 
@@ -615,23 +603,18 @@ func (r *SQLiteRepository) ListReports(ctx context.Context, userID *uuid.UUID, a
 		return nil, 0, err
 	}
 
-	// Get paginated results
-	argCount++
-	limitArg := argCount
-	args = append(args, limit)
-	argCount++
-	offsetArg := argCount
-	args = append(args, offset)
+	// Get paginated results - SQLite uses ? placeholders
+	paginatedArgs := append(args, limit, offset)
 
 	query := fmt.Sprintf(`
 		SELECT id, analysis_id, user_id, report_type, format, title, description,
 			file_path, file_size, download_count, is_public, expires_at, created_at, last_download
 		%s %s
 		ORDER BY created_at DESC
-		LIMIT $%d OFFSET $%d
-	`, baseQuery, whereClause, limitArg, offsetArg)
+		LIMIT ? OFFSET ?
+	`, baseQuery, whereClause)
 
-	err = r.db.DB.SelectContext(ctx, &reports, query, args...)
+	err = r.db.DB.SelectContext(ctx, &reports, query, paginatedArgs...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -701,15 +684,15 @@ func (r *SQLiteRepository) UpdateQualityComparison(ctx context.Context, comparis
 
 	_, err := r.db.DB.ExecContext(
 		ctx, query,
-		comparison.ID, comparison.Status, comparison.ResultSummary, comparison.ProcessingTime,
-		comparison.CompletedAt, comparison.ErrorMsg,
+		comparison.Status, comparison.ResultSummary, comparison.ProcessingTime,
+		comparison.CompletedAt, comparison.ErrorMsg, comparison.ID,
 	)
 	return err
 }
 
 func (r *SQLiteRepository) UpdateQualityComparisonStatus(ctx context.Context, id uuid.UUID, status models.AnalysisStatus) error {
 	query := "UPDATE quality_comparisons SET status = ?, updated_at = datetime('now') WHERE id = ?"
-	_, err := r.db.DB.ExecContext(ctx, query, id, status)
+	_, err := r.db.DB.ExecContext(ctx, query, status, id)
 	return err
 }
 
@@ -717,38 +700,34 @@ func (r *SQLiteRepository) ListQualityComparisons(ctx context.Context, userID *u
 	var comparisons []*models.QualityComparison
 	var total int
 
-	baseQuery := `FROM quality_comparisons qc 
+	baseQuery := `FROM quality_comparisons qc
 		LEFT JOIN analyses ref ON qc.reference_id = ref.id
 		LEFT JOIN analyses dist ON qc.distorted_id = dist.id`
 	whereConditions := []string{}
 	args := []interface{}{}
-	argCount := 0
 
 	if userID != nil {
-		argCount++
-		whereConditions = append(whereConditions, fmt.Sprintf("(ref.user_id = $%d OR dist.user_id = $%d)", argCount, argCount))
-		args = append(args, *userID)
+		// SQLite uses ? placeholders - need to add the same arg twice for OR condition
+		whereConditions = append(whereConditions, "(ref.user_id = ? OR dist.user_id = ?)")
+		args = append(args, *userID, *userID)
 	}
 
 	if referenceID != "" {
 		if refUUID, err := uuid.Parse(referenceID); err == nil {
-			argCount++
-			whereConditions = append(whereConditions, fmt.Sprintf("qc.reference_id = $%d", argCount))
+			whereConditions = append(whereConditions, "qc.reference_id = ?")
 			args = append(args, refUUID)
 		}
 	}
 
 	if distortedID != "" {
 		if distUUID, err := uuid.Parse(distortedID); err == nil {
-			argCount++
-			whereConditions = append(whereConditions, fmt.Sprintf("qc.distorted_id = $%d", argCount))
+			whereConditions = append(whereConditions, "qc.distorted_id = ?")
 			args = append(args, distUUID)
 		}
 	}
 
 	if status != "" {
-		argCount++
-		whereConditions = append(whereConditions, fmt.Sprintf("qc.status = $%d", argCount))
+		whereConditions = append(whereConditions, "qc.status = ?")
 		args = append(args, status)
 	}
 
@@ -764,23 +743,18 @@ func (r *SQLiteRepository) ListQualityComparisons(ctx context.Context, userID *u
 		return nil, 0, err
 	}
 
-	// Get paginated results
-	argCount++
-	limitArg := argCount
-	args = append(args, limit)
-	argCount++
-	offsetArg := argCount
-	args = append(args, offset)
+	// Get paginated results - SQLite uses ? placeholders
+	paginatedArgs := append(args, limit, offset)
 
 	query := fmt.Sprintf(`
 		SELECT qc.id, qc.reference_id, qc.distorted_id, qc.comparison_type, qc.status,
 			qc.result_summary, qc.processing_time, qc.created_at, qc.completed_at, qc.error_msg
 		%s %s
 		ORDER BY qc.created_at DESC
-		LIMIT $%d OFFSET $%d
-	`, baseQuery, whereClause, limitArg, offsetArg)
+		LIMIT ? OFFSET ?
+	`, baseQuery, whereClause)
 
-	err = r.db.DB.SelectContext(ctx, &comparisons, query, args...)
+	err = r.db.DB.SelectContext(ctx, &comparisons, query, paginatedArgs...)
 	if err != nil {
 		return nil, 0, err
 	}
